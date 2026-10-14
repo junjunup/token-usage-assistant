@@ -29,6 +29,7 @@ const statuses = {
 
 function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) {
   const [label, setLabel] = useState(source.label || '');
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
   useEffect(() => setLabel(source.label || ''), [source.label]);
   const status = source.enabled === false ? 'disabled' : source.status || 'idle';
   const changed = label.trim() !== source.label && label.trim().length > 0;

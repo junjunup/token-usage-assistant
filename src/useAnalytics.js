@@ -20,6 +20,7 @@ export function useAnalytics(bridge, query, state, enabled = true) {
       setReport(null);
       previous.current = queryKey + '|' + state.analyticsRevision;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
     setLoading(true);
     setError('');
     const requestId = crypto.randomUUID();

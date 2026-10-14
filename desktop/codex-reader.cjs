@@ -52,7 +52,7 @@ function* lines(file) {
 function readFile(file, sourceId) {
   let session = null,
     born = 0,
-    version = '',
+    version,
     project = null,
     model = null,
     previous = null,

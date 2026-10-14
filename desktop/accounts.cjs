@@ -25,6 +25,7 @@ function validateConnection(value) {
       typeof input !== 'string' ||
       input.trim().length < 8 ||
       input.trim().length > 4096 ||
+      // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
       /[\x00-\x20\x7f]/.test(input.trim())
     )
       throw publicError('请输入有效的 ' + name + '。');

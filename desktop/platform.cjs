@@ -16,6 +16,7 @@ function executableShape(value, platform = process.platform) {
   return (
     typeof value === 'string' &&
     path.isAbsolute(value) &&
+    // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
     !/[\x00-\x1f]/.test(value) &&
     (platform !== 'win32' || value.toLowerCase().endsWith('.exe'))
   );

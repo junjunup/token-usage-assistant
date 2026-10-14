@@ -4,9 +4,11 @@ const { summarizeAssociations } = require('./association-rules.cjs');
 const number = (v) => typeof v === 'number' && Number.isFinite(v);
 const count = (v) => (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : null);
 const text = (v, fallback = 'unknown', limit = 2048) =>
+  // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   typeof v === 'string' && v.length ? v.replace(/[\x00-\x1f]/g, '').slice(0, limit) : fallback;
 const stableId = (value, fallback = 'unknown') => {
   if (value === undefined || value === null || value === '') return fallback;
+  // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   if (typeof value !== 'string' || value.length > 8192 || /[\x00-\x1f]/.test(value))
     throw Object.assign(new Error('工具用量身份字段无效。'), { code: 'INVALID_TOOL_METADATA' });
   return value;
@@ -132,6 +134,7 @@ function normalizeHarnessRecord(wire, sourceId) {
     wire.harnessVersion !== '0.1.7-rc.1' ||
     wire.tool !== 'deepseek-harness' ||
     !['sourceId', 'sessionId', 'requestId', 'attemptId'].every(
+      // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
       (k) => typeof wire[k] === 'string' && wire[k].length && wire[k].length <= 8192 && !/[\x00-\x1f]/.test(wire[k]),
     ) ||
     !number(wire.timestamp) ||

@@ -22,6 +22,7 @@ const count = (v) => {
   const n = finite(v);
   return n !== null && n >= 0 ? n : null;
 };
+// eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
 const text = (v, max = 160) => (typeof v === 'string' ? v.replace(/[\x00-\x1f]/g, '').slice(0, max) : '');
 function timestamp(v) {
   if (v === null || v === undefined || v === '' || v === 0) return null;

@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：本机 Git（`main`），基线标签 `v1.8.0-beta.5`。尚未推送远端（T2.1，按 D2 建私有仓库）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。本机只有 beta.5 的 Mac 产物；Windows 双包在旧 Windows 机器上，按 D1 由 CI 补齐。
-- 测试基线：`pnpm run test:desktop` 共 249 项，246 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint 基线：26 个错误、68 个警告（待 T2.2 前处理，见改进计划第 5 节）。
+- 测试基线：`pnpm run test:desktop` 共 249 项，246 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
 
 ## 2. 各能力证据等级
 
