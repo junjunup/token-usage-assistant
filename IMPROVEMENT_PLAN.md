@@ -91,7 +91,7 @@
 | 阶段 | 任务 | 改变应用行为？ | 依赖 | 决策 | 状态 |
 |---|---|---|---|---|---|
 | 1 工程底座 | T1.1 初始化 Git 与基线快照 | 否 | — | — | [x] |
-| | T1.2 清理仓库杂物 | 否 | T1.1 | D5、D6 | [ ] |
+| | T1.2 清理仓库杂物 | 否 | T1.1 | D5、D6 | [x] |
 | | T1.3 Prettier + ESLint，一次性格式化 | 否 | T1.1 | — | [ ] |
 | | T1.4 文档重构 | 否 | T1.1 | D5 | [ ] |
 | 2 CI | T2.1 推送到私有仓库 | 否 | T1.1 | D2 | [ ] |
@@ -679,6 +679,8 @@ T7.0 只是改文档，可以随时插队。
 |---|---|---|---|---|
 | 2026-10-15 | T1.1 | 第 0.2 节写的 beta.5 测试基线是「249 通过、0 跳过」，但在用户 Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）上实测为 249 项：246 通过、0 失败、3 跳过。跳过的 3 项是 Harness 运行时测试，原因是未设置 `TUA_HARNESS_CONTRACT_RUNTIME` / `TUA_HARNESS_CLI_RUNTIME`（PROJECT_HANDOFF 已说明这是预期的跳过，不算通过）。 | 用户 2026-10-15 决定：以 246 通过 / 0 失败 / 3 跳过作为后续任务的比对基线。如需恢复 249 通过，另行安装固定版本 Harness 运行时。 | 已按用户决定处理 |
 | 2026-10-15 | T1.1 | 执行环境限制：Claude 的设备命令环境是 Linux 虚拟机，且项目文件夹挂载失败；电脑控制对「终端」只允许点击、不允许输入。因此 git 和测试命令由执行模型写成 `work/t1.1/phase-a.sh`、`phase-b.sh`（`work/` 已被忽略），由用户在 Mac 终端运行，执行模型读取输出文件核对。 | 后续任务沿用「执行模型写脚本 → 用户在终端运行 → 执行模型读输出」的方式，除非命令环境能挂载项目文件夹。 | 记录 |
+| 2026-10-15 | T1.2 | 预备的 `styles.css` 把 `.red-text` 列为「仅 App.jsx 使用」并删除，但 `DesktopApp.jsx` 用模板字符串动态拼出 `${tone}-text`（`monthTone`/`windowTone` 为 `red` 时，即月度余额耗尽或额度窗口超限），这条规则只在 `styles.css` 中定义；删除会让超限数字失去红色。按字面量 grep 类名查不出这种用法，构建产物检查也查不出。 | 执行前审阅时已恢复 `.red-text`，并从脚本的「已删类名」检查列表中去掉。今后删 CSS 规则时，同时检查 `${…}-xxx` / `+'-xxx'` 这类动态拼接。 | 已处理 |
+| 2026-10-15 | T1.2 | T1.2 验收要求 `pnpm run desktop` 能启动并显示主窗口和悬浮窗。但在 Mac 上，开发版直接读写真实 userData，并与打包版共用 Keychain 条目（即 T3.1 要修的问题），可能触发授权弹框、改动真实数据。 | 用户 2026-10-15 决定：本任务改用隔离目录的原生 smoke（`--smoke-test --test-directory=<mktemp -d>`）代替。T3.1 完成前，其他任务的「`pnpm run desktop` 启动」验收同样按此处理，除非用户另行指示。 | 已按用户决定处理 |
 
 ---
 
@@ -687,6 +689,7 @@ T7.0 只是改文档，可以随时插队。
 | 日期 | 任务 | 分支 / commit | 测试（通过/失败/跳过） | 证据等级 | 交付物 | 未完成或遗留 |
 |---|---|---|---|---|---|---|
 | 2026-10-15 | T1.1 | `main`（初始提交，无需分支）/ `a90b791`（`a90b791248ed54465c4efa10a870d60519ac0124`），标签 `v1.8.0-beta.5`（附注标签） | 246 / 0 / 3（共 249；3 项 Harness 运行时测试因未设环境变量跳过，见第 5 节） | ①（合成契约测试，用户 Mac 本机运行） | 不出包（D1：不改变行为）。`.gitignore` 按计划原样；`git ls-files` = 387；提交后 `git status` 干净。秘密扫描两项（内容正则、文件名）在 `git add` 后和提交前各跑一次，均无命中。`src/generated` 仅被 `scripts/prepare-analytics-preview.mjs` 生成，无测试 import，已忽略。提交者身份由用户自行设置（仓库级 config）。 | 本条执行记录和复选框的更新需单独提交（见下一个提交）。 |
+| 2026-10-15 | T1.2 | `task/T1.2-cleanup` / `86331dd`，`--no-ff` 合并为 `6de9240` | 前后均为 246 / 0 / 3（共 249）。`tests/sites-worker.test.mjs` 不在 `test:desktop` 中，删除后总数不变 | ①（合成契约测试）+ ②（Mac 本机开发运行时的隔离目录原生 smoke，非打包版） | 不出包（D1：不改变行为）。git 内：删除 `pelican-bike.html`、`src/App.jsx`、`worker/`、`.openai/`、`scripts/prepare-sites-build.mjs`、`tests/sites-worker.test.mjs`；`package.json` 去掉 `test:sites` 和 build 末尾的 `prepare-sites-build`；`main.jsx` 去掉 `legacy-prototype` 分支；`styles.css` 删掉 36 条仅 App.jsx 使用的规则（260 → 226 条，含两处媒体查询内的子规则），保留 `.red-text`（见第 5 节）以及与 `.preview-bar` 共用的 `.preview-options` 选择器。git 外：经用户同意删除 `a/`（含未入库的 `taste.md`）和 `.DS_Store`；`release-v1.8.0-beta.5/` 移到 `~/Documents/TokenUsageAssistant-releases/`，文件数 271 → 271、字节数 560305755 → 560305755，一致。`src/desktop-preview.js`（`previewBridge`）保留。`git ls-files` 387 → 381。`pnpm run build` 成功，被删类名不出现在构建产物 JS 中。启动验收按用户决定改用隔离目录 smoke：`ok:true`，`readySurfaces` = widget、main，`trayCreated:true`，各子检查 ok。 | 硬编码的 `release-v` 路径已列出（`scripts/verify-package-beta5.cjs`、`deliver-opencode-beta5.py`、`Build-Mac-App.command`、`Verify-Mac-Native.command`、`verify-opencode-package-beta5.ps1`、`electron-builder.yml`），留给 T2.5。`AGENTS.md`、`README.md`、`PROJECT_HANDOFF.md`、`DEVELOPMENT_READY.md` 中还提到 `test:sites` 和 Sites 文件，留给 T1.4。未用真实数据跑 `pnpm run desktop`（见第 5 节）。 |
 
 ---
 
