@@ -1,75 +1,101 @@
-# Project Instructions
+# 项目规则（AGENTS.md）
 
-## Mac native .app + DMG packaging (2026-09-30)
-Per docs/MAC-APP-PLAN-1.8.0-beta.5.md, Mac delivery is now the locally electron-builder-built real `Token 用量助手.app` + DMG/ZIP (arm64, ad-hoc signature, hardened runtime, entitlements, no notarization). The hand-assembled Full ZIP plus the Start/Check/Repair/Build-Test script chain and electron-builder.mac-test.yml were removed; scripts/deliver-opencode-beta5.py now reads docs/verification-1.8.0-beta.5/mac-app-integrity.json (codesign --verify --deep --strict must pass and the packaged native smoke must return ok) and lists the DMG/ZIP by actual files only. spctl stays rejected and is recorded honestly, never counted as a pass. Version stays 1.8.0-beta.5; both Windows packages remain mandatory. Honest limits: without an Apple Developer account the first launch still needs right-click → Open (Gatekeeper remembers per cdhash, same-version reinstalls skip it); this removes "app is damaged + repair scripts" only, not the "unidentified developer" prompt. desktop/main.cjs dock icon override now runs only when !app.isPackaged so the bundle icns is authoritative. See docs/MAC-APP-1.8.0-beta.5.md.
+Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
-## OpenCode integration (approved 2026-09-26)
-User approved the staged OpenCode plan. 1.8.0-beta.5 implements Go official quota and independent OpenCode SQLite tool metadata, preserving the approved logo and UI. Read docs/OPENCODE-1.8.0-beta.5.md. Fixed HTTPS GET /zen/go/v1/usage only, Bearer key, no redirects or inference. Three server percentages/resets, no invented balance, monetary quota, renewal date or implicit billing association. Rounded zero does not establish a rolling-window start. Zen/Black/enterprise queries remain unavailable until verified contracts/accounts exist; do not imply all plans are fully supported. SQLite projections select metadata leaves only; no full message JSON/content/errors. Prefer step records over message snapshots, exclude legacy mirrors and history predating session creation, do not double-count cache/reasoning, and do not call saved observations complete request telemetry. Tests are synthetic contracts plus packaged native checks, not real Go/OpenCode or Mac acceptance. Both Windows packages, full Mac trial kit and source handoff remain required; no long stability testing.
+- 当前版本：**1.8.0-beta.5**（Mac 本机构建 `.app` + DMG；Windows 双包在旧机器上）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D10）
+- 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
-## Logo regression repair (2026-09-26)
-1.8.0-beta.4 fixes the reported right-shifted rail logo and Electron taskbar icon. Keep the approved artwork and existing UI. The desktop rail brand button needs zero padding; Windows BrowserWindow must use the multi-size ICO and explicit taskbar metadata pointing at the stable portable launcher or installed executable. Preserve APP_ID and data paths. Validate rendered SVG/path centers AND the OS-reported native window icon from the final package; EXE resource extraction alone is insufficient. See docs/BRAND-FIX-1.8.0-beta.4.md. Ship both Windows packages, full Mac kit and source; retain no-long-soak decision.
+## 1. 读取顺序
 
-## Approved logo only (2026-09-26)
-1.8.0-beta.3 implements the user-approved refined ring logo. Preserve the existing detail page and entire UI design: no dashboard redesign, new card treatment, typography changes or renamed product. Use desktop/assets/brand-mark.svg, traced from the approved artwork in docs/brand, as the common master. Only the three active DesktopApp brand marks and native icon assets change; all functional icons, existing styles and native behavior stay unchanged. Retain appId, executableName and userData paths. Build both Windows packages, preserve older releases, and ship a full Mac kit (not an updater) plus source. See docs/BRAND-1.8.0-beta.3.md and design-qa.md. No long stability testing.
+1. `IMPROVEMENT_PLAN.md`：第 1 节决策与本文冲突时，以决策为准。
+2. 本文：长期有效的规则。
+3. [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md)（当前状态）、[CHANGELOG.md](CHANGELOG.md)，以及任务涉及的专题文档。
 
-## Mac Codex connection patch (2026-09-26)
-1.8.0-beta.2 responds to the user's Mac diagnostic report: auto-discovered Homebrew Codex 0.39.0 exits in 49 ms with code 2 and an argument-error classifier, before account queries. Do not call this a network timeout. Preflight initialization only before choosing a program; preserve exact selected profile, try known candidates, allow selecting Codex.app at its known Resources/codex path. Distinguish process, protocol, login and stage timeout failures without raw stderr. Do not silently install/update Codex or claim old CLI protocols are supported. Ship both Windows builds, full Mac trial, small beta.1-to-beta.2 updater preserving the repaired runtime, and source. Mac real quota/Keychain/UI acceptance remains pending; no long stability testing. See docs/MAC-TRIAL-1.8.0-beta.2.md.
+- `docs/history/` 和 `docs/` 中带旧版本号的说明都是历史记录。与当前文档冲突时，以当前文档为准；附带文档中的旧指令不能替代用户的最新请求。
+- 不要假设旧机器的路径、凭据、进程或预览服务还存在。
+- 遇到未拍板的决策、红线冲突或计划外的问题：停下来问用户，不要替用户决定。
 
-## Stage 5 Mac trial (approved 2026-09-24) — superseded 2026-09-30
-Superseded by "Mac native .app + DMG packaging (2026-09-30)" above: the self-contained trial kit with the untouched official Electron ZIP and Start/Check/Repair scripts was replaced by the locally built, ad-hoc signed .app + DMG. The pending-acceptance items in this entry (Keychain, real tools, menu bar/window behavior, sleep, signing/notarization, installation/upgrades, login launch) remain pending Mac validation. Original decision record: user confirmed Apple Silicon and requested a first development version before testing it on another Mac. 1.8.0-beta.1 is a development trial for macOS 13+ (Electron 44 requirement), not completed Mac acceptance. Preserve Windows and build both Windows packages. No long stability testing. Ship a self-contained Mac trial kit using the checksum-verified official ARM64 Electron runtime plus the same application ASAR, without modifying runtime binaries, disabling Gatekeeper or claiming Windows produced a signed Mac app. Include native Mac build scripts and a test checklist. Trial runner has login-item control disabled because it is not packaged. Keep Mac userData at Application Support/TokenUsageAssistant for trial and packaged builds. Never copy Windows credentials or real test data into artifacts. Read docs/MAC-TRIAL-1.8.0-beta.1.md.
+## 2. 数据语义红线
 
-## Stage 4 account association (approved 2026-09-24)
-Version 1.7.0 adds manual billing-account groups and explicit source/time/provider/model rules. This supersedes the older unconditional accountId-null rule ONLY for records matched by valid confirmed rules. Never infer from active account selection or model name. Multiple Keys use one chosen platform connection, never summed. Credential/member/known identity changes invalidate associations pending confirmation; source replacement does too. Compare only exactly aligned account, interval, unit, basis, coverage and freshness; current platform/collector combinations cannot certify these, so report unavailable with reasons, not fabricated error rates. No real-account reconciliation is claimed. Read docs/ACCOUNT-ASSOCIATION-1.7.0.md and verification-1.7.0. Both Windows packages, source handoff and necessary regression/native checks remain mandatory; long stability testing remains stopped. Stages 5–6 remain future work.
+- 缺失显示「—」，不显示 0；缺失字段保持未知，不填零，并标明覆盖范围和已知部分。
+- `resetAt=0` 显示「未启用」，与「缺少重置数据」区分；不编造倒计时（包括 5 小时窗口）。
+- USD 与 CNY 分别保留，不合并、不换汇；旧的未声明币种价格按 USD 解释；金额保留十进制精度。
+- 余额差不当作消费；订阅百分比不套用到按量余额。零余额是成功的查询；查询失败不伪造 0，保留上次成功值及其时间。
+- 平台/账户汇总与工具汇总不相加。账户接口数据、本机工具统计、采样历史、估算费用分别标注；费用只是按用户单价的估算，不是账单。
+- 缓存/推理子项不重复计入总量。
+- 采用「已报告用量」：失败或取消的请求如有报告用量，照样计入；完成率和均值按完成请求的口径单独计算。
+- 同一尝试按 revision 更新，重试单独计数；分叉继承的历史不累计；重复扫描和重启不重复计数。
+- 覆盖范围是观测范围，不是完整账单。只有账户、区间、单位、口径、覆盖和新鲜度完全对齐时才能比较；否则显示「不可用」并说明原因，不得给出差值或误差率。
+- 预测需要足够多的连续新鲜样本。不编造逐请求历史；保存的观测不能称为完整的请求遥测。
+- 月度余额与短窗口额度并列展示，并纳入健康度和告警；月度余额耗尽时不得显示为额度充足。
 
-## Stage 3 official balance (approved 2026-09-24)
-Version 1.6.0 implements DeepSeek official pay-as-you-go account balance before stages 4–6. Use the fixed HTTPS GET /user/balance with Bearer auth and no redirects. Preserve decimal strings, CNY/USD separately, unknown fields, and official is_available. Zero balance is a successful query; HTTP/query failures never fabricate zeros. parts.balance is separate from credits, tool usage and actual billing. Do not infer consumption from balance differences or apply quota percentages to pay-as-you-go balances. Multiple Keys may share an account; no summing, automatic grouping or implicit tool-account association. No real DeepSeek account has been tested yet. Read docs/DEEPSEEK-BALANCE-1.6.0.md and docs/verification-1.6.0. Both Windows packages remain mandatory; do not restart long stability testing.
+## 3. 账户归属
 
-## Local connection UX (approved 2026-09-24)
-Version 1.5.1 auto-discovers saved Codex locations, explicit CODEX_HOME and the current user's default .codex. One location connects directly; multiple locations require an in-app selection. Manual directory and executable pickers are fallbacks. Updating a missing saved location must not silently rebind another account. Quota success survives missing logs or source-add failure; do not re-enable disabled sources. Claude component readiness is separate from first quota synchronization. Read docs/CONNECTION-UX-1.5.1.md and docs/verification-1.5.1. Preserve prior releases and the no-long-soak decision.
+- 工具记录默认 `accountId:null`，不借用账户的额度、预测或账期。只有用户确认过的有效关联规则（来源 / 时间 / 供应商 / 模型）才能归属。
+- 不从当前选中的账户、活动平台或模型名推断归属。
+- 多个 Key 可以属于同一个账户：不汇总、不自动归组；核对时只使用用户选定的一个主连接。
+- 凭据、组成员、已知平台身份发生变化，或来源被替换时，相关关联失效，待用户重新确认。
 
-## Subscription milestone (approved 2026-09-24)
-Before roadmap stage 3, implement both ChatGPT/Codex and Claude/Claude Code subscription quotas plus independent tool usage analytics. User accepted the optional local Claude collection component and has ChatGPT Pro with Codex, Command Code with Zcode; no Claude live account is available. Version 1.5.0 implements this added milestone; stages 3–6 remain future work. Read docs/SUBSCRIPTIONS-1.5.0.md. Preserve the 1.4.1 widget bottom-edge fix. Do not restart long stability/soak testing: the user explicitly stopped it. Run necessary targeted regression and final-package checks only.
+## 4. 隐私与只读
 
-Codex official app-server queries are read-only; never call model, login/logout mutation, or reset-credit consumption as part of monitoring. Codex 0.155.x rollout metadata snapshots are NOT request counts and have unknown request status. Claude quota observations are from statusLine; context_window is not total consumption. Claude OTLP metadata exports start after activation, are loopback-only and have explicit coverage gaps. No conversation bodies, raw errors or credentials may enter exports, indexes or release evidence. Real Codex read-only observation does not certify Claude live-account reconciliation.
+- 不读取、不记录、不导出对话正文、提示词、回复、工具内容、原始请求载荷、原始错误文本、原始 stderr 或凭据。日志、诊断包、导出、索引和发布证据同样遵守。
+- 第三方 SQLite（Zcode、OpenCode）只读，只投影白名单中的元数据叶子字段。
+- 只读：不调用模型生成；不调用任何改变登录状态、购买、修改账户或消耗额度（包括重置额度）的接口；不修改第三方工具的数据库或全局配置。助手只写自己的索引和配置。
+- 凭据只在应用内由用户在本机配置，不通过聊天传递，不写入日志。
+- 不开放任意网络地址；本机文件来源只通过原生选择器选择。
+- 真实用户数据、凭据（包括 Windows 凭据）不得进入仓库、产物或测试 fixture。
+- 不静默安装或升级第三方工具（例如 Codex）。
 
-## Delivery consistency (confirmed 2026-09-24)
-After every code change, build and update both the Windows installer and portable executable. Verify that the packaged app version and bundled code match the source. Keep prior release artifacts intact; do not report a source-only change as delivered.
+## 5. 平台与存储不变量
 
-## Dual tool sources (approved 2026-09-24)
-The user explicitly requested implementation of the staged plan. Version 1.4.0 implements stages 1 and 2 only: independent tool sources and the optional local DeepSeek Harness statistics plugin, preserving Zcode and all 1.3 platform/Windows behavior. Read PROJECT_HANDOFF.md and docs/TOOL-SOURCES-1.4.0.md. The earlier planning-only/no-code wording is superseded by the explicit implementation request. Stages 3–6 remain separate deliveries: DeepSeek official balance first, explicit account association/reconciliation next, Apple Silicon macOS before third-party evaluation.
+- `appId`（`local.commandcode.tokenusageassistant`）、`executableName`、已打包应用的 userData 路径一律不变。Mac 打包版：`~/Library/Application Support/TokenUsageAssistant`；Windows：原 Electron userData。（Mac 开发版将由 T3.1 改用独立目录。）
+- 凭据加密：Windows 用 DPAPI，Mac 用 Keychain（Electron safeStorage）。DPAPI 文件绑定当前 Windows 用户，不能作为跨电脑备份。
+- 升级时保留账户凭据、设置和窗口位置；配置损坏时不自动覆盖；旧迁移文件（例如 `local-source.json`）保留。
+- 不引入新的原生依赖。不覆盖、不删除旧发布产物（统一存放在 `~/Documents/TokenUsageAssistant-releases/`）。
+- 多账户（最多 20 个）各自加密保存；轮询、缓存、告警相互隔离；支持区域选择和动态额度窗口。
+- 某个来源格式异常或失败时，要显式报告并隔离，不能阻断其他来源。
 
-Never infer a billing account from the active platform selection. Tool records have accountId null and no borrowed credits/forecast/billing period. Count reported usage even on failed/cancelled attempts; completed-request rates/averages are separate. Cache/reasoning subsets are not additive. Preserve missing fields, coverage limitations, original currencies and legacy USD prices. Do not add platform and tool totals. Unknown or incomplete coverage cannot produce a fake comparison.
+## 6. 平台与工具契约要点
 
-Harness is pinned to official 0.1.7-rc.1 / session format 4. Its optional plugin exports only whitelisted metadata observed after activation; no raw history, message bodies, tool content, credentials or request proxy. The assistant reads exported files and writes only its own index. Same attempts update by revision, retries stay distinct, fork inheritance is excluded. Unknown formats and per-source failures must be explicit and isolated. Final tests must distinguish synthetic contracts, actual local runtime/package checks, and live-account/real-tool acceptance. Do not treat accelerated short runs as a two-hour soak.
+- **Command Code**：`https://api.commandcode.ai` 只读用量查询。
+- **GLM / MiniMax / 火山**：固定官方只读额度接口（GLM `/api/monitor/usage/quota/limit`，MiniMax `/v1/token_plan/remains`，火山 `GetAFPUsage` 北京区），支持国内/国际区域。见 [PROVIDER-ADAPTATION-1.3.0](docs/PROVIDER-ADAPTATION-1.3.0.md)。
+- **DeepSeek**：固定 HTTPS `GET /user/balance`，Bearer 鉴权，不跟随重定向；保留 `is_available` 和未知字段；`parts.balance` 与额度、工具用量、账单分开。见 [DEEPSEEK-BALANCE-1.6.0](docs/DEEPSEEK-BALANCE-1.6.0.md)。
+- **OpenCode Go**：固定 HTTPS `GET /zen/go/v1/usage`，Bearer 鉴权，不跟随重定向，不调用推理。只展示服务端给出的三个百分比和重置时间，不编造余额、金额额度或续费日；舍入为 0 不能说明滚动窗口的起点。Zen / Black / 企业版查询不可用，不得暗示支持全部套餐。见 [OPENCODE-1.8.0-beta.5](docs/OPENCODE-1.8.0-beta.5.md)。
+- **Codex 订阅**：只读 app-server 方法白名单：`initialize`、`initialized`、`account/read`、`account/rateLimits/read`。选定程序前只做初始化预检；保留用户所选配置；可直接选择 `Codex.app` 的 `Resources/codex`。区分进程、协议、登录、阶段超时四类失败，不暴露 stderr；不声称支持旧版 CLI 协议。
+- **Codex 连接发现**：已保存的位置、`CODEX_HOME`、默认 `~/.codex`。只有一个时直接连接，多个时在应用内选择，手动选择作为回退；更新一个已丢失的保存位置时，不得静默改绑到另一个账户。见 [CONNECTION-UX-1.5.1](docs/CONNECTION-UX-1.5.1.md)、[MAC-TRIAL-1.8.0-beta.2](docs/MAC-TRIAL-1.8.0-beta.2.md)。
+- **Codex rollout**：0.155.x 的元数据快照不是请求数，请求状态未知。
+- **Claude**：额度来自 statusLine，`context_window` 不是总消耗。OTLP 本地组件只监听回环地址，只采集启用之后的数据，覆盖缺口要明示。组件就绪和首次额度同步是两个独立状态。见 [SUBSCRIPTIONS-1.5.0](docs/SUBSCRIPTIONS-1.5.0.md)。
+- 额度查询成功时，不因缺少工具日志或来源添加失败而显示失败；不重新启用用户已禁用的来源。
+- **Zcode**：只读白名单 SQLite 投影；多个副本身份重叠时只做保守的暂停合并，不猜测哪份最新。见 [TOOL-SOURCES-1.4.0](docs/TOOL-SOURCES-1.4.0.md)。
+- **OpenCode 数据库**：优先使用 step 记录，排除旧版镜像和会话创建之前的历史。
+- **Harness**：锁定 `0.1.7-rc.1` / session format 4 / JSONL schema 1。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
 
-Keep the 1.3.0 source/release baseline and old migration files. Source handoffs must include integrations/deepseek-harness and validation scripts, but exclude work, research clones, test runtime profiles, node_modules, release folders and real user data. Current documentation supersedes historical README/HANDOFF copies under docs.
+## 7. 交付与验证（过渡期：D1 / D3 / D4）
 
-## First provider batch (approved 2026-09-23)
-The user approved implementation of GLM Coding Plan, MiniMax Token Plan, and personal Volcengine Agent Plan, retaining Command Code. Support multiple encrypted local connections, isolated polling/cache/alerts, region selection and dynamic quota windows. Preserve existing UI language and local Zcode analysis. No model inference, purchases or account changes. Official pay-as-you-go APIs, third-party gateways, additional clients and macOS remain later phases. Verify adapters with upstream contracts and synthetic regression fixtures; distinguish those checks from real-account reconciliation, which requires user-configured credentials in the app. Do not describe untested real accounts as verified.
+- 不改变应用行为的任务不出包。改变行为的任务在本机出 Mac 包（DMG + ZIP，文件名加 `-dev.<短 commit>`）；Windows 双包在执行记录中标「待 CI 补齐」，不得写成已交付。T2.3 完成后，三种包统一由 CI 产出。
+- 版本：阶段 1–2 保持 1.8.0-beta.5；阶段 3–6 依次为 beta.6–beta.9，只在该阶段最后一个任务合并时修改；1.9.0 留给灵动岛。
+- Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、ad-hoc 签名、hardened runtime、entitlements、不公证）。`codesign --verify --deep --strict` 必须通过，打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
+- D4（暂不购买 Apple Developer 账号）带来的限制：首次打开需要右键 → 打开；只能消除「已损坏」提示，不能消除「无法验证开发者」提示；覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。不引导用户关闭 Gatekeeper。
+- 出包时核对包内版本和代码与源码一致。只改了源码，不得称为已交付。
+- 每个任务按改进计划第 0.2 节执行：独立分支、`--no-ff` 合并、追加执行记录。
+- 有意义的决策变化要同步更新 `PROJECT_HANDOFF.md`（只写当前快照）和 `CHANGELOG.md`。
 
-## Cross-computer handoff (2026-09-23)
-Read `PROJECT_HANDOFF.md` and `docs/PROVIDER-ADAPTATION-1.3.0.md` for the current implementation, user decisions, data semantics, migration steps and test evidence. The first provider batch was subsequently approved and implemented in 1.3.0; broader pay-as-you-go, third-party and macOS work remains future scope. The user currently has no subscriptions to the new providers and explicitly requested official-contract sample validation first. Do not claim real-account reconciliation. Historical 1.2.0 context lives in `docs/PROJECT_HANDOFF-1.2.0-history.md`. Do not assume old machine paths, credentials, processes or preview servers exist on a new machine. Preserve this handoff document as meaningful project decisions change.
+## 8. UI 规则
 
-## Analytics extension (approved 2026-09-23)
-Implement the first eight researched features: today / 7-day / billing range selection, time-series trends, model rankings, project / session analytics, cache breakdown, request health and averages, funding-source consumption, and measured burn rates with conditional quota forecasts. The second rail icon (SquaresFour) must navigate to Usage Analytics, not toggle the widget. Keep the widget toggle on the overview. Preserve the approved Command Code visual language. Distinguish account API data, local Zcode statistics, sampled history, and estimated cost. Read only explicitly selected usage metadata from the local Zcode SQLite database; never read prompts, response content, raw usage payloads, or credentials. Never mix account and local totals. Missing metrics must remain unavailable, not zero. Forecasts require adequate continuous fresh samples. Preserve existing preferences and credentials when upgrading.
+- 保持已批准的刻度环 Logo（母版为 `desktop/assets/brand-mark.svg`）和现有 UI 风格：白底、细线、Geist / Geist Mono、分段绿色额度条、紫色 Token 强调、深浅色主题（参考 commandcode.ai 用量页）。不改名，不重做页面，不替换功能图标。
+- 任何新视觉元素或界面改动，都要先出浅色和深色的截图或草图，用户确认后才能实现和合并（D10）。从用户选定的 mock 实现时，以 mock 为准。
+- 界面代码放在 `src/`；`dist/client` 由构建生成；`src/generated` 由 `scripts/prepare-analytics-preview.mjs` 生成，要改就改 `desktop/` 下对应的纯模块。
+- 已定交互：左侧导航和标题栏固定，只有主内容滚动；所有下拉菜单用统一的自定义组件，可键盘操作，不出现系统原生 select；悬浮窗默认紧凑，点击展开；侧栏第二个图标（SquaresFour）进入用量分析，悬浮窗开关放在总览；优先展示 5 小时/每周剩余额度和重置时间，Token 与费用分开。
+- 回归保护：悬浮窗收起后回到原来的底边（1.4.1）；侧栏品牌按钮零内边距，Logo 居中；Windows 窗口使用多尺寸 ICO，并显式设置任务栏信息，指向稳定启动器或安装后的 EXE；Mac 打包版以 bundle 内的 icns 为准（Dock 图标覆盖只在开发版生效）。
+- 品牌或图标改动，必须验证渲染后的 SVG/路径中心，以及最终包中系统返回的原生窗口图标；只提取 EXE 资源不够。
+- 用户给出持久的设计反馈或决定时，记录在本节。
 
-## Desktop implementation (approved 2026-09-23)
-The user approved the existing visual standard and requested development. Implement a real Windows desktop app with tray, separate floating window, polling, local encrypted credentials, settings persistence, and notifications. The earlier prototype-only restrictions below describe the browser demo, not the new desktop app. Preserve the original browser prototype as a reference. Do not log credentials or request model generation. All real credentials are configured in the application on the local machine.
+## 9. 测试规则
 
-## Confirmed product direction
-- Chinese Windows desktop companion, first delivered as a browser prototype with mock data.
-- Reference: https://commandcode.ai/junjunup/settings/usage. White surfaces, thin rules, Geist/Geist Mono, segmented green quota bars, purple Token accents.
-- Prioritize remaining 5-hour/weekly quotas and reset times, with Token totals and cost separate.
-- Simulate tray, floating widget, and detail panel. Do not imply actual OS integration.
-- No API keys, real billing calls, or invented per-request history in this prototype.
-
-Run the local server yourself and open the preview in the browser available to this environment. Do not give the user server-start instructions when you can run it.
-
-Before making substantial visual changes, use the Product Design plugin's `get-context` skill when the visual source is unclear or no longer matches the current goal. When the user gives durable prototype-specific design feedback, preferences, or decisions, record them in `AGENTS.md`.
-
-When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
-
-Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs`, and `tests/sites-worker.test.mjs` intact so the same local prototype can be handed to Sites. Before a Sites handoff, run `npm run build` and `npm run test:sites`; the build must leave `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
-
-## Usability feedback (approved 2026-09-23)
-Keep the left navigation and titlebar fixed while only the main content scrolls. Use consistent custom, keyboard-accessible dropdown menus in all desktop views, matching light/dark themes; do not expose native blue OS select menus. Promote monthly balance beside short-window quotas and include it in health/alerts so empty monthly funds never appear as ample allowance. Distinguish an explicitly inactive reset window (resetAt=0) from missing reset data; never invent a five-hour countdown. The floating widget should be compact by default with click-to-expand extra metrics; user explicitly chose this pattern. Preserve existing account credentials, preferences and window position during upgrade.
+- 证据三级：①合成契约测试；②打包原生 smoke（隔离样例）；③真实账户或真机验收。没做过 ③ 的，不得写成「已验证」。某个平台的真实观察不能证明其他平台（例如 Codex 的只读观察不证明 Claude 核账）。
+- 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
+- `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
+- T3.1 完成前，Mac 开发版会直接读写真实数据，启动验收用隔离 smoke 代替 `pnpm run desktop`（用户 2026-10-15 决定）。
+- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：246 通过 / 0 失败 / 3 跳过。
+- 本地服务和预览由执行模型自己启动，并在可用的浏览器中查看，不让用户手动启动。

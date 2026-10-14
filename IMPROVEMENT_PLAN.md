@@ -684,6 +684,7 @@ T7.0 只是改文档，可以随时插队。
 | 2026-10-15 | T1.3 | `scripts/prepare-analytics-preview.mjs` 用精确字符串替换 `desktop/*.cjs` 中的 `require` 行来生成 `src/generated/`。格式化后其中 3 处不再匹配，打包出的渲染进程 JS 会在模块顶层调用 `require("./domain.cjs")`，界面加载即报错白屏，而 `pnpm run build` 不报任何错误。是靠 dist 哈希比对发现的。 | 用户 2026-10-15 选择方案 A：4 处精确匹配改为允许任意空白的正则（替换结果不变），并在仍有 `require(` 残留时让构建报错。单独提交（`95ee2e2`），在格式化提交之前；在未格式化源码上构建产物与基线逐字节一致；保护逻辑已用临时注入的 `require` 验证会触发。 | 已按用户决定处理 |
 | 2026-10-15 | T1.3 | 格式化把 26 个文件的 CRLF 统一成了 LF（Prettier 默认 `endOfLine: lf`）。Windows runner 如果开启 `core.autocrlf`，检出时会转回 CRLF，`format:check` 就会失败。 | T2.2 时加 `.gitattributes`（例如 `* text=auto eol=lf`，并让 `*.ps1` 保持原有换行），或在 CI 中关闭 autocrlf。需要时向用户确认。 | 待 T2.2 |
 | 2026-10-15 | T1.3 | ESLint 基线有 26 个错误（`no-control-regex` 10、`react-hooks/set-state-in-effect` 10、`react-hooks/refs` 2、`react-hooks/purity` 1、`no-useless-assignment` 1、`preserve-caught-error` 1、`no-useless-escape` 1）。T2.2 规定 lint 有错误时 CI 失败，所以 CI 一接上就会是红的。 | T2.2 之前需要用户决定：先修这些错误（另开任务，逐条确认不改变行为），还是把相应规则暂时降为 warn 并记录。 | 待用户决定 |
+| 2026-10-15 | T1.4 | `scripts/deliver-opencode-beta5.py` 的源码交接清单里写死了根目录的 `DEVELOPMENT_READY.md`、`design-qa.md`、`desktop-verification.md`。这些文件已在 T1.4 归档到 `docs/history/`，脚本再运行就会找不到文件。 | 不在 T1.4 范围内修改。T2.5 按计划泛化或删除该脚本时一并处理；源码交付已改由 git 管理（见迁移表 R16）。 | 待 T2.5 |
 
 ---
 
