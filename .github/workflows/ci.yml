@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Check files out byte-for-byte as committed (LF), so format:check matches on Windows too.
+      - name: Disable line-ending conversion
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.19.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm run format:check
+
+      # Warnings do not fail the build; errors do (eslint exits non-zero only on errors).
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Test
+        run: |
+          set -o pipefail
+          pnpm run test:desktop 2>&1 | tee test-output.txt
+
+      - name: Test summary
+        if: always()
+        run: |
+          [ -f test-output.txt ] || exit 0
+          count() { grep -E "^ℹ $1 [0-9]+" test-output.txt | tail -1 | awk '{print $3}'; }
+          {
+            echo "### Tests (${{ matrix.os }})"
+            echo ""
+            echo "| total | pass | fail | skipped |"
+            echo "|---|---|---|---|"
+            echo "| $(count tests) | $(count pass) | $(count fail) | $(count skipped) |"
+            skipped=$(grep -E '# SKIP' test-output.txt || true)
+            if [ -n "$skipped" ]; then
+              echo ""
+              echo "**Skipped tests are not passes:**"
+              echo ""
+              echo '```'
+              echo "$skipped"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build
+        run: pnpm run build
