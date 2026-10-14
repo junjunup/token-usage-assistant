@@ -1,55 +1,371 @@
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
-const crypto=require('node:crypto');
-const {DatabaseSync}=require('node:sqlite');
-const {ToolSources}=require('../desktop/tool-sources.cjs');
-const {LocalStore,atomicWrite}=require('../desktop/store.cjs');
-const {AnalyticsService}=require('../desktop/analytics-service.cjs');
-const {harnessWire,createHarness,createZcode}=require('../desktop/tool-fixture.cjs');
-const now=Date.now();
-function setup(t){const root=path.resolve(__dirname,'../work/tool-source-tests');fs.mkdirSync(root,{recursive:true});const dir=fs.mkdtempSync(path.join(root,'case-'));const store=new LocalStore(dir,{isEncryptionAvailable:()=>true,encryptString:s=>Buffer.from(s),decryptString:b=>b.toString()});const zfile=createZcode(path.join(dir,'zcode.sqlite'),now);const hfile=createHarness(path.join(dir,'harness'),[harnessWire(now)]);atomicWrite(store.file('local-source.json'),{file:zfile});const sources=new ToolSources({store,legacyFile:zfile,now:()=>now});t.after(async()=>{await sources.dispose();assert.ok(dir.startsWith(root+path.sep));fs.rmSync(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100});});return {dir,store,zfile,hfile,sources};}
-const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-const query=s=>s.query({range:'today'});
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const { DatabaseSync } = require('node:sqlite');
+const { ToolSources } = require('../desktop/tool-sources.cjs');
+const { LocalStore, atomicWrite } = require('../desktop/store.cjs');
+const { AnalyticsService } = require('../desktop/analytics-service.cjs');
+const { harnessWire, createHarness, createZcode } = require('../desktop/tool-fixture.cjs');
+const now = Date.now();
+function setup(t) {
+  const root = path.resolve(__dirname, '../work/tool-source-tests');
+  fs.mkdirSync(root, { recursive: true });
+  const dir = fs.mkdtempSync(path.join(root, 'case-'));
+  const store = new LocalStore(dir, {
+    isEncryptionAvailable: () => true,
+    encryptString: (s) => Buffer.from(s),
+    decryptString: (b) => b.toString(),
+  });
+  const zfile = createZcode(path.join(dir, 'zcode.sqlite'), now);
+  const hfile = createHarness(path.join(dir, 'harness'), [harnessWire(now)]);
+  atomicWrite(store.file('local-source.json'), { file: zfile });
+  const sources = new ToolSources({ store, legacyFile: zfile, now: () => now });
+  t.after(async () => {
+    await sources.dispose();
+    assert.ok(dir.startsWith(root + path.sep));
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
+  return { dir, store, zfile, hfile, sources };
+}
+const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const query = (s) => s.query({ range: 'today' });
 
-test('1.3 source migration preserves source config, prices, encrypted credentials and preferences',async t=>{const {store,zfile,sources}=setup(t);const old=fs.readFileSync(store.file('local-source.json'),'utf8');store.saveAccounts({activeId:'x',accounts:[]});atomicWrite(store.file('settings.json'),{preferences:{theme:'dark'},bounds:{widget:{x:80,y:120}}});atomicWrite(store.file('local-pricing.json'),{m:{input:1,output:2,read:0,write:0}});const before=['accounts.encrypted.json','settings.json','local-pricing.json'].map(n=>hash(store.file(n)));const restarted=new ToolSources({store,legacyFile:'D:/ignored.sqlite'});assert.equal(restarted.list()[0].id,'legacy-zcode');assert.equal(restarted.list()[0].file,zfile);assert.equal(fs.readFileSync(store.file('local-source.json'),'utf8'),old);assert.deepEqual(['accounts.encrypted.json','settings.json','local-pricing.json'].map(n=>hash(store.file(n))),before);await restarted.dispose();assert.equal((await query(sources)).summary.total,120);});
-test('two independent sources aggregate reported attempts and never borrow active account billing or credits',async t=>{const {store,sources,hfile}=setup(t);sources.add({kind:'harness',file:hfile});const monitor={snapshot:()=>({parts:{subscription:{start:now-300000},credits:{monthly:999}},updatedAt:{},errors:[]}),settings:{refreshSeconds:60}},history={records:[],hash:'account-a'};const analytics=new AnalyticsService({store,monitor,history,client:{},tools:sources});const first=await analytics.get({source:'tools'});assert.equal(first.summary.total,240);assert.equal(first.summary.requests,2);assert.equal(first.accountId,null);assert.equal(first.credits,null);history.hash='another-account';analytics.resetAccount();assert.equal((await analytics.get({source:'tools'})).summary.total,240);assert.equal((await analytics.get({source:'tools',range:'billing'})).summary,null);assert.equal((await analytics.get({source:'local',range:'billing'})).status,'unavailable');});
-test('duplicate path, hardlink and copied Harness installation are rejected; same-id relocation is safe',async t=>{const {dir,sources,zfile,hfile}=setup(t);assert.throws(()=>sources.add({kind:'zcode',file:zfile}),/已添加/);const link=path.join(dir,'alias.sqlite');fs.linkSync(zfile,link);assert.throws(()=>sources.add({kind:'zcode',file:link}),/已添加/);const h=sources.add({kind:'harness',file:hfile});const moved=path.join(dir,'harness-copy');fs.cpSync(path.dirname(hfile),moved,{recursive:true});assert.throws(()=>sources.add({kind:'harness',file:path.join(moved,'usage.jsonl')}),/已添加/);sources.relocate(h.id,path.join(moved,'usage.jsonl'));assert.equal((await query(sources)).summary.total,240);sources.update(h.id,{label:'Harness new name'});assert.equal(sources.require(h.id).label,'Harness new name');});
-test('incremental JSONL replay/restart/stream final replacement/retry/failed and cancelled usage stay exact',async t=>{const {store,sources,hfile}=setup(t),h=sources.add({kind:'harness',file:hfile});const append=r=>fs.appendFileSync(hfile,JSON.stringify(r)+'\n');assert.equal((await query(sources)).summary.total,240);append(harnessWire(now));assert.equal((await query(sources)).summary.total,240);append(harnessWire(now,{revision:7,status:'failed',usage:{uncachedInputTokens:80,cacheReadTokens:50,cacheWriteTokens:10,outputTokens:20,reasoningTokens:5,totalTokens:160}}));append(harnessWire(now,{attemptId:'retry',revision:8,status:'cancelled'}));let report=await query(sources);assert.equal(report.summary.total,400);assert.equal(report.summary.failed,1);assert.equal(report.summary.cancelled,1);append(harnessWire(now,{revision:9,status:'failed',usageReported:false,usage:{}}));assert.equal((await query(sources)).summary.total,400);const restarted=new ToolSources({store,now:()=>now});t.after(()=>restarted.dispose());assert.equal((await query(restarted)).summary.total,400);await sources.remove(h.id);assert.equal((await query(sources)).summary.total,120);assert.ok(fs.existsSync(hfile));});
-test('partial final line waits, unknown schema rolls back entire batch, no body or secret enters index',async t=>{const {store,sources,hfile}=setup(t),h=sources.add({kind:'harness',file:hfile});await query(sources);const wire=harnessWire(now,{attemptId:'second',prompt:'PRIVATE_PROMPT',apiKey:'PRIVATE_KEY'}),line=JSON.stringify(wire);fs.appendFileSync(hfile,line.slice(0,50));assert.equal((await query(sources)).summary.total,240);fs.appendFileSync(hfile,line.slice(50)+'\n');assert.equal((await query(sources)).summary.total,360);fs.appendFileSync(hfile,JSON.stringify(harnessWire(now,{attemptId:'third'}))+'\n'+JSON.stringify(harnessWire(now,{schemaVersion:999}))+'\n');const r=await query(sources);assert.equal(r.summary.total,120);assert.equal(r.sourceReports.find(s=>s.id===h.id).status,'schema');const db=new DatabaseSync(store.file('tool-usage.sqlite'));const rows=db.prepare('SELECT record FROM tool_records').all();assert.equal(rows.length,2);assert.equal(JSON.stringify(rows).includes('PRIVATE'),false);db.close();});
-test('source disable/removal/error are isolated and original files remain byte-identical',async t=>{const {sources,zfile,hfile}=setup(t),h=sources.add({kind:'harness',file:hfile}),original=[hash(zfile),hash(hfile)];sources.update(h.id,{enabled:false});assert.equal((await query(sources)).summary.total,120);sources.update(h.id,{enabled:true});fs.renameSync(hfile,hfile+'.moved');assert.equal((await query(sources)).summary.total,120);fs.renameSync(hfile+'.moved',hfile);await sources.remove(h.id);assert.deepEqual([hash(zfile),hash(hfile)],original);});
-test('corrupt migration config is preserved and refuses destructive replacement',t=>{const {store}=setup(t);fs.writeFileSync(store.file('tool-sources.json'),'BROKEN');const manager=new ToolSources({store,legacyFile:'D:/fallback'});assert.ok(manager.issue);assert.throws(()=>manager.add({kind:'zcode',file:'D:/fallback'}));assert.equal(fs.readFileSync(store.file('tool-sources.json'),'utf8'),'BROKEN');});
-test('100k metadata analysis runs off-thread; cancellation, supersession and timeouts recover',async t=>{const {dir,sources}=setup(t);const file=createZcode(path.join(dir,'large.sqlite'),now,100000);sources.relocate('legacy-zcode',file);let heartbeats=0;const ticker=setInterval(()=>heartbeats++,5);const started=Date.now(),full=await query(sources);clearInterval(ticker);assert.equal(full.summary.requests,100000);assert.equal(full.summary.total,12000000);assert.ok(heartbeats>2);assert.ok(Date.now()-started<15000);const cancelled=sources.query({range:'today',requestId:'cancel-me'});await new Promise(r=>setTimeout(r,10));await sources.cancel('cancel-me');assert.equal((await cancelled).status,'cancelled');const a=sources.query({range:'today',requestId:'first'}),b=sources.query({range:'today',requestId:'second'});assert.equal((await a).status,'cancelled');assert.equal((await b).summary.requests,100000);sources.timeoutMs=1;assert.equal((await query(sources)).status,'timeout');sources.timeoutMs=15000;assert.equal((await query(sources)).summary.requests,100000);});
-
-test('actual exporter output imports through reader with stopped/error health and no private event content',async t=>{
-  const {dir,store,sources}=setup(t),{pathToFileURL}=require('node:url');
-  const {UsageExporter,HARNESS_VERSION}=await import(pathToFileURL(path.resolve(__dirname,'../integrations/deepseek-harness/exporter.js')));
-  const directory=path.join(dir,'actual-export'),exporter=new UsageExporter({outputDirectory:directory,runtimeVersion:HARNESS_VERSION,now:()=>now-100});await exporter.ready;
-  const session={id:'actual-session',inheritedEventCount:0,header:{version:4,cwd:'D:/actual-project',isSeeded:false}},event=(seq,type,data)=>({seq,time:now-50+seq,type,data}),usage={inputTokens:12,outputTokens:7,cacheReadTokens:30,cacheWriteTokens:3};
-  exporter.observe(session,event(0,'step/start',{turn:1,step:1}));
-  exporter.observe(session,event(1,'assistant/message',{turn:1,step:1,usage,stream:[],message:{source:{provider:'deepseek',model:'actual-model'},get content(){throw Error('PRIVATE_BODY_MUST_NOT_BE_READ');}},get apiKey(){throw Error('PRIVATE_KEY_MUST_NOT_BE_READ');}}));
-  await exporter.flush();const source=sources.add({kind:'harness',file:path.join(directory,'usage.jsonl')});
-  let result=await sources.query({sourceIds:[source.id],range:'today'});assert.equal(result.status,'ready');assert.equal(result.summary.requests,1);assert.equal(result.summary.total,52);assert.equal(result.sourceReports[0].status,'ready');
-  await exporter.close();result=await sources.query({sourceIds:[source.id],range:'today'});assert.equal(result.sourceReports[0].status,'stale');assert.equal(result.summary.total,52);
-  exporter.disable('unsupported-format');await exporter.flush();result=await sources.query({sourceIds:[source.id],range:'today'});assert.equal(result.sourceReports[0].status,'stale');assert.equal(JSON.parse(fs.readFileSync(path.join(directory,'status.json'),'utf8')).state,'error');
-  const db=new DatabaseSync(store.file('tool-usage.sqlite'));const indexed=db.prepare('SELECT record FROM tool_records WHERE source_id=?').all(source.id);db.close();assert.equal(indexed.length,1);assert.doesNotMatch(JSON.stringify(indexed),/PRIVATE_|apiKey|content/);
+test('1.3 source migration preserves source config, prices, encrypted credentials and preferences', async (t) => {
+  const { store, zfile, sources } = setup(t);
+  const old = fs.readFileSync(store.file('local-source.json'), 'utf8');
+  store.saveAccounts({ activeId: 'x', accounts: [] });
+  atomicWrite(store.file('settings.json'), { preferences: { theme: 'dark' }, bounds: { widget: { x: 80, y: 120 } } });
+  atomicWrite(store.file('local-pricing.json'), { m: { input: 1, output: 2, read: 0, write: 0 } });
+  const before = ['accounts.encrypted.json', 'settings.json', 'local-pricing.json'].map((n) => hash(store.file(n)));
+  const restarted = new ToolSources({ store, legacyFile: 'D:/ignored.sqlite' });
+  assert.equal(restarted.list()[0].id, 'legacy-zcode');
+  assert.equal(restarted.list()[0].file, zfile);
+  assert.equal(fs.readFileSync(store.file('local-source.json'), 'utf8'), old);
+  assert.deepEqual(
+    ['accounts.encrypted.json', 'settings.json', 'local-pricing.json'].map((n) => hash(store.file(n))),
+    before,
+  );
+  await restarted.dispose();
+  assert.equal((await query(sources)).summary.total, 120);
+});
+test('two independent sources aggregate reported attempts and never borrow active account billing or credits', async (t) => {
+  const { store, sources, hfile } = setup(t);
+  sources.add({ kind: 'harness', file: hfile });
+  const monitor = {
+      snapshot: () => ({
+        parts: { subscription: { start: now - 300000 }, credits: { monthly: 999 } },
+        updatedAt: {},
+        errors: [],
+      }),
+      settings: { refreshSeconds: 60 },
+    },
+    history = { records: [], hash: 'account-a' };
+  const analytics = new AnalyticsService({ store, monitor, history, client: {}, tools: sources });
+  const first = await analytics.get({ source: 'tools' });
+  assert.equal(first.summary.total, 240);
+  assert.equal(first.summary.requests, 2);
+  assert.equal(first.accountId, null);
+  assert.equal(first.credits, null);
+  history.hash = 'another-account';
+  analytics.resetAccount();
+  assert.equal((await analytics.get({ source: 'tools' })).summary.total, 240);
+  assert.equal((await analytics.get({ source: 'tools', range: 'billing' })).summary, null);
+  assert.equal((await analytics.get({ source: 'local', range: 'billing' })).status, 'unavailable');
+});
+test('duplicate path, hardlink and copied Harness installation are rejected; same-id relocation is safe', async (t) => {
+  const { dir, sources, zfile, hfile } = setup(t);
+  assert.throws(() => sources.add({ kind: 'zcode', file: zfile }), /已添加/);
+  const link = path.join(dir, 'alias.sqlite');
+  fs.linkSync(zfile, link);
+  assert.throws(() => sources.add({ kind: 'zcode', file: link }), /已添加/);
+  const h = sources.add({ kind: 'harness', file: hfile });
+  const moved = path.join(dir, 'harness-copy');
+  fs.cpSync(path.dirname(hfile), moved, { recursive: true });
+  assert.throws(() => sources.add({ kind: 'harness', file: path.join(moved, 'usage.jsonl') }), /已添加/);
+  sources.relocate(h.id, path.join(moved, 'usage.jsonl'));
+  assert.equal((await query(sources)).summary.total, 240);
+  sources.update(h.id, { label: 'Harness new name' });
+  assert.equal(sources.require(h.id).label, 'Harness new name');
+});
+test('incremental JSONL replay/restart/stream final replacement/retry/failed and cancelled usage stay exact', async (t) => {
+  const { store, sources, hfile } = setup(t),
+    h = sources.add({ kind: 'harness', file: hfile });
+  const append = (r) => fs.appendFileSync(hfile, JSON.stringify(r) + '\n');
+  assert.equal((await query(sources)).summary.total, 240);
+  append(harnessWire(now));
+  assert.equal((await query(sources)).summary.total, 240);
+  append(
+    harnessWire(now, {
+      revision: 7,
+      status: 'failed',
+      usage: {
+        uncachedInputTokens: 80,
+        cacheReadTokens: 50,
+        cacheWriteTokens: 10,
+        outputTokens: 20,
+        reasoningTokens: 5,
+        totalTokens: 160,
+      },
+    }),
+  );
+  append(harnessWire(now, { attemptId: 'retry', revision: 8, status: 'cancelled' }));
+  let report = await query(sources);
+  assert.equal(report.summary.total, 400);
+  assert.equal(report.summary.failed, 1);
+  assert.equal(report.summary.cancelled, 1);
+  append(harnessWire(now, { revision: 9, status: 'failed', usageReported: false, usage: {} }));
+  assert.equal((await query(sources)).summary.total, 400);
+  const restarted = new ToolSources({ store, now: () => now });
+  t.after(() => restarted.dispose());
+  assert.equal((await query(restarted)).summary.total, 400);
+  await sources.remove(h.id);
+  assert.equal((await query(sources)).summary.total, 120);
+  assert.ok(fs.existsSync(hfile));
+});
+test('partial final line waits, unknown schema rolls back entire batch, no body or secret enters index', async (t) => {
+  const { store, sources, hfile } = setup(t),
+    h = sources.add({ kind: 'harness', file: hfile });
+  await query(sources);
+  const wire = harnessWire(now, { attemptId: 'second', prompt: 'PRIVATE_PROMPT', apiKey: 'PRIVATE_KEY' }),
+    line = JSON.stringify(wire);
+  fs.appendFileSync(hfile, line.slice(0, 50));
+  assert.equal((await query(sources)).summary.total, 240);
+  fs.appendFileSync(hfile, line.slice(50) + '\n');
+  assert.equal((await query(sources)).summary.total, 360);
+  fs.appendFileSync(
+    hfile,
+    JSON.stringify(harnessWire(now, { attemptId: 'third' })) +
+      '\n' +
+      JSON.stringify(harnessWire(now, { schemaVersion: 999 })) +
+      '\n',
+  );
+  const r = await query(sources);
+  assert.equal(r.summary.total, 120);
+  assert.equal(r.sourceReports.find((s) => s.id === h.id).status, 'schema');
+  const db = new DatabaseSync(store.file('tool-usage.sqlite'));
+  const rows = db.prepare('SELECT record FROM tool_records').all();
+  assert.equal(rows.length, 2);
+  assert.equal(JSON.stringify(rows).includes('PRIVATE'), false);
+  db.close();
+});
+test('source disable/removal/error are isolated and original files remain byte-identical', async (t) => {
+  const { sources, zfile, hfile } = setup(t),
+    h = sources.add({ kind: 'harness', file: hfile }),
+    original = [hash(zfile), hash(hfile)];
+  sources.update(h.id, { enabled: false });
+  assert.equal((await query(sources)).summary.total, 120);
+  sources.update(h.id, { enabled: true });
+  fs.renameSync(hfile, hfile + '.moved');
+  assert.equal((await query(sources)).summary.total, 120);
+  fs.renameSync(hfile + '.moved', hfile);
+  await sources.remove(h.id);
+  assert.deepEqual([hash(zfile), hash(hfile)], original);
+});
+test('corrupt migration config is preserved and refuses destructive replacement', (t) => {
+  const { store } = setup(t);
+  fs.writeFileSync(store.file('tool-sources.json'), 'BROKEN');
+  const manager = new ToolSources({ store, legacyFile: 'D:/fallback' });
+  assert.ok(manager.issue);
+  assert.throws(() => manager.add({ kind: 'zcode', file: 'D:/fallback' }));
+  assert.equal(fs.readFileSync(store.file('tool-sources.json'), 'utf8'), 'BROKEN');
+});
+test('100k metadata analysis runs off-thread; cancellation, supersession and timeouts recover', async (t) => {
+  const { dir, sources } = setup(t);
+  const file = createZcode(path.join(dir, 'large.sqlite'), now, 100000);
+  sources.relocate('legacy-zcode', file);
+  let heartbeats = 0;
+  const ticker = setInterval(() => heartbeats++, 5);
+  const started = Date.now(),
+    full = await query(sources);
+  clearInterval(ticker);
+  assert.equal(full.summary.requests, 100000);
+  assert.equal(full.summary.total, 12000000);
+  assert.ok(heartbeats > 2);
+  assert.ok(Date.now() - started < 15000);
+  const cancelled = sources.query({ range: 'today', requestId: 'cancel-me' });
+  await new Promise((r) => setTimeout(r, 10));
+  await sources.cancel('cancel-me');
+  assert.equal((await cancelled).status, 'cancelled');
+  const a = sources.query({ range: 'today', requestId: 'first' }),
+    b = sources.query({ range: 'today', requestId: 'second' });
+  assert.equal((await a).status, 'cancelled');
+  assert.equal((await b).summary.requests, 100000);
+  sources.timeoutMs = 1;
+  assert.equal((await query(sources)).status, 'timeout');
+  sources.timeoutMs = 15000;
+  assert.equal((await query(sources)).summary.requests, 100000);
 });
 
-test('actual 32 KB protocol export preserves 2048-character identities and metadata without truncation',async t=>{
-  const {dir,sources}=setup(t),{pathToFileURL}=require('node:url');
-  const {UsageExporter,HARNESS_VERSION}=await import(pathToFileURL(path.resolve(__dirname,'../integrations/deepseek-harness/exporter.js')));
-  const directory=path.join(dir,'long-export'),exporter=new UsageExporter({outputDirectory:directory,runtimeVersion:HARNESS_VERSION,now:()=>now-100});await exporter.ready;
-  const sessionId='s'.repeat(2047)+'A',provider='供'.repeat(2048),model='模'.repeat(2048),project='项'.repeat(2048),session={id:sessionId,inheritedEventCount:0,header:{version:4,cwd:project,isSeeded:false}},event=(seq,type,data)=>({seq,time:now-50+seq,type,data});
-  exporter.observe(session,event(0,'request/context',{provider,model}));exporter.observe(session,event(1,'step/start',{turn:1,step:1}));
-  exporter.observe(session,event(2,'assistant/message',{turn:1,step:1,usage:{inputTokens:12,outputTokens:7,cacheReadTokens:30,cacheWriteTokens:3},stream:[],message:{source:{provider,model}}}));await exporter.flush();
-  const file=path.join(directory,'usage.jsonl'),lines=fs.readFileSync(file,'utf8').trim().split('\n');assert.ok(lines.some(line=>Buffer.byteLength(line)>16384));assert.ok(lines.every(line=>Buffer.byteLength(line)<=32768));assert.equal(exporter.error,null);
-  const source=sources.add({kind:'harness',file});let result=await sources.query({sourceIds:[source.id],range:'today'});assert.equal(result.summary?.total,52);assert.equal(result.sessions[0].sessionId,sessionId);assert.equal(result.models[0].model,model);assert.equal(result.models[0].provider,provider);assert.equal(result.projects[0].id,project);
-  result=await sources.query({sourceIds:[source.id],range:'today',session:result.sessions[0].id,model:result.models[0].id,project});assert.equal(result.summary.total,52);await exporter.close();
+test('actual exporter output imports through reader with stopped/error health and no private event content', async (t) => {
+  const { dir, store, sources } = setup(t),
+    { pathToFileURL } = require('node:url');
+  const { UsageExporter, HARNESS_VERSION } = await import(
+    pathToFileURL(path.resolve(__dirname, '../integrations/deepseek-harness/exporter.js'))
+  );
+  const directory = path.join(dir, 'actual-export'),
+    exporter = new UsageExporter({ outputDirectory: directory, runtimeVersion: HARNESS_VERSION, now: () => now - 100 });
+  await exporter.ready;
+  const session = {
+      id: 'actual-session',
+      inheritedEventCount: 0,
+      header: { version: 4, cwd: 'D:/actual-project', isSeeded: false },
+    },
+    event = (seq, type, data) => ({ seq, time: now - 50 + seq, type, data }),
+    usage = { inputTokens: 12, outputTokens: 7, cacheReadTokens: 30, cacheWriteTokens: 3 };
+  exporter.observe(session, event(0, 'step/start', { turn: 1, step: 1 }));
+  exporter.observe(
+    session,
+    event(1, 'assistant/message', {
+      turn: 1,
+      step: 1,
+      usage,
+      stream: [],
+      message: {
+        source: { provider: 'deepseek', model: 'actual-model' },
+        get content() {
+          throw Error('PRIVATE_BODY_MUST_NOT_BE_READ');
+        },
+      },
+      get apiKey() {
+        throw Error('PRIVATE_KEY_MUST_NOT_BE_READ');
+      },
+    }),
+  );
+  await exporter.flush();
+  const source = sources.add({ kind: 'harness', file: path.join(directory, 'usage.jsonl') });
+  let result = await sources.query({ sourceIds: [source.id], range: 'today' });
+  assert.equal(result.status, 'ready');
+  assert.equal(result.summary.requests, 1);
+  assert.equal(result.summary.total, 52);
+  assert.equal(result.sourceReports[0].status, 'ready');
+  await exporter.close();
+  result = await sources.query({ sourceIds: [source.id], range: 'today' });
+  assert.equal(result.sourceReports[0].status, 'stale');
+  assert.equal(result.summary.total, 52);
+  exporter.disable('unsupported-format');
+  await exporter.flush();
+  result = await sources.query({ sourceIds: [source.id], range: 'today' });
+  assert.equal(result.sourceReports[0].status, 'stale');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(directory, 'status.json'), 'utf8')).state, 'error');
+  const db = new DatabaseSync(store.file('tool-usage.sqlite'));
+  const indexed = db.prepare('SELECT record FROM tool_records WHERE source_id=?').all(source.id);
+  db.close();
+  assert.equal(indexed.length, 1);
+  assert.doesNotMatch(JSON.stringify(indexed), /PRIVATE_|apiKey|content/);
 });
 
-test('copied Zcode sources with overlapping request identities cannot inflate a combined report',async t=>{const {dir,sources,zfile}=setup(t),copy=path.join(dir,'backup.sqlite');fs.copyFileSync(zfile,copy);const added=sources.add({kind:'zcode',file:copy,label:'backup'});const combined=await query(sources);assert.equal(combined.summary.total,120);assert.equal(combined.status,'partial');assert.equal(combined.sourceReports.find(s=>s.id===added.id).status,'overlap');assert.equal((await sources.query({sourceIds:[added.id],range:'today'})).summary.total,120);});
-test('last successful tool sync survives restart and legacy local selects only Zcode with its currency',async t=>{const {store,sources,hfile}=setup(t);sources.add({kind:'harness',file:hfile});await query(sources);const restored=new ToolSources({store});t.after(()=>restored.dispose());assert.equal(restored.list()[0].lastSuccessAt,now);assert.equal(restored.list()[0].status,'idle');const analytics=new AnalyticsService({store,monitor:{snapshot:()=>({parts:{},updatedAt:{}})},history:{records:[]},tools:sources,now:()=>now});analytics.savePrice(JSON.stringify(['deepseek','deepseek-chat']),{input:1,output:1,read:1,write:1,currency:'CNY'});const report=await analytics.get({source:'local',range:'today',session:'session-z'});assert.equal(report.summary.requests,1);assert.equal(report.summary.total,120);assert.equal(report.summary.currency,'CNY');assert.equal(report.source,'local');});
+test('actual 32 KB protocol export preserves 2048-character identities and metadata without truncation', async (t) => {
+  const { dir, sources } = setup(t),
+    { pathToFileURL } = require('node:url');
+  const { UsageExporter, HARNESS_VERSION } = await import(
+    pathToFileURL(path.resolve(__dirname, '../integrations/deepseek-harness/exporter.js'))
+  );
+  const directory = path.join(dir, 'long-export'),
+    exporter = new UsageExporter({ outputDirectory: directory, runtimeVersion: HARNESS_VERSION, now: () => now - 100 });
+  await exporter.ready;
+  const sessionId = 's'.repeat(2047) + 'A',
+    provider = '供'.repeat(2048),
+    model = '模'.repeat(2048),
+    project = '项'.repeat(2048),
+    session = { id: sessionId, inheritedEventCount: 0, header: { version: 4, cwd: project, isSeeded: false } },
+    event = (seq, type, data) => ({ seq, time: now - 50 + seq, type, data });
+  exporter.observe(session, event(0, 'request/context', { provider, model }));
+  exporter.observe(session, event(1, 'step/start', { turn: 1, step: 1 }));
+  exporter.observe(
+    session,
+    event(2, 'assistant/message', {
+      turn: 1,
+      step: 1,
+      usage: { inputTokens: 12, outputTokens: 7, cacheReadTokens: 30, cacheWriteTokens: 3 },
+      stream: [],
+      message: { source: { provider, model } },
+    }),
+  );
+  await exporter.flush();
+  const file = path.join(directory, 'usage.jsonl'),
+    lines = fs.readFileSync(file, 'utf8').trim().split('\n');
+  assert.ok(lines.some((line) => Buffer.byteLength(line) > 16384));
+  assert.ok(lines.every((line) => Buffer.byteLength(line) <= 32768));
+  assert.equal(exporter.error, null);
+  const source = sources.add({ kind: 'harness', file });
+  let result = await sources.query({ sourceIds: [source.id], range: 'today' });
+  assert.equal(result.summary?.total, 52);
+  assert.equal(result.sessions[0].sessionId, sessionId);
+  assert.equal(result.models[0].model, model);
+  assert.equal(result.models[0].provider, provider);
+  assert.equal(result.projects[0].id, project);
+  result = await sources.query({
+    sourceIds: [source.id],
+    range: 'today',
+    session: result.sessions[0].id,
+    model: result.models[0].id,
+    project,
+  });
+  assert.equal(result.summary.total, 52);
+  await exporter.close();
+});
 
-test('malformed request identities isolate only that source instead of hiding another tool',async t=>{const {sources,zfile,hfile}=setup(t);sources.add({kind:'harness',file:hfile});const db=new DatabaseSync(zfile);db.exec('UPDATE model_usage SET id=NULL');db.close();const report=await query(sources);assert.equal(report.status,'partial');assert.equal(report.summary.total,120);assert.equal(report.summary.requests,1);assert.equal(report.sourceReports.find(s=>s.kind==='zcode').status,'schema');assert.equal(report.sourceReports.find(s=>s.kind==='harness').status,'ready');});
-test('missing plugin health is disclosed as stale even when its existing records remain readable',async t=>{const {sources,hfile}=setup(t);const h=sources.add({kind:'harness',file:hfile});fs.unlinkSync(path.join(path.dirname(hfile),'status.json'));const report=await query(sources);assert.equal(report.status,'partial');assert.equal(report.summary.total,240);assert.equal(report.sourceReports.find(s=>s.id===h.id).status,'stale');});
+test('copied Zcode sources with overlapping request identities cannot inflate a combined report', async (t) => {
+  const { dir, sources, zfile } = setup(t),
+    copy = path.join(dir, 'backup.sqlite');
+  fs.copyFileSync(zfile, copy);
+  const added = sources.add({ kind: 'zcode', file: copy, label: 'backup' });
+  const combined = await query(sources);
+  assert.equal(combined.summary.total, 120);
+  assert.equal(combined.status, 'partial');
+  assert.equal(combined.sourceReports.find((s) => s.id === added.id).status, 'overlap');
+  assert.equal((await sources.query({ sourceIds: [added.id], range: 'today' })).summary.total, 120);
+});
+test('last successful tool sync survives restart and legacy local selects only Zcode with its currency', async (t) => {
+  const { store, sources, hfile } = setup(t);
+  sources.add({ kind: 'harness', file: hfile });
+  await query(sources);
+  const restored = new ToolSources({ store });
+  t.after(() => restored.dispose());
+  assert.equal(restored.list()[0].lastSuccessAt, now);
+  assert.equal(restored.list()[0].status, 'idle');
+  const analytics = new AnalyticsService({
+    store,
+    monitor: { snapshot: () => ({ parts: {}, updatedAt: {} }) },
+    history: { records: [] },
+    tools: sources,
+    now: () => now,
+  });
+  analytics.savePrice(JSON.stringify(['deepseek', 'deepseek-chat']), {
+    input: 1,
+    output: 1,
+    read: 1,
+    write: 1,
+    currency: 'CNY',
+  });
+  const report = await analytics.get({ source: 'local', range: 'today', session: 'session-z' });
+  assert.equal(report.summary.requests, 1);
+  assert.equal(report.summary.total, 120);
+  assert.equal(report.summary.currency, 'CNY');
+  assert.equal(report.source, 'local');
+});
+
+test('malformed request identities isolate only that source instead of hiding another tool', async (t) => {
+  const { sources, zfile, hfile } = setup(t);
+  sources.add({ kind: 'harness', file: hfile });
+  const db = new DatabaseSync(zfile);
+  db.exec('UPDATE model_usage SET id=NULL');
+  db.close();
+  const report = await query(sources);
+  assert.equal(report.status, 'partial');
+  assert.equal(report.summary.total, 120);
+  assert.equal(report.summary.requests, 1);
+  assert.equal(report.sourceReports.find((s) => s.kind === 'zcode').status, 'schema');
+  assert.equal(report.sourceReports.find((s) => s.kind === 'harness').status, 'ready');
+});
+test('missing plugin health is disclosed as stale even when its existing records remain readable', async (t) => {
+  const { sources, hfile } = setup(t);
+  const h = sources.add({ kind: 'harness', file: hfile });
+  fs.unlinkSync(path.join(path.dirname(hfile), 'status.json'));
+  const report = await query(sources);
+  assert.equal(report.status, 'partial');
+  assert.equal(report.summary.total, 240);
+  assert.equal(report.sourceReports.find((s) => s.id === h.id).status, 'stale');
+});

@@ -32,15 +32,15 @@ portable:
 mac:
   icon: desktop/assets/app.icns
   category: public.app-category.developer-tools
-  minimumSystemVersion: "13.0"
-  executableName: "Token 用量助手"
+  minimumSystemVersion: '13.0'
+  executableName: 'Token 用量助手'
   target:
     - target: dmg
       arch: [arm64]
     - target: zip
       arch: [arm64]
   artifactName: TokenUsageAssistant-Mac-arm64-${version}.${ext}
-  identity: "-"
+  identity: '-'
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
