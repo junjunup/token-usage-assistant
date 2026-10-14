@@ -1,5 +1,7 @@
 # 刘海灵动岛（Mac）设计交接文档
 
+> 当前项目状态见 [PROJECT_HANDOFF.md](../../PROJECT_HANDOFF.md)；改进计划（含已拍板的 D9 和修订任务 T7.0）见 [IMPROVEMENT_PLAN.md](../../IMPROVEMENT_PLAN.md)。
+
 > 项目：Token 用量助手（commandcode-companion）· 目标版本线：1.9.0（Mac 刘海屏专属悬浮形态）
 > 状态：**设计稿已基本定稿，剩 5 条待拍板；尚未写任何实现代码**。
 > 设计稿位置：`docs/island-1.9.0-design/`（打开 `proposals.html` 即可看完整稿）
