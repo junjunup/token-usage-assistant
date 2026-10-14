@@ -105,6 +105,7 @@ export function Select({ label, value, options, onChange, disabled = false, clas
     };
   }, [open]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
     close();
   }, [disabled, value]);
   return (
@@ -159,6 +160,7 @@ export function Select({ label, value, options, onChange, disabled = false, clas
               </div>
             ))}
           </div>,
+          // eslint-disable-next-line react-hooks/refs -- portal target is read at render time; refactor tracked in IMPROVEMENT_PLAN.md section 5.
           button.current.closest('.app'),
         )}
     </div>

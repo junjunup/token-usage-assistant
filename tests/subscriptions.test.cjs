@@ -212,7 +212,7 @@ test('selective JSON decoder excludes nested bodies, escapes, credentials and pr
   const input = JSON.stringify({
     payload: { info: { total_tokens: 4 }, messages: [{ content: 'PRIVATE_BODY' }], apiKey: 'PRIVATE_KEY' },
     __proto__: { bad: true },
-    other: '\\\"',
+    other: '\\"',
   });
   const r = projectJSON(input, { payload: { info: { total_tokens: true } } });
   assert.equal(r.payload.info.total_tokens, 4);

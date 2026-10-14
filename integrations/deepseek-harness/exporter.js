@@ -6,6 +6,7 @@ export const HARNESS_VERSION = '0.1.7-rc.1';
 export const HARNESS_COMMIT = '46a7f68b0922371ce7144b668b90e377d8e799f4';
 export const EXPORTER_VERSION = '1.4.0';
 const count = value => Number.isSafeInteger(value) && value >= 0;
+// eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
 const text = (value, max = 2048) => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value) ? value : null;
 const EMPTY_USAGE = Object.freeze({ uncachedInputTokens: null, outputTokens: null, cacheReadTokens: null, cacheWriteTokens: null, reasoningTokens: null, totalTokens: null });
 const OBSERVED = new Set(['step/start', 'step/end', 'turn/end', 'request/context', 'assistant/message', 'assistant/attempt', 'llm/retry', 'llm/retry-started']);
@@ -103,6 +104,7 @@ export class UsageExporter {
             }
           }
         } catch {}
+        // eslint-disable-next-line preserve-caught-error -- deliberately generic; the raw cause is not attached (privacy rule).
         if (Date.now() >= deadline) throw new Error('io-error');
         await new Promise(done => setTimeout(done, 10));
       }

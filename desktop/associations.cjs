@@ -11,6 +11,7 @@ const id = (v) => typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v);
 const fail = (message) => Object.assign(new Error(message), { publicMessage: message });
 const hash = (value) => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const label = (value) => {
+  // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   if (typeof value !== 'string' || !value.trim() || value.length > 80 || /[\x00-\x1f]/.test(value))
     throw fail('请输入 1–80 个字符的计费账户名称。');
   return value.trim();
@@ -288,6 +289,7 @@ class Associations extends EventEmitter {
     )
       throw fail('请选择有效的关联起止时间；结束时间必须晚于开始时间。');
     for (const key of ['provider', 'model'])
+      // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
       if (typeof value[key] !== 'string' || value[key].length > 2048 || /[\x00-\x1f]/.test(value[key]))
         throw fail('供应商或模型条件无效。');
   }

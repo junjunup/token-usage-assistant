@@ -118,7 +118,7 @@ export function DesktopApp() {
     [view, setView] = useState('overview'),
     [used, setUsed] = useState(false),
     [details, setDetails] = useState(false),
-    [now, setNow] = useState(Date.now()),
+    [now, setNow] = useState(() => Date.now()),
     [toast, setToast] = useState(null),
     [dialog, setDialog] = useState(null);
   const dialogRef = useRef();
@@ -132,6 +132,7 @@ export function DesktopApp() {
     state?.capabilities?.usageSummary === false || (!!state?.provider && state.provider !== 'commandcode');
   useEffect(() => {
     if (view !== 'analytics' || analysisSource === 'account') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
       setRange('today');
       setFilters({ model: '', project: '', session: '' });
     }
@@ -145,6 +146,7 @@ export function DesktopApp() {
       billingGroupId !== 'unlinked' &&
       !billingGroups.some((g) => g.id === billingGroupId && g.valid)
     )
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
       setBillingGroupId('');
   }, [billingGroupId, JSON.stringify(billingGroups)]);
   const analysis = useAnalytics(
@@ -163,6 +165,7 @@ export function DesktopApp() {
   };
   useEffect(() => {
     if (state?.toolSources)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
       setSourceIds((ids) => ids.filter((id) => state.toolSources.some((s) => s.id === id && s.enabled)));
   }, [JSON.stringify(state?.toolSources?.map((s) => [s.id, s.enabled]))]);
   useEffect(() => {

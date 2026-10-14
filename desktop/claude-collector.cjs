@@ -7,6 +7,7 @@ const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const { normalizeClaude } = require('./subscriptions.cjs');
 const { launcherName, shellQuote } = require('./platform.cjs');
 const clean = (v, max = 2048) =>
+  // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   typeof v === 'string' && v.length && v.length <= max && !/[\x00-\x1f]/.test(v) ? v : null;
 const count = (v) => {
   const n = typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : v;
