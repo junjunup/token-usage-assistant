@@ -92,7 +92,7 @@
 |---|---|---|---|---|---|
 | 1 工程底座 | T1.1 初始化 Git 与基线快照 | 否 | — | — | [x] |
 | | T1.2 清理仓库杂物 | 否 | T1.1 | D5、D6 | [x] |
-| | T1.3 Prettier + ESLint，一次性格式化 | 否 | T1.1 | — | [ ] |
+| | T1.3 Prettier + ESLint，一次性格式化 | 否 | T1.1 | — | [x] |
 | | T1.4 文档重构 | 否 | T1.1 | D5 | [ ] |
 | 2 CI | T2.1 推送到私有仓库 | 否 | T1.1 | D2 | [ ] |
 | | T2.2 CI 测试流水线（Win + Mac） | 否 | T2.1、T1.3 | — | [ ] |
@@ -681,6 +681,9 @@ T7.0 只是改文档，可以随时插队。
 | 2026-10-15 | T1.1 | 执行环境限制：Claude 的设备命令环境是 Linux 虚拟机，且项目文件夹挂载失败；电脑控制对「终端」只允许点击、不允许输入。因此 git 和测试命令由执行模型写成 `work/t1.1/phase-a.sh`、`phase-b.sh`（`work/` 已被忽略），由用户在 Mac 终端运行，执行模型读取输出文件核对。 | 后续任务沿用「执行模型写脚本 → 用户在终端运行 → 执行模型读输出」的方式，除非命令环境能挂载项目文件夹。 | 记录 |
 | 2026-10-15 | T1.2 | 预备的 `styles.css` 把 `.red-text` 列为「仅 App.jsx 使用」并删除，但 `DesktopApp.jsx` 用模板字符串动态拼出 `${tone}-text`（`monthTone`/`windowTone` 为 `red` 时，即月度余额耗尽或额度窗口超限），这条规则只在 `styles.css` 中定义；删除会让超限数字失去红色。按字面量 grep 类名查不出这种用法，构建产物检查也查不出。 | 执行前审阅时已恢复 `.red-text`，并从脚本的「已删类名」检查列表中去掉。今后删 CSS 规则时，同时检查 `${…}-xxx` / `+'-xxx'` 这类动态拼接。 | 已处理 |
 | 2026-10-15 | T1.2 | T1.2 验收要求 `pnpm run desktop` 能启动并显示主窗口和悬浮窗。但在 Mac 上，开发版直接读写真实 userData，并与打包版共用 Keychain 条目（即 T3.1 要修的问题），可能触发授权弹框、改动真实数据。 | 用户 2026-10-15 决定：本任务改用隔离目录的原生 smoke（`--smoke-test --test-directory=<mktemp -d>`）代替。T3.1 完成前，其他任务的「`pnpm run desktop` 启动」验收同样按此处理，除非用户另行指示。 | 已按用户决定处理 |
+| 2026-10-15 | T1.3 | `scripts/prepare-analytics-preview.mjs` 用精确字符串替换 `desktop/*.cjs` 中的 `require` 行来生成 `src/generated/`。格式化后其中 3 处不再匹配，打包出的渲染进程 JS 会在模块顶层调用 `require("./domain.cjs")`，界面加载即报错白屏，而 `pnpm run build` 不报任何错误。是靠 dist 哈希比对发现的。 | 用户 2026-10-15 选择方案 A：4 处精确匹配改为允许任意空白的正则（替换结果不变），并在仍有 `require(` 残留时让构建报错。单独提交（`95ee2e2`），在格式化提交之前；在未格式化源码上构建产物与基线逐字节一致；保护逻辑已用临时注入的 `require` 验证会触发。 | 已按用户决定处理 |
+| 2026-10-15 | T1.3 | 格式化把 26 个文件的 CRLF 统一成了 LF（Prettier 默认 `endOfLine: lf`）。Windows runner 如果开启 `core.autocrlf`，检出时会转回 CRLF，`format:check` 就会失败。 | T2.2 时加 `.gitattributes`（例如 `* text=auto eol=lf`，并让 `*.ps1` 保持原有换行），或在 CI 中关闭 autocrlf。需要时向用户确认。 | 待 T2.2 |
+| 2026-10-15 | T1.3 | ESLint 基线有 26 个错误（`no-control-regex` 10、`react-hooks/set-state-in-effect` 10、`react-hooks/refs` 2、`react-hooks/purity` 1、`no-useless-assignment` 1、`preserve-caught-error` 1、`no-useless-escape` 1）。T2.2 规定 lint 有错误时 CI 失败，所以 CI 一接上就会是红的。 | T2.2 之前需要用户决定：先修这些错误（另开任务，逐条确认不改变行为），还是把相应规则暂时降为 warn 并记录。 | 待用户决定 |
 
 ---
 
@@ -690,6 +693,7 @@ T7.0 只是改文档，可以随时插队。
 |---|---|---|---|---|---|---|
 | 2026-10-15 | T1.1 | `main`（初始提交，无需分支）/ `a90b791`（`a90b791248ed54465c4efa10a870d60519ac0124`），标签 `v1.8.0-beta.5`（附注标签） | 246 / 0 / 3（共 249；3 项 Harness 运行时测试因未设环境变量跳过，见第 5 节） | ①（合成契约测试，用户 Mac 本机运行） | 不出包（D1：不改变行为）。`.gitignore` 按计划原样；`git ls-files` = 387；提交后 `git status` 干净。秘密扫描两项（内容正则、文件名）在 `git add` 后和提交前各跑一次，均无命中。`src/generated` 仅被 `scripts/prepare-analytics-preview.mjs` 生成，无测试 import，已忽略。提交者身份由用户自行设置（仓库级 config）。 | 本条执行记录和复选框的更新需单独提交（见下一个提交）。 |
 | 2026-10-15 | T1.2 | `task/T1.2-cleanup` / `86331dd`，`--no-ff` 合并为 `6de9240` | 前后均为 246 / 0 / 3（共 249）。`tests/sites-worker.test.mjs` 不在 `test:desktop` 中，删除后总数不变 | ①（合成契约测试）+ ②（Mac 本机开发运行时的隔离目录原生 smoke，非打包版） | 不出包（D1：不改变行为）。git 内：删除 `pelican-bike.html`、`src/App.jsx`、`worker/`、`.openai/`、`scripts/prepare-sites-build.mjs`、`tests/sites-worker.test.mjs`；`package.json` 去掉 `test:sites` 和 build 末尾的 `prepare-sites-build`；`main.jsx` 去掉 `legacy-prototype` 分支；`styles.css` 删掉 36 条仅 App.jsx 使用的规则（260 → 226 条，含两处媒体查询内的子规则），保留 `.red-text`（见第 5 节）以及与 `.preview-bar` 共用的 `.preview-options` 选择器。git 外：经用户同意删除 `a/`（含未入库的 `taste.md`）和 `.DS_Store`；`release-v1.8.0-beta.5/` 移到 `~/Documents/TokenUsageAssistant-releases/`，文件数 271 → 271、字节数 560305755 → 560305755，一致。`src/desktop-preview.js`（`previewBridge`）保留。`git ls-files` 387 → 381。`pnpm run build` 成功，被删类名不出现在构建产物 JS 中。启动验收按用户决定改用隔离目录 smoke：`ok:true`，`readySurfaces` = widget、main，`trayCreated:true`，各子检查 ok。 | 硬编码的 `release-v` 路径已列出（`scripts/verify-package-beta5.cjs`、`deliver-opencode-beta5.py`、`Build-Mac-App.command`、`Verify-Mac-Native.command`、`verify-opencode-package-beta5.ps1`、`electron-builder.yml`），留给 T2.5。`AGENTS.md`、`README.md`、`PROJECT_HANDOFF.md`、`DEVELOPMENT_READY.md` 中还提到 `test:sites` 和 Sites 文件，留给 T1.4。未用真实数据跑 `pnpm run desktop`（见第 5 节）。 |
+| 2026-10-15 | T1.3 | `task/T1.3-format`：配置 `33faa30`、脚本修复 `95ee2e2`、格式化 `c71ffea`、blame-ignore `c78ff80`；`--no-ff` 合并为 `e3206d8` | 前后均为 246 / 0 / 3（共 249） | ①（合成契约测试）+ ②（Mac 本机开发运行时的隔离目录原生 smoke，非打包版） | 不出包（D1）。开发依赖精确锁定，均为 2026-10-01 前发布的最新稳定版：prettier 3.9.9、eslint 10.11.0、@eslint/js 10.0.1（与 eslint 10 配套）、eslint-plugin-react-hooks 7.1.1（`configs.flat.recommended`）、globals 17.12.0；锁文件只有新增。`.prettierignore` 保留了 `integrations/deepseek-harness/`：没有哈希校验，但覆盖它的 3 项运行时测试本机会跳过，无法验证；目录里还有上游补丁配置 `cordis.patch.yml`；`exporter.js` 本来就是正常格式。格式化 98 个文件。dist 比对：格式化前构建已确认可复现（两次构建哈希相同）；格式化后 44 个文件里 41 个非入口资源逐字节一致；JS 合并相邻字符串字面量后完全相同（唯一差异是 JSX 文本在折行处拆出 `{' '}`）；CSS 做空白规范化后相同（只是自定义属性冒号后、`var()` 回退值前多了空格）；`index.html` 只有资源文件名和换行符不同。`node --check desktop/*.cjs` 全部通过。smoke：`ok:true`，`readySurfaces` = widget、main，`trayCreated:true`，providers/tools/subscriptions/balance/associations/opencode/branding 全部 ok。`prettier --check` 通过。ESLint 基线：26 个错误、68 个警告（`no-empty` 36、`no-unused-vars` 20、`react-hooks/exhaustive-deps` 12），格式化前后相同，没有 `no-undef` 或解析错误（说明环境配置正确）。新增脚本 `format`、`format:check`、`lint`。 | 26 个 lint 错误和 Windows 换行问题见第 5 节，留给 T2.2。本机可执行 `git config blame.ignoreRevsFile .git-blame-ignore-revs` 来启用 blame 忽略（未自动设置）。 |
 
 ---
 
