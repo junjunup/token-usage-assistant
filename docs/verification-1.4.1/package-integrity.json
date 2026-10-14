@@ -1,0 +1,31 @@
+{
+  "version": "1.4.1",
+  "platform": "Windows x64",
+  "change": "Floating widget keeps its bottom edge when expanded and collapsed",
+  "tests": {
+    "desktop": { "passed": 127, "failed": 0, "skipped": 3 },
+    "sites": { "passed": 4, "failed": 0, "skipped": 0 },
+    "frontendBuild": "passed",
+    "nativeSmoke": "not completed: Electron GPU process failed during startup in this environment"
+  },
+  "checks": {
+    "packagedVersion": "1.4.1",
+    "packagedMainMatchesSource": true,
+    "packagedWidgetBoundsMatchesSource": true,
+    "installerAndPortablePayloadMatch": true,
+    "payloadAsarMatchesUnpackedAsar": true,
+    "lockfileRestoredAfterBuild": true
+  },
+  "sha256": {
+    "sourceMain": "ac2ff7ba5b51d58c32637f43c4c6409724d8a08a34464c23f8b011d0cd404b79",
+    "sourceWidgetBounds": "ddba027a0deb62a846026f0bea507df99b2685d962dce1793d18378ef5eff607",
+    "appAsar": "8d65a930c075ded0c8ad22e668ff5def228e9233565ea5c6e615bd84a901fc74",
+    "sharedInstallerPortablePayload": "26d6adc3e769bf09807505c08e5a26274ea61ece9aaa7ca815b1370e598d872d",
+    "portableExe": "9f0c8379288e2fa5c2351edca5aa87fcc416237e976eeefa2ba293f1376d770f",
+    "installerExe": "5bcc9386ed7da54a560f37fe5f5897fca726d2a0fe526ab20b907a409eccb5e3"
+  },
+  "limitations": [
+    "Installer was built but not installed over an existing user installation.",
+    "Native GUI smoke could not start because the Electron GPU process failed in this environment."
+  ]
+}

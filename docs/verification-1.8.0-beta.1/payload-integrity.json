@@ -1,0 +1,15 @@
+{
+  "asarSha256": "47ea6661405cbfcd6ee6fcd37e3f52032f62ddc6a1b60c4ea70eeffe74729ebd",
+  "ok": true,
+  "payloads": [
+    {
+      "asarSha256": "47ea6661405cbfcd6ee6fcd37e3f52032f62ddc6a1b60c4ea70eeffe74729ebd",
+      "kind": "Setup"
+    },
+    {
+      "asarSha256": "47ea6661405cbfcd6ee6fcd37e3f52032f62ddc6a1b60c4ea70eeffe74729ebd",
+      "kind": "Portable"
+    }
+  ],
+  "version": "1.8.0-beta.1"
+}

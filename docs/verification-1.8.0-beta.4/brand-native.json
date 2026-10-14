@@ -1,0 +1,121 @@
+{
+  "ok": true,
+  "version": "1.8.0-beta.4",
+  "alignment": [
+    {
+      "width": 1260,
+      "theme": "light",
+      "button": {
+        "x": 16.5,
+        "y": 19,
+        "width": 34,
+        "height": 34
+      },
+      "svg": {
+        "x": 20,
+        "y": 22.5,
+        "width": 27,
+        "height": 27
+      },
+      "centerOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "visibleOffset": {
+        "x": -0.007796287536621094,
+        "y": -0.0370330810546875
+      },
+      "padding": "0px",
+      "dpr": 1
+    },
+    {
+      "width": 1260,
+      "theme": "dark",
+      "button": {
+        "x": 16.5,
+        "y": 19,
+        "width": 34,
+        "height": 34
+      },
+      "svg": {
+        "x": 20,
+        "y": 22.5,
+        "width": 27,
+        "height": 27
+      },
+      "centerOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "visibleOffset": {
+        "x": -0.007796287536621094,
+        "y": -0.0370330810546875
+      },
+      "padding": "0px",
+      "dpr": 1
+    },
+    {
+      "width": 780,
+      "theme": "light",
+      "button": {
+        "x": 11,
+        "y": 19,
+        "width": 30,
+        "height": 30
+      },
+      "svg": {
+        "x": 12.5,
+        "y": 20.5,
+        "width": 27,
+        "height": 27
+      },
+      "centerOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "visibleOffset": {
+        "x": -0.007796287536621094,
+        "y": -0.0370330810546875
+      },
+      "padding": "0px",
+      "dpr": 1
+    },
+    {
+      "width": 780,
+      "theme": "dark",
+      "button": {
+        "x": 11,
+        "y": 19,
+        "width": 30,
+        "height": 30
+      },
+      "svg": {
+        "x": 12.5,
+        "y": 20.5,
+        "width": 27,
+        "height": 27
+      },
+      "centerOffset": {
+        "x": 0,
+        "y": 0
+      },
+      "visibleOffset": {
+        "x": -0.007796287536621094,
+        "y": -0.0370330810546875
+      },
+      "padding": "0px",
+      "dpr": 1
+    }
+  ],
+  "windowsIcon": {
+    "skipped": false,
+    "size": {
+      "width": 32,
+      "height": 32
+    },
+    "averageChannelDelta": 0.09814453125,
+    "readFromActualWindow": true,
+    "portableLauncher": true,
+    "shellIconFileExists": true
+  }
+}

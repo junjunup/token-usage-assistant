@@ -1,0 +1,21 @@
+✔ read-only RPC uses the exact handshake and account allowlist and closes once (2.0758ms)
+✔ program preflight initializes only, without reading any account or quota (0.4063ms)
+✔ reported old CLI argument rejection exits as incompatible, not timeout; stderr stays private (0.5413ms)
+✔ an early process exit without a classifier stays distinct from timeout (0.3179ms)
+✔ a genuinely stalled initialization times out and closes the owned child (17.6125ms)
+✔ timeouts identify the stalled login and quota stages separately (45.8965ms)
+✔ each completed stage gets its own timeout budget (95.1615ms)
+✔ spawn failures and error events have a safe startup error (0.8467ms)
+✔ unsupported account methods preserve version guidance without raw JSON-RPC errors (0.2991ms)
+✔ non-ChatGPT login stops before quota, without login mutation (0.3879ms)
+✔ null, malformed lines and notifications do not crash parsing; UTF8 split replies work (0.3928ms)
+✔ missing initialize fields and oversized output fail safely (2.2129ms)
+✔ network RPC errors identify their stage without exporting raw credentials or bodies (0.2431ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.4589

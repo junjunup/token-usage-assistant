@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>刘海灵动岛 · 设计方案 1.9.0 提案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* 复用桌面端暗色主题 token（岛体物理上必须深色） */
+  --island:#050507; --panel:#0b0b0f; --panel2:#121218;
+  --fg:#ededee; --muted:#aaaab0; --hair:rgba(255,255,255,.09); --hair2:rgba(255,255,255,.16);
+  --green:#36c793; --green-pale:#1e3b31; --purple:#bb7ae8; --purple-pale:#553767;
+  --amber:#e3ad57; --amber-pale:#453822; --red:#ee7580;
+  /* 文档亮色 token */
+  --doc-fg:#18181b; --doc-muted:#73737d; --doc-line:#e9e9ec; --doc-soft:#fafafa;
+}
+*{box-sizing:border-box;margin:0}
+body{background:#f4f4f6;color:var(--doc-fg);font-family:'Geist','PingFang SC','Microsoft YaHei UI',sans-serif;font-size:14px;padding:34px 40px 60px;-webkit-font-smoothing:antialiased}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+.doc-head{max-width:1560px;margin:0 auto 30px}
+.doc-head h1{font-size:24px;font-weight:600;letter-spacing:-.5px}
+.doc-head p{font-size:12px;color:var(--doc-muted);margin-top:8px;letter-spacing:.02em}
+.doc-note{font-size:10px;color:var(--doc-muted);margin-top:6px}
+.proposal{max-width:1560px;background:#fff;border:1px solid var(--doc-line);padding:26px 28px 24px;margin-bottom:26px}
+.proposal>h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.proposal>h2 .tag{font-family:'Geist Mono',monospace;font-size:10px;color:#14815e;background:#e0f6ed;padding:3px 7px;margin-left:10px;vertical-align:3px;letter-spacing:.06em}
+.proposal>p.lead{font-size:12px;color:var(--doc-muted);margin-top:7px;line-height:1.7}
+.traits{display:flex;gap:22px;margin-top:12px;font-size:11px;color:var(--doc-muted);flex-wrap:wrap}
+.traits b{color:var(--doc-fg);font-weight:500}
+.frames{display:flex;flex-wrap:wrap;gap:22px;margin-top:22px;align-items:flex-start}
+.frame{flex:0 0 auto;width:620px}
+.frame.wide{width:680px}
+.frame-cap{text-align:center;margin-top:12px}
+.frame-cap b{font-size:12px;font-weight:500}
+.frame-cap span{display:block;font-size:10px;color:var(--doc-muted);margin-top:3px}
+.side-note{flex:1;min-width:560px;border:1px solid var(--doc-line);background:var(--doc-soft);padding:18px 20px}
+.side-note h3{font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:var(--doc-muted);font-weight:400;margin-bottom:10px}
+.side-note li{font-size:11.5px;color:var(--doc-fg);line-height:1.8;margin:0 0 8px 0;list-style:none;padding-left:14px;position:relative}
+.side-note li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;background:var(--doc-line)}
+.side-note li b{font-weight:500}
+.side-note li .dim{color:var(--doc-muted);font-size:10.5px}
+
+/* ── 屏幕顶部还原 ─────────────────────────── */
+.screen{position:relative;width:100%;border-radius:10px;overflow:hidden;
+  background:linear-gradient(140deg,#34365a 0%,#262741 42%,#332a4d 100%)}
+.screen::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(340px 130px at 18% 0%,rgba(174,82,232,.28),transparent 70%),
+             radial-gradient(300px 120px at 82% 10%,rgba(54,199,147,.12),transparent 70%)}
+.menubar{position:relative;height:38px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;background:rgba(16,16,22,.42);color:rgba(255,255,255,.92);font-size:12.5px;letter-spacing:.01em}
+.mb-left,.mb-right{display:flex;align-items:center;gap:13px}
+.mb-left .apple{font-size:14px;line-height:1}
+.mb-right .clock{font-size:12px}
+.mb-ic{width:15px;height:15px;stroke:rgba(255,255,255,.92);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mb-fill{fill:rgba(255,255,255,.92)}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:200px;height:38px;background:#000;border-radius:0 0 11px 11px;z-index:6}
+.notch::after{content:"";position:absolute;top:11px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#0a0a10;box-shadow:0 0 0 1.5px #050508}
+/* 岛体通用 */
+.island{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--island);border-radius:0 0 17px 17px;height:38px;
+  display:flex;align-items:center;justify-content:center;z-index:5}
+.island.panel-open{height:auto;align-items:stretch;flex-direction:column;justify-content:flex-start;border-radius:0 0 20px 20px;
+  box-shadow:0 26px 70px rgba(0,0,0,.55),0 4px 18px rgba(0,0,0,.4)}
+.cursor{position:absolute;z-index:9;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.5))}
+
+/* ── 岛内组件 ─────────────────────────── */
+.dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(54,199,147,.7)}
+.dot.amber{background:var(--amber);box-shadow:0 0 6px rgba(227,173,87,.7)}
+.track{height:2px;border-radius:2px;background:rgba(255,255,255,.14);position:relative;overflow:hidden}
+.track i{position:absolute;left:0;top:0;bottom:0;background:var(--green);border-radius:2px}
+.ilabel{font-family:'Geist Mono',monospace;font-size:8.5px;letter-spacing:.06em;color:var(--muted)}
+.ival{font-family:'Geist Mono',monospace;font-size:12px;color:var(--fg);font-variant-numeric:tabular-nums}
+.ival.amber{color:var(--amber)}
+.ival.dimv{color:var(--muted)}
+.imuted{font-family:'Geist Mono',monospace;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ivdiv{width:1px;height:15px;background:var(--hair2)}
+.msegs{display:flex;gap:2px}
+.msegs i{width:7px;height:6px;background:var(--green-pale);border-radius:1px}
+.msegs i.f{background:var(--green)}
+.msegs.amber i{background:var(--amber-pale)}
+.msegs.amber i.f{background:var(--amber)}
+.msegs.s i{width:5px}
+/* 耳区：刘海(200px 保守半宽)两侧的可用屏幕，内容锚定刘海边缘，中心留 16px 缓冲 */
+.ear-l{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:6px;right:calc(50% + 108px)}
+.ear-r{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:6px;left:calc(50% + 108px)}
+
+/* 面板内部 */
+.pl-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px}
+.pl-head .l{display:flex;align-items:center;gap:8px}
+.pl-head img{width:15px;height:15px;display:block;color:var(--fg)}
+.pl-head .name{font-size:11.5px;font-weight:500;color:var(--fg)}
+.pl-head .live{display:flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:.05em}
+.pl-body{padding:2px 18px 0}
+.pl-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 18px 13px;border-top:1px solid var(--hair);margin-top:15px}
+.chips{display:flex;gap:6px;align-items:center}
+.chip{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--hair);padding:3px 8px;border-radius:3px}
+.chip .dot{width:4px;height:4px;box-shadow:none}
+.chip .dot.off{background:transparent;border:1px solid var(--muted);box-shadow:none}
+.plink{font-size:10px;color:var(--muted)}
+.qblock{margin-top:11px}
+.qtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.qtop .qn{font-size:11px;color:var(--fg)}
+.qtop .qv{font-family:'Geist Mono',monospace;font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums}
+.qmeta{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--muted)}
+.qmeta b{font-family:'Geist Mono',monospace;font-weight:400;color:var(--muted);font-size:9px}
+.segs{display:flex;gap:2.5px;height:9px}
+.segs i{flex:1;background:var(--green-pale);border-radius:1px}
+.segs i.f{background:var(--green)}
+.segs.amber i{background:var(--amber-pale)}
+.segs.amber i.f{background:var(--amber)}
+.statgrid{display:flex;gap:0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-top:14px}
+.statgrid>div{flex:1;padding:10px 0 11px}
+.statgrid>div+div{border-left:1px solid var(--hair);padding-left:14px}
+.statgrid .sl{font-size:8.5px;color:var(--muted);letter-spacing:.03em}
+.statgrid .sv{font-family:'Geist Mono',monospace;font-size:16.5px;color:var(--fg);margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.statgrid .sv.pu{color:var(--purple)}
+.statgrid .sv small{font-size:9.5px;color:var(--muted);margin-left:3px;letter-spacing:0}
+.forecast{display:flex;align-items:center;gap:7px;margin-top:10px}
+.ftar{font-family:'Geist Mono',monospace;font-size:8px;letter-spacing:.06em;color:var(--amber);background:var(--amber-pale);padding:2.5px 6px;border-radius:2px}
+.ftxt{font-size:9.5px;color:var(--muted)}
+.ftxt b{color:var(--amber);font-weight:400;font-family:'Geist Mono',monospace;font-size:9.5px}
+.hairline{height:1px;background:var(--hair);margin-top:13px}
+.dist{display:flex;gap:2.5px;height:7px;margin-top:9px}
+.dist i:first-child{flex:8;background:var(--purple);border-radius:1px}
+.dist i:last-child{flex:2;background:var(--purple-pale);border-radius:1px}
+.dlegend{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--muted)}
+.dlegend .mk{display:inline-block;width:4px;height:4px;background:var(--purple);margin-right:4px;vertical-align:1px}
+.dlegend .mk.o{background:var(--purple-pale)}
+.kv{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:9px}
+.kv b{font-family:'Geist Mono',monospace;font-weight:400;color:var(--fg);font-size:10.5px;font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,.05);border:1px solid var(--hair);padding:2.5px;margin:2px 0 4px}
+.tabs button{flex:1;padding:4.5px 0;font-size:9.5px;color:var(--muted);background:transparent;border:0;font-family:inherit;border-radius:2px}
+.tabs button.sel{background:#212129;color:var(--fg)}
+.acct{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:10.5px;color:var(--fg)}
+.acct:last-child{border-bottom:0}
+.acct .an{flex:1}
+.acct .as{font-family:'Geist Mono',monospace;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums}
+.acct.off{color:var(--muted)}
+.acct .dot.off{background:transparent;border:1px solid var(--muted);box-shadow:none}
+
+/* 方案A rest：296 = 200 刘海 + 两侧 48px 耳区 */
+.a-rest{width:296px}
+.a-rest .track{width:30px}
+/* 方案A peek */
+.a-peek{width:460px;cursor:pointer}
+/* 方案B rest：360 = 200 + 两侧 80px 耳区 */
+.b-rest{width:360px;opacity:.82}
+.b-peek{width:420px;box-shadow:inset 0 0 0 1px var(--hair2)}
+/* 方案C */
+.c-rest{width:232px}
+.c-peek{width:352px}
+.b-peek{width:440px}
+/* 面板尺寸 */
+.pa{width:470px}
+.pb{width:540px}
+.pb .cols{display:flex;gap:18px;padding:2px 18px 0}
+.pb .colL{flex:1.06}.pb .colR{flex:1}
+.pc{width:560px}
+
+/* 设置页 mockup（亮色，沿用 settings-panel 语言） */
+.setmock{width:840px;border:1px solid var(--doc-line);background:#fff;padding:4px 28px 18px;margin-top:22px}
+.setmock .shead{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.07em;color:var(--doc-muted);padding:16px 0 14px;border-bottom:1px solid var(--doc-line)}
+.setmock .srow{display:flex;justify-content:space-between;align-items:flex-start;gap:25px;border-bottom:1px solid var(--doc-line);padding:19px 0;position:relative}
+.setmock .srow:last-child{border-bottom:0}
+.setmock h3{font-size:13px;font-weight:500;margin:0 0 6px}
+.setmock p{font-size:11px;color:var(--doc-muted);margin:0;line-height:1.6;max-width:430px}
+.seglight{display:flex;gap:2px;background:var(--doc-soft);padding:3px;border:1px solid var(--doc-line)}
+.seglight button{padding:5px 13px;font-size:11px;color:var(--doc-muted);background:transparent;border:0;font-family:inherit}
+.seglight button.sel{background:#fff;box-shadow:0 1px 3px #0000000a;color:var(--doc-fg)}
+.selbox{min-width:270px;border:1px solid var(--doc-line);padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;position:relative;color:var(--doc-fg)}
+.selbox .chev{color:var(--doc-muted);font-size:9px}
+.selopen{position:absolute;top:calc(100% + 5px);left:-1px;right:-1px;background:#fff;border:1px solid var(--doc-line);box-shadow:0 10px 30px #00000014;z-index:8;text-align:left}
+.selopen div{padding:8px 12px;font-size:11px;color:var(--doc-fg);display:flex;justify-content:space-between;gap:12px;white-space:nowrap}
+.selopen div.cur{background:var(--doc-soft)}
+.selopen div.dim{color:var(--doc-muted)}
+.selopen .sep{padding:5px 12px;font-size:9px;color:var(--doc-muted);letter-spacing:.05em;background:var(--doc-soft)}
+.tgl{width:32px;height:19px;background:var(--green);border-radius:20px;position:relative;flex-shrink:0}
+.tgl i{position:absolute;width:13px;height:13px;top:3px;right:3px;border-radius:50%;background:#fff}
+.stepper{display:flex;align-items:center;border:1px solid var(--doc-line)}
+.stepper button{width:28px;height:30px;font-size:13px;color:var(--doc-muted);background:#fff;border:0}
+.stepper b{width:76px;text-align:center;font-family:'Geist Mono',monospace;font-size:11px;font-weight:400;border-left:1px solid var(--doc-line);border-right:1px solid var(--doc-line);align-self:stretch;display:flex;align-items:center;justify-content:center}
+
+/* ── 对比总览 ─────────────────────────── */
+#overview{max-width:1560px;background:#fff;border:1px solid var(--doc-line);padding:26px 28px}
+#overview h2{font-size:17px;font-weight:600}
+.ovgrid{display:flex;gap:26px;margin-top:20px}
+.ovgrid .frame{width:470px}
+table.ov{width:100%;border-collapse:collapse;margin-top:24px;font-size:11.5px}
+table.ov th{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--doc-muted);letter-spacing:.06em;text-align:left;font-weight:400;border-bottom:1px solid var(--doc-line);padding:8px 10px}
+table.ov td{border-bottom:1px solid var(--doc-line);padding:11px 10px;vertical-align:top;line-height:1.65}
+table.ov td:first-child{font-weight:500;white-space:nowrap}
+table.ov .dim{color:var(--doc-muted);font-size:10.5px}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>刘海灵动岛 · 定稿设计</h1>
+  <p>Token 用量助手 1.9.0 定稿 · Mac 刘海屏专属悬浮形态 · 交互 = B 耳区收纳 + A 面板悬停直落 · 数据 = 槽位制 · 配置 = 自动默认 + 显式绑定 + 告警接管</p>
+  <p class="doc-note">定稿结构：① 交互设计（v2）→ ② 数据形态适配（槽位制）→ ③ 设置页 → ④ 决策记录与待议清单。历史探索稿（A/B/C 单案）已移入 archive/。</p>
+  <p class="doc-note">图中数据均为演示样例，非真实账户；缺失指标按产品原则显示「—」而非 0。岛体物理上必须纯黑以与刘海硬件融合，故所有方案共用深色底。</p>
+  <p class="doc-note">刘海是物理硬体：摄像头所在位置没有像素、无法显示任何内容。所有收纳/悬停态信息都绘制在刘海<b>两侧的「耳朵」屏区</b>（内容锚定刘海边缘，中心留缓冲）；刘海精确宽度无系统 API，真机校准并在设置中提供微调。</p>
+</div>
+
+<!-- ══════════ 融合方案 v2 ══════════ -->
+<section class="proposal" id="proposal-v2">
+  <h2>融合方案 v2 · B 收纳 + A 悬停展开<span class="tag">MERGED</span></h2>
+  <p class="lead">讨论收敛稿：收纳态采用 B 的两耳常显迷你条（扫一眼即得）；悬停 150ms 直接落 A 的单栏概览面板（零点击）；移除中间亮度过渡态与点击展开。双栏全景与多账户页签不进岛，保留在主窗口。</p>
+  <div class="traits"><span><b>收纳宽度</b> 360px（B 耳区布局）</span><span><b>悬停展开</b> 470px 单栏面板</span><span><b>交互层级</b> 2 步 → 1 步</span><span><b>适合</b> 零点击看详情、交互最简</span></div>
+  <div class="frames">
+    <div class="frame">
+      <div class="screen" style="height:190px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l"><span class="ilabel">5H</span><span class="msegs s"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">58</span></span>
+          <span class="ear-r"><span class="ilabel">周</span><span class="msegs s"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>收纳态（B 耳区）</b><span>两耳常显 5h / 周迷你条 + 数值（82% 亮度）；告警时转琥珀</span></div>
+    </div>
+    <div class="frame wide">
+      <div class="screen" style="height:430px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg></div><div class="notch"></div></div>
+        <div class="island panel-open pa">
+          <div class="pl-head">
+            <div class="l"><img src="../../desktop/assets/brand-mark.svg" alt=""><span class="name">Token 用量助手</span></div>
+            <div class="live"><span class="dot"></span>已同步</div>
+          </div>
+          <div class="pl-body">
+            <div class="qblock">
+              <div class="qtop"><span class="qn">5 小时配额</span><span class="qv">58%</span></div>
+              <div class="segs"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="qmeta"><span>重置 <b class="mono">14:32</b></span><span>已用 <b>42%</b></span></div>
+            </div>
+            <div class="qblock">
+              <div class="qtop"><span class="qn">每周配额</span><span class="qv">67%</span></div>
+              <div class="segs"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i></div>
+              <div class="qmeta"><span>重置 <b>周日 00:00</b></span><span>已用 <b>33%</b></span></div>
+            </div>
+            <div class="statgrid">
+              <div><div class="sl">今日 TOKEN</div><div class="sv pu">1.24<small>M</small></div></div>
+              <div><div class="sl">今日费用</div><div class="sv">$3.82</div></div>
+              <div><div class="sl">月度余额</div><div class="sv">¥1,286<small>.50</small></div></div>
+            </div>
+          </div>
+          <div class="pl-foot">
+            <div class="chips"><span class="chip"><span class="dot"></span>Command Code</span><span class="chip"><span class="dot"></span>Codex</span><span class="chip"><span class="dot"></span>DeepSeek</span><span class="chip">+1</span></div>
+            <span class="plink">主窗口 ›</span>
+          </div>
+        </div>
+        <svg class="cursor" style="left:calc(50% + 130px);top:30px;position:absolute;z-index:9" width="14" height="19" viewBox="0 0 14 19"><path d="M1 1 L1 15.5 L4.8 12.3 L7.3 17.8 L9.9 16.7 L7.4 11.2 L12.3 11.2 Z" fill="#111" stroke="#fff" stroke-width="1.2"/></svg>
+      </div>
+      <div class="frame-cap"><b>悬停态（= 原 A 展开面板）</b><span>耳区停留 150ms → 面板直接落下；移出 200ms 收回；全程零点击</span></div>
+    </div>
+    <div class="side-note">
+      <h3>v2 · 交互规则与取舍</h3>
+      <li><b>悬停意图</b>：耳区停留 ≥150ms 才展开（防划过菜单栏误触）；移出 200ms 宽限后收回；展开 220ms spring 下落。</li>
+      <li><b>点击语义</b>：点击岛体 = 打开主窗口配额页；面板内行项跳转主窗口对应视图。不再有"点击展开/固定"——需要常驻大窗用经典悬浮窗。</li>
+      <li><b>移除项</b><span class="dim">：B 双栏全景与 C 多账户页签不进岛（保留在主窗口）；「正在运行」实时会话与事件流建议作为首版后增量（范围见决策记录）。</span></li>
+      <li><b>边界不变</b>：全屏自动隐藏 · 外接屏回退经典窗 · setContentProtection · 耳区策略与刘海宽度校准。</li>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 数据形态适配 ══════════ -->
+<section class="proposal" id="data-adaptation">
+  <h2>数据形态适配 · 槽位制设计<span class="tag">SLOT-BASED</span></h2>
+  <p class="lead">两耳与面板块不是写死的「5H/周」，而是按账户数据形态渲染的通用指标槽：窗口配额（分段条+倒计时）/ 余额（等宽数字+币种，无分母不画条）/ 不限量 / 不可用（「—」）。字段直接映射现有 domain：resetState scheduled/idle/unknown、unlimited、exceeded、is_available。</p>
+  <div class="traits"><span><b>适用</b> 纯 API（DeepSeek 等）· 无 5h 的套餐 · 动态窗口 · 不限量 · 企业/未验证 · 混合组合</span><span><b>原则</b> 缺什么就不画什么：无分母不画条、无窗口不倒计时、无数据不占位</span></div>
+  <div class="frames">
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l"><span class="ilabel">DS</span><span class="ival">¥1,286</span></span>
+          <span class="ear-r"><span class="ilabel">OR</span><span class="ival amber">$186</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>① 纯 API · 双余额账户</b><span>余额槽：等宽数字 + 原始币种，不画分段条（无分母）；账户短标区分；琥珀 = 低于用户自设阈值</span></div>
+    </div>
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l" style="gap:4px"><span class="ilabel" style="color:var(--amber)">5H</span><span class="msegs s amber"><i class="f"></i><i></i><i></i><i></i></span><span class="ival amber">23%</span></span>
+          <span class="ear-r"><span class="ilabel">DS</span><span class="ival">¥1,286</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>② 混合组合 · 订阅 + API</b><span>两槽异型各自独立：左窗口槽（告警转琥珀）、右余额槽；槽位优先级 = 告警中 &gt; 剩余最少 &gt; 低于阈值 &gt; 默认</span></div>
+    </div>
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l"><span class="ilabel">5H</span><span class="msegs s"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival">58%</span></span>
+          <span class="ear-r"><span class="ilabel">企业</span><span class="ival dimv">—</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>③ 企业 / 未验证契约</b><span>无已验证数据源 → 如实「—」，不显示 0、不占用告警、不猜测</span></div>
+    </div>
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l"><span class="ilabel">5H</span><span class="msegs s"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival">58%</span></span>
+          <span class="ear-r"><span class="ilabel">周</span><span class="ival dimv">不限</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>④ 不限量窗口（limited=false）</b><span>无分母 → 显示「不限」而非 0% 或满条；resetAt=0 的未启用窗口同理标注「未启用」</span></div>
+    </div>
+    <div class="frame wide">
+      <div class="screen" style="height:430px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg></div><div class="notch"></div></div>
+        <div class="island panel-open pa">
+          <div class="pl-head">
+            <div class="l"><img src="../../desktop/assets/brand-mark.svg" alt=""><span class="name">Token 用量助手</span></div>
+            <div class="live"><span class="dot"></span>已同步</div>
+          </div>
+          <div class="pl-body">
+            <div class="qblock">
+              <div class="qtop"><span class="qn">DeepSeek · 官方余额</span><span class="qv">¥1,286.50</span></div>
+              <div class="qmeta"><span>is_available <b>正常</b></span><span>无重置窗口</span></div>
+            </div>
+            <div class="qblock">
+              <div class="qtop"><span class="qn">API 中转 · 余额</span><span class="qv" style="color:var(--amber)">$186.40</span></div>
+              <div class="qmeta"><span>低于自设阈值 <b>$200</b></span><span>无重置窗口</span></div>
+            </div>
+            <div class="forecast"><span class="ftar">预估</span><span class="ftxt">按已关联工具用量，余额预计 <b>9 天</b>后耗尽 · 近 6h 连续样本</span></div>
+            <div class="statgrid">
+              <div><div class="sl">今日 TOKEN</div><div class="sv pu">1.24<small>M</small></div></div>
+              <div><div class="sl">今日费用<i style="color:var(--muted);font-style:normal">（预估）</i></div><div class="sv">$3.82</div></div>
+              <div><div class="sl">7 日费用<i style="color:var(--muted);font-style:normal">（预估）</i></div><div class="sv">$24.10</div></div>
+            </div>
+          </div>
+          <div class="pl-foot">
+            <div class="chips"><span class="chip"><span class="dot"></span>DeepSeek</span><span class="chip"><span class="dot amber"></span>API 中转</span></div>
+            <span class="plink">主窗口 ›</span>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap"><b>面板 · 纯 API 组合</b><span>余额账户无分段条、无倒计时；预估行仅在账户关联已确认且样本充足时出现（不从余额差推算消耗）</span></div>
+    </div>
+    <div class="frame wide">
+      <div class="screen" style="height:430px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg></div><div class="notch"></div></div>
+        <div class="island panel-open pa">
+          <div class="pl-head">
+            <div class="l"><img src="../../desktop/assets/brand-mark.svg" alt=""><span class="name">Token 用量助手</span></div>
+            <div class="live"><span class="dot"></span>已同步</div>
+          </div>
+          <div class="pl-body">
+            <div class="qblock">
+              <div class="qtop"><span class="qn">5 小时配额 · Command Code</span><span class="qv" style="color:var(--amber)">23%</span></div>
+              <div class="segs amber"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="qmeta"><span>重置 <b>14:32</b></span><span>已用 <b>77%</b></span></div>
+            </div>
+            <div class="qblock">
+              <div class="qtop"><span class="qn">每周配额</span><span class="qv dimv" style="color:var(--muted)">未启用</span></div>
+              <div class="qmeta"><span>窗口显式未启用（resetAt=0）</span><span>不适用倒计时</span></div>
+            </div>
+            <div class="qblock">
+              <div class="qtop"><span class="qn">DeepSeek · 官方余额</span><span class="qv">¥1,286.50</span></div>
+              <div class="qmeta"><span>is_available <b>正常</b></span><span>无重置窗口</span></div>
+            </div>
+            <div class="statgrid">
+              <div><div class="sl">今日 TOKEN</div><div class="sv pu">1.24<small>M</small></div></div>
+              <div><div class="sl">今日费用<i style="color:var(--muted);font-style:normal">（预估）</i></div><div class="sv">$3.82</div></div>
+              <div><div class="sl">请求成功率</div><div class="sv">98.2<small>%</small></div></div>
+            </div>
+          </div>
+          <div class="pl-foot">
+            <div class="chips"><span class="chip"><span class="dot amber"></span>Command Code</span><span class="chip"><span class="dot"></span>DeepSeek</span></div>
+            <span class="plink">主窗口 ›</span>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap"><b>面板 · 混合组合</b><span>窗口账户渲染分段条；未启用窗口如实标注（绝不发明倒计时）；余额账户渲染数字行</span></div>
+    </div>
+    <div class="side-note">
+      <h3>槽位制 · 渲染与优先级规则</h3>
+      <li><b>四型槽位</b>：窗口配额（remainingPercent 有值 → 分段条 + 重置时间）、余额（balances[] + is_available → 等宽数字 + 币种）、不限量（limited=false → 「不限」）、不可用（无已验证数据源 → 「—」）。</li>
+      <li><b>耳位优先级</b>：告警中（琥珀/红）&gt; 窗口剩余最少 &gt; 余额低于阈值 &gt; 默认账户；多账户同时告警时叠加数字徽标。空耳位保持纯黑，不编造内容。</li>
+      <li><b>诚实红线</b>：resetAt=0 = 窗口显式未启用（「未启用」，绝不发明 5h 倒计时）；缺 reset 数据 = 「—」；余额永不画百分比条；不从余额差推算消耗；余额预估仅基于已确认关联的工具用量且样本充足；订阅百分比永不套用在 API 余额上。</li>
+      <li><b>告警</b>：窗口沿用现有 &lt;20%/&lt;10% 阈值；余额阈值用户自设（与"月度余额纳入健康告警"的既有规则一致）；缺数据不告警。</li>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 设置页 · 耳区自定义 ══════════ -->
+<section class="proposal" id="island-settings">
+  <h2>设置页 · 耳区内容自定义<span class="tag">SETTINGS</span></h2>
+  <p class="lead">四层模型：识别账户数据形态后自动默认填充两耳（零配置可用）→ 设置页显式绑定左右耳内容（可选项只列实际存在的槽）→ 告警临时接管（默认开）→ 绑定失效自动回退默认并在设置中如实标记。</p>
+  <div class="setmock">
+    <div class="shead">设置 · 悬浮窗 · 灵动岛（Mac 刘海屏）</div>
+    <div class="srow">
+      <div><h3>悬浮窗形态</h3><p>灵动岛仅在内建刘海屏显示器生效；外接显示器与 Windows 自动回退经典悬浮窗。</p></div>
+      <div class="seglight"><button>经典悬浮窗</button><button class="sel">灵动岛</button></div>
+    </div>
+    <div class="srow">
+      <div><h3>左耳内容</h3><p>可选项按已配置账户的数据形态自动列出；标注「未启用」的槽仍可绑定，但在耳区回退默认并在此标记。</p></div>
+      <div class="selbox">5 小时配额 · Command Code<span class="chev">▼</span>
+        <div class="selopen">
+          <div class="sep">窗口配额</div>
+          <div class="cur"><span>5 小时配额 · Command Code</span><span class="chk">✓</span></div>
+          <div class="dim"><span>每周配额 · Command Code</span><span>未启用</span></div>
+          <div class="sep">余额</div>
+          <div><span>DeepSeek · 官方余额</span><span></span></div>
+          <div><span>API 中转 · 余额</span><span></span></div>
+          <div class="sep">其他</div>
+          <div><span>正在运行 · 工具统计</span><span>需启用</span></div>
+          <div><span>健康总览</span><span></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="srow">
+      <div><h3>右耳内容</h3><p>两耳可绑定同型不同账户；选择重复时在耳区以账户短标区分。</p></div>
+      <div class="selbox">DeepSeek · 官方余额<span class="chev">▼</span></div>
+    </div>
+    <div class="srow">
+      <div><h3>告警临时接管耳区</h3><p>任一账户进入告警（琥珀/红）时临时占用耳位并显示徽标，解除后自动恢复绑定内容。多账户同时告警时叠加数字徽标。</p></div>
+      <div class="tgl"><i></i></div>
+    </div>
+    <div class="srow">
+      <div><h3>消耗瞬态提示</h3><p>轮次消耗时左耳短暂显示「会话 +N」后恢复绑定内容（3–4s）。合并冷却 ≥120s 或累计 ≥5%，避免频闪；跨越阈值或告警时改由接管通道显示。默认开。</p></div>
+      <div class="tgl"><i></i></div>
+    </div>
+    <div class="srow">
+      <div><h3>刘海宽度微调</h3><p>纯 Electron 拿不到系统刘海精确宽度：默认按内置机型预设表（如 200pt），若耳区内容与刘海边缘间距异常可手动微调（真机校准一次即可）。</p></div>
+      <div class="stepper"><button>−</button><b>预设 · 200pt</b><button>＋</button></div>
+    </div>
+    <div class="srow">
+      <div><h3>截屏与共享保护</h3><p>防止岛内容出现在截图、录屏与屏幕共享中（如实标注：使用 ScreenCaptureKit 的新版应用仍可能捕获到）。对应 setContentProtection。</p></div>
+      <div class="tgl"><i></i></div>
+    </div>
+    <div class="srow">
+      <div><h3>步进刷新频率</h3><p>「正在运行」与会话增量的轮询间隔；更快的刷新略微增加本地读取开销，真机验收时提供实测数据。</p></div>
+      <div class="seglight"><button>2s</button><button class="sel">5s</button><button>10s</button></div>
+    </div>
+  </div>
+  <div class="side-note" style="margin-top:22px">
+    <h3>默认与回退规则</h3>
+    <li><b>首次启用自动填充</b>：左耳 = 最紧急窗口槽（有 5h 用 5h）；右耳 = 周配额或首个余额账户；纯 API 组合两耳各一余额账户；单账户只占左耳，右耳留黑。</li>
+    <li><b>绑定失效回退</b>：账户删除 / 窗口未启用 / 契约失效 → 该耳自动回退默认规则，设置中如实标记，绝不渲染编造内容。</li>
+    <li><b>升级不扰</b>：绑定与告警阈值随既有偏好持久化；升级默认不变（经典悬浮窗仍为默认形态）。</li>
+  </div>
+</section>
+
+<!-- ══════════ 功能整合落位 ══════════ -->
+<section class="proposal" id="feature-integration">
+  <h2>功能整合落位 · 从竞品调研到岛内<span class="tag">INTEGRATION</span></h2>
+  <p class="lead">调研筛出的整合功能逐一落位到定稿结构：哪些进耳区槽位、哪些进悬停面板、哪些只进设置，以及各自交付阶段。只读红线不变——不做终端跳转、审批注入、媒体控制、文件架、剪贴板。</p>
+  <div class="frames">
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l" style="gap:4px"><span class="dot"></span><span class="ival">12.4k</span><span class="imuted">8s 前</span></span>
+          <span class="ear-r"><span class="ilabel">5H</span><span class="msegs s" style="gap:2px"><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">58%</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>「正在运行」· 耳位可绑定槽</b><span>脉冲点 + 当前会话步进增量 + 「8s 前」；无活跃会话显示「空闲」，组件未启用显示「—」（步进粒度，非逐 token）</span></div>
+    </div>
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l"><span class="ilabel">5H</span><span class="ival">2h41m</span></span>
+          <span class="ear-r"><span class="ilabel">周</span><span class="msegs s"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>「重置倒计时」· 窗口槽的倒计时变体</b><span>每个窗口槽均可绑定为倒计时（5H → 2h41m）；临近重置（&lt;15min）时窗口槽临时切换为倒计时，重置完成后回满绿并单次柔光</span></div>
+    </div>
+    <div class="frame">
+      <div class="screen" style="height:150px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><span class="clock mono">10:24</span></div><div class="notch"></div></div>
+        <div class="island b-rest">
+          <span class="ear-l" style="gap:4px"><span class="ilabel">会话</span><span class="ival" style="color:var(--purple)">+3.2k</span></span>
+          <span class="ear-r"><span class="ilabel">5H</span><span class="msegs s"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">58%</span></span>
+        </div>
+      </div>
+      <div class="frame-cap"><b>「消耗瞬态」· 合并后的例外提示</b><span>轮次消耗：左耳 crossfade「会话 +3.2k」（Token 紫）3–4s 后恢复绑定内容；冷却 ≥120s 或累计 ≥5%；跨阈值/告警改走接管；悬停时推迟；措辞用本地 turn 增量，轮询差值不做「本轮」归因</span></div>
+    </div>
+    <div class="frame wide">
+      <div class="screen" style="height:452px">
+        <div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg></div><div class="notch"></div></div>
+        <div class="island panel-open pa">
+          <div class="pl-head">
+            <div class="l"><img src="../../desktop/assets/brand-mark.svg" alt=""><span class="name">Token 用量助手</span></div>
+            <div class="live"><span class="dot"></span>已同步</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;margin:0 18px;padding:8px 10px;background:rgba(54,199,147,.07);border:1px solid rgba(54,199,147,.18);border-radius:4px">
+            <span class="dot"></span><span style="font-size:10.5px;color:var(--fg);flex:1">Claude Code · 会话进行中</span><span class="imuted">12.4k tok · 8s 前</span>
+          </div>
+          <div class="pl-body">
+            <div class="qblock">
+              <div class="qtop"><span class="qn">5 小时配额</span><span class="qv">58%</span></div>
+              <div class="segs"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="qmeta"><span>重置 <b class="mono">14:32</b></span><span>已用 <b>42%</b></span></div>
+            </div>
+            <div class="statgrid">
+              <div><div class="sl">今日 TOKEN</div><div class="sv pu">1.24<small>M</small></div></div>
+              <div><div class="sl">今日费用<i style="color:var(--muted);font-style:normal">（预估）</i></div><div class="sv">$3.82</div></div>
+              <div><div class="sl">请求成功率</div><div class="sv">98.2<small>%</small></div></div>
+            </div>
+          </div>
+          <div style="padding:0 18px;margin-top:12px">
+            <div class="ilabel" style="letter-spacing:.06em;margin-bottom:2px">最近事件</div>
+            <div class="acct"><span class="dot"></span><span class="an">5h 配额已重置 · 本周窗口 67%</span><span class="as">10:02</span></div>
+            <div class="acct"><span class="dot amber"></span><span class="an">DeepSeek 余额低于自设阈值 $200</span><span class="as">09:47</span></div>
+            <div class="acct" style="color:var(--muted)"><span class="dot off"></span><span class="an">API 中转 · 同步失败 · 将重试</span><span class="as">09:12</span></div>
+          </div>
+          <div class="pl-foot">
+            <div class="chips"><span class="chip"><span class="dot"></span>Codex</span><span class="chip"><span class="dot"></span>DeepSeek</span></div>
+            <span class="plink">主窗口 ›　事件全览 ›</span>
+          </div>
+        </div>
+      </div>
+      <div class="frame-cap"><b>悬停面板 · 增量内容</b><span>「正在运行」会话行（活跃时出现）+「最近事件」流（与告警同色系）+ 事件全量入口在主窗口</span></div>
+    </div>
+  </div>
+  <table class="ov">
+    <tr><th>功能</th><th>岛内落位</th><th>设置</th><th>交付阶段</th></tr>
+    <tr><td>正在运行 · 实时会话</td><td>耳位可绑定槽 + 面板会话行；步进增量、三态诚实显示（运行 / 空闲 / —）</td><td class="dim">耳区绑定项「需启用」+ 步进刷新频率</td><td class="dim">增量一</td></tr>
+    <tr><td>重置倒计时</td><td>窗口槽的倒计时变体；临期（&lt;15min）临时切换，重置完成单次柔光微动效</td><td class="dim">耳区绑定项</td><td class="dim">增量一</td></tr>
+    <tr><td>消耗瞬态提示</td><td>左耳 crossfade「会话 +N」（Token 紫）3–4s，宽度不变；多账户取最大差值并带短标；合并冷却 ≥120s 或累计 ≥5%；跨阈值 / 告警走接管；悬停让位</td><td class="dim">toggle · 默认开</td><td class="dim">增量一</td></tr>
+    <tr><td>本地事件流</td><td>面板「最近事件」块（同告警色系）；全量在主窗口</td><td class="dim">—</td><td class="dim">增量二</td></tr>
+    <tr><td>截屏 / 共享保护</td><td>—（全局行为）</td><td class="dim">toggle · 默认开</td><td style="color:var(--doc-fg)">首版</td></tr>
+    <tr><td>微动效时刻</td><td>重置完成：分段条回满绿 + 800ms 单次柔光，不循环</td><td class="dim">—</td><td style="color:var(--doc-fg)">首版</td></tr>
+    <tr><td>组件健康</td><td>面板 chip 圆点扩展为 CLI / 采集器 / SQLite 状态语义</td><td class="dim">—</td><td class="dim">增量二</td></tr>
+    <tr><td>快捷入口</td><td>面板 footer「官方用量页 ›」——仅打开官方页面链接，不代登录不抓取</td><td class="dim">—</td><td style="color:var(--doc-fg)">首版</td></tr>
+  </table>
+  <div class="side-note" style="margin-top:18px">
+    <h3>交付阶段与红线</h3>
+    <li><b>首版（岛 v1）</b><span class="dim">：槽位岛 + 设置四层 + 截屏保护 + 微动效 + 快捷入口——不依赖新数据管线，纯呈现层。</span></li>
+    <li><b>增量一</b><span class="dim">：reader 增量投影（latest-since-cursor）+ monitor 会话聚合 →「正在运行」、倒计时槽、消耗瞬态、步进刷新生效。</span></li>
+    <li><b>增量二</b><span class="dim">：本地事件存储 + 组件状态聚合 → 事件流面板块、组件健康 chip。</span></li>
+    <li><b>明确不做</b><span class="dim">：终端跳转 / 审批注入（只读红线）· 媒体控制 / HUD · 文件架 / AirDrop · 剪贴板历史 · 摄像头 Mirror。</span></li>
+  </div>
+</section>
+
+<!-- ══════════ 决策记录与待议 ══════════ -->
+<section class="proposal" id="decision-log">
+  <h2>设计决策记录与待议清单<span class="tag">REVIEW</span></h2>
+  <div class="frames">
+    <div class="side-note" style="min-width:600px">
+      <h3>已定稿</h3>
+      <li><b>交互</b>：B 耳区收纳（常显迷你条）+ 悬停 150ms 直落 A 单栏面板；移除点击展开与中间过渡态。</li>
+      <li><b>几何</b>：内容绘制在刘海两侧耳区（中心偏移 108px 起）；摄像头硬体区纯黑不显示像素。</li>
+      <li><b>数据</b>：槽位制四型（窗口配额 / 余额 / 不限量 / 不可用），字段映射 domain 现有语义。</li>
+      <li><b>设置</b>：自动默认 + 显式绑定 + 告警接管（默认开）+ 失效回退；步进刷新频率与刘海宽度微调入设置。</li>
+      <li><b>刘海宽度</b>：无系统 API——内置机型预设表 + 设置内手动微调（真机校准一次）。</li>
+      <li><b>消耗瞬态</b>：轮次消耗提示为合并后的例外提示——左耳 crossfade「会话 +N」（Token 紫）3–4s、宽度不变；冷却 ≥120s 或累计 ≥5%；例外直通告警接管；悬停让位；默认开。措辞用本地 turn 增量，轮询差值不做「本轮」归因。</li>
+      <li><b>边界</b>：全屏自动隐藏 · 外接屏回退经典窗 · setContentProtection · 经典悬浮窗仍为默认形态。</li>
+      <li><b>已否决</b><span class="dim">：C 多账户页签与 B 双栏全景（退回主窗口）· 悬停提亮中间态 · 点击展开 · 纯 A 静默胶囊 · 居中绘制内容（物理不可行）· 媒体/HUD/文件架/剪贴板类竞品功能。</span></li>
+    </div>
+    <div class="side-note" style="min-width:600px">
+      <h3>待商议（拍版前最后一轮）</h3>
+      <li><b>① 首版范围</b>：建议纯配额/余额岛先行，「正在运行 + 事件流」作为紧随其后的增量交付（涉及新数据管线，独立验收）。</li>
+      <li><b>② 告警接管的视觉</b>：整耳替换为告警槽 vs 原槽叠加角标——需一张小稿定。</li>
+      <li><b>③ 余额告警默认阈值</b>：固定默认（如 ¥/$50）vs 首次配置余额时引导自设。</li>
+      <li><b>④ 多账户同时告警</b>：耳位让给哪个——红 &gt; 琥珀？最近重置优先？</li>
+      <li><b>⑤ 悬停参数</b>：150ms/200ms 为初值，真机调优后定值，不暴露到设置。</li>
+      <li><b>⑥ 锁屏 / 快速用户切换</b>：余额等敏感信息的可见性场景，列入真机验收清单。</li>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

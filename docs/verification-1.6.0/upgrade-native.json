@@ -1,0 +1,45 @@
+{
+  "kind": "native-packaged-module-upgrade",
+  "syntheticOnly": true,
+  "fromVersion": "1.5.1",
+  "toVersion": "1.6.0",
+  "platform": "win32",
+  "electron": "44.4.4",
+  "startedAt": "2026-09-24T12:50:00.138Z",
+  "checks": {
+    "oldPackageRecognized": true,
+    "newPackageIs160": true,
+    "nativeSafeStorageAvailable": true,
+    "oldVaultDecryptsFourAccounts": true,
+    "oldPricesHaveImplicitUSD": true,
+    "vaultContainsNoPlaintextSyntheticCredentials": true,
+    "preferencesAndWindowBoundsPreserved": true,
+    "nativeVaultStillDecrypts": true,
+    "allFourAccountsAndSelectionPreserved": true,
+    "cachedSnapshotsAndHistoryLoaded": true,
+    "legacySourceMigratedIndependently": true,
+    "storedLegacyPriceRatesPreserved": true,
+    "packagedWorkerAnalyzesMigratedSource": true,
+    "reportPricesGainExplicitUSD": true,
+    "estimateUsesOriginalUSDRates": true,
+    "toolDataNotAttributedToSelectedAccount": true,
+    "legacyZcodeQueryStillWorks": true,
+    "sevenPlatformCapabilitiesPresent": true,
+    "existingFilesRemainByteIdentical": true,
+    "130RollbackCanReadVaultAndSettings": true,
+    "130RollbackCanReadLegacySourceAndPrice": true,
+    "noNetworkRequests": true,
+    "isolatedUserDataOnly": true
+  },
+  "limitations": [
+    "Does not install or execute the NSIS installer.",
+    "Does not validate system login startup or a physical reboot.",
+    "Does not read or modify real user accounts, app data, billing records, or tool logs."
+  ],
+  "packages": {
+    "oldAsarSha256": "018514bf11374c98bac2738b765374ff730923ffa30354e1fb244db65aebc319",
+    "newAsarSha256": "cb59f76922d45a008490769d1de36fd9c59e3f8be5c012be8212dc95c7a916aa"
+  },
+  "status": "passed",
+  "finishedAt": "2026-09-24T12:50:00.308Z"
+}

@@ -1,0 +1,49 @@
+{
+  "kind": "native-packaged-module-upgrade",
+  "syntheticOnly": true,
+  "fromVersion": "1.8.0-beta.1",
+  "toVersion": "1.8.0-beta.2",
+  "platform": "win32",
+  "electron": "44.4.4",
+  "startedAt": "2026-09-26T10:36:33.667Z",
+  "checks": {
+    "oldPackageRecognized": true,
+    "newPackageIs180Beta2": true,
+    "nativeSafeStorageAvailable": true,
+    "oldVaultDecryptsFiveAccounts": true,
+    "oldPricesHaveImplicitUSD": true,
+    "vaultContainsNoPlaintextSyntheticCredentials": true,
+    "preferencesAndWindowBoundsPreserved": true,
+    "nativeVaultStillDecrypts": true,
+    "allFiveAccountsAndSelectionPreserved": true,
+    "cachedSnapshotsAndHistoryLoaded": true,
+    "legacySourceMigratedIndependently": true,
+    "storedLegacyPriceRatesPreserved": true,
+    "packagedWorkerAnalyzesMigratedSource": true,
+    "reportPricesGainExplicitUSD": true,
+    "estimateUsesOriginalUSDRates": true,
+    "toolDataNotAttributedToSelectedAccount": true,
+    "legacyZcodeQueryStillWorks": true,
+    "sevenPlatformCapabilitiesPresent": true,
+    "existingFilesRemainByteIdentical": true,
+    "170RollbackCanReadVaultAndSettings": true,
+    "170RollbackCanReadLegacySourceAndPrice": true,
+    "upgradeDoesNotAutoAssociate": true,
+    "manualAssociationWorksAfterUpgrade": true,
+    "associationConfigurationSurvivesRestart": true,
+    "newMetadataDoesNotAffectOldVault": true,
+    "noNetworkRequests": true,
+    "isolatedUserDataOnly": true
+  },
+  "limitations": [
+    "Does not install or execute the NSIS installer.",
+    "Does not validate system login startup or a physical reboot.",
+    "Does not read or modify real user accounts, app data, billing records, or tool logs."
+  ],
+  "packages": {
+    "oldAsarSha256": "47ea6661405cbfcd6ee6fcd37e3f52032f62ddc6a1b60c4ea70eeffe74729ebd",
+    "newAsarSha256": "031a7e3516164da3a62197776f103b8d81a0df3725c1afc1de02fb01f5de9ce4"
+  },
+  "status": "passed",
+  "finishedAt": "2026-09-26T10:36:33.885Z"
+}

@@ -1,0 +1,37 @@
+{
+  "version": "1.4.0",
+  "date": "2026-09-24",
+  "status": "passed-with-scope-limitations",
+  "methods": [
+    "Browser UI inspection of the built local preview with synthetic data at 1260x900; temporary viewport reset afterwards.",
+    "Final packaged Windows portable native self-test, recorded separately in portable-smoke.json."
+  ],
+  "checks": {
+    "existingProviderOverview": true,
+    "lightAndDarkThemes": true,
+    "twoSelectedTools": true,
+    "singleSelectedTool": true,
+    "accountSwitchPreservesToolRangeAndTotals": true,
+    "unassociatedBillingRangeDisabled": true,
+    "modelFilterByKeyboard": true,
+    "usdCnyEstimatesKeptSeparate": true,
+    "sourceRename": true,
+    "sourceEnableDisable": true,
+    "allSourcesDisabledEmptyState": true,
+    "fixedNavigationAndScrollableContent": true,
+    "packagedSourceManagerRendered": true,
+    "packagedFloatingWindow": true
+  },
+  "observations": [
+    "Seven-day synthetic totals: 272 attempts and about 21M reported tokens with both tools; 136 and about 10.5M for Zcode alone.",
+    "Switching GLM to MiniMax in the final build left the seven-day tool selection and 272-attempt/21M totals unchanged.",
+    "Unknown comparison coverage is explicitly unavailable; no account billing period is borrowed.",
+    "Disabling all sources produces a source-setup empty state rather than invented zero usage.",
+    "Mixed USD and CNY estimates are listed separately without conversion or a combined money total."
+  ],
+  "limitations": [
+    "Browser file picking is intentionally unavailable; native source paths and worker/SQLite behavior are exercised by the packaged self-test.",
+    "This is not two hours of continuous GUI use and not live paid-account or user-tool acceptance.",
+    "Actual NSIS installation/overwrite, operating-system restart/autostart and sleep-resume remain unverified."
+  ]
+}

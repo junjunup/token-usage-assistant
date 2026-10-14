@@ -1,0 +1,8 @@
+{
+  "scope": "initialize-only; fresh isolated CODEX_HOME",
+  "realAccountRead": false,
+  "modelCalls": false,
+  "platform": "win32",
+  "ok": true,
+  "version": "0.158.0-alpha.2.1"
+}

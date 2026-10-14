@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "kind": "synthetic-harness-100k",
+  "at": "2026-09-23T16:33:49.824Z",
+  "records": 100000,
+  "totalTokens": 12000000,
+  "replayDeduplicated": true,
+  "cancelRolledBack": true,
+  "recoveryExact": true,
+  "mainThreadHeartbeats": 373,
+  "maxRssBytes": 563748864,
+  "firstImportMs": 2465.2919,
+  "replayMs": 693.0360000000001,
+  "recoveryMs": 2531.8803000000003,
+  "sourceHashes": {
+    "tool-sources": "7cc0965729fdaf1113c659a51736e69f58cfe2f2ca485355757e52b2982ba285",
+    "tool-worker": "63d5d086d4f68966aa051f1aab8d9ff4d1983b29256131910acf754c1f74d892",
+    "tool-analytics": "bb9749a254a2c901a670231790a01b35bbb77368c1d1b9eeb6d2956feb7c8c98",
+    "harness-reader": "50de4cf96426b8c6159246ff39d5637774502f351974a6836067132fe55303fc"
+  },
+  "realToolCalls": false
+}

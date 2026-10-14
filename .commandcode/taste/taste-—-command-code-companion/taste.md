@@ -1,0 +1,8 @@
+# Taste — Command Code companion
+- Communicates in Chinese and expects replies, plans, and docs written in Chinese. Confidence: 0.8
+- Wants a proposed plan reviewed for problems/gaps before implementation starts, and explicitly wants the revised plan delivered for review first ("revise the plan and give it to me") — no coding until the plan is approved. Confidence: 0.7
+- Prefers minimal-scope fixes: when only one platform's packaging/release chain is being repaired, keep the existing version number and avoid forcing rebuilds or renames on other platforms. Confidence: 0.5
+- When something appears to have hung or taken unusually long, expects the agent to check for stuck background tasks, report the finding, then resume the unfinished work rather than waiting or restarting from scratch. Confidence: 0.5
+- When a behavior/build change lands, prefers that accompanying docs (README, handoff, AGENTS, delivery notes) be updated in the same change so documentation never contradicts the actual artifacts — opts for the more thorough scope that includes doc cleanup. Confidence: 0.5
+- Wants plans persisted as a standalone Markdown file inside the repo (e.g. under docs/) rather than only as ephemeral plan-mode output, so the plan can be carried to another machine/platform and implemented there. Confidence: 0.6
+- Expects such plan docs to be self-contained/handoff-ready: root-cause analysis, explicit prerequisites and environment constraints, step-by-step file-level changes, verification/regression steps, and a deliverable checklist (added/modified/deleted/kept) — plus honest limits rather than overstated completion. Confidence: 0.6

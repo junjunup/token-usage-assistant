@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "version": "1.8.0-beta.5",
+  "file": "TokenUsageAssistant-Mac-arm64-Full-1.8.0-beta.5.zip",
+  "bytes": 131173823,
+  "sha256": "95b069c2d4020d2ebe3bd14fcb95feb46e2bc8d493d3a73580761011ad106ce2",
+  "asarSha256": "0887ec00abcbd4981876aea144be400c860498bd287cd8e9486844621f6e04f7",
+  "officialRuntimeSha256": "da15aa8c48f3eeb1622c820249e57a2b7b85048adc7ac792d8b97da86e6edcf8",
+  "runtimeUnmodified": true,
+  "filesVerified": 8,
+  "helperSyntaxAndNonMacExitPassed": true,
+  "commandLfNoBomUnix755": true,
+  "nativeMacTest": false
+}

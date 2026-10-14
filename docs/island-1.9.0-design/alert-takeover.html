@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>告警接管视觉 · 小稿</title>
+<style>
+:root{
+  /* 复用桌面端暗色主题 token（岛体物理上必须深色） */
+  --island:#050507; --panel:#0b0b0f; --panel2:#121218;
+  --fg:#ededee; --muted:#aaaab0; --hair:rgba(255,255,255,.09); --hair2:rgba(255,255,255,.16);
+  --green:#36c793; --green-pale:#1e3b31; --purple:#bb7ae8; --purple-pale:#553767;
+  --amber:#e3ad57; --amber-pale:#453822; --red:#ee7580;
+  /* 文档亮色 token */
+  --doc-fg:#18181b; --doc-muted:#73737d; --doc-line:#e9e9ec; --doc-soft:#fafafa;
+}
+*{box-sizing:border-box;margin:0}
+body{background:#f4f4f6;color:var(--doc-fg);font-family:'Geist','PingFang SC','Microsoft YaHei UI',sans-serif;font-size:14px;padding:34px 40px 60px;-webkit-font-smoothing:antialiased}
+.mono{font-family:'Geist Mono',monospace;font-variant-numeric:tabular-nums}
+.doc-head{max-width:1560px;margin:0 auto 30px}
+.doc-head h1{font-size:24px;font-weight:600;letter-spacing:-.5px}
+.doc-head p{font-size:12px;color:var(--doc-muted);margin-top:8px;letter-spacing:.02em}
+.doc-note{font-size:10px;color:var(--doc-muted);margin-top:6px}
+.proposal{max-width:1560px;background:#fff;border:1px solid var(--doc-line);padding:26px 28px 24px;margin-bottom:26px}
+.proposal>h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.proposal>h2 .tag{font-family:'Geist Mono',monospace;font-size:10px;color:#14815e;background:#e0f6ed;padding:3px 7px;margin-left:10px;vertical-align:3px;letter-spacing:.06em}
+.proposal>p.lead{font-size:12px;color:var(--doc-muted);margin-top:7px;line-height:1.7}
+.traits{display:flex;gap:22px;margin-top:12px;font-size:11px;color:var(--doc-muted);flex-wrap:wrap}
+.traits b{color:var(--doc-fg);font-weight:500}
+.frames{display:flex;flex-wrap:wrap;gap:22px;margin-top:22px;align-items:flex-start}
+.frame{flex:0 0 auto;width:620px}
+.frame.wide{width:680px}
+.frame-cap{text-align:center;margin-top:12px}
+.frame-cap b{font-size:12px;font-weight:500}
+.frame-cap span{display:block;font-size:10px;color:var(--doc-muted);margin-top:3px}
+.side-note{flex:1;min-width:560px;border:1px solid var(--doc-line);background:var(--doc-soft);padding:18px 20px}
+.side-note h3{font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:var(--doc-muted);font-weight:400;margin-bottom:10px}
+.side-note li{font-size:11.5px;color:var(--doc-fg);line-height:1.8;margin:0 0 8px 0;list-style:none;padding-left:14px;position:relative}
+.side-note li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;background:var(--doc-line)}
+.side-note li b{font-weight:500}
+.side-note li .dim{color:var(--doc-muted);font-size:10.5px}
+
+/* ── 屏幕顶部还原 ─────────────────────────── */
+.screen{position:relative;width:100%;border-radius:10px;overflow:hidden;
+  background:linear-gradient(140deg,#34365a 0%,#262741 42%,#332a4d 100%)}
+.screen::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(340px 130px at 18% 0%,rgba(174,82,232,.28),transparent 70%),
+             radial-gradient(300px 120px at 82% 10%,rgba(54,199,147,.12),transparent 70%)}
+.menubar{position:relative;height:38px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;background:rgba(16,16,22,.42);color:rgba(255,255,255,.92);font-size:12.5px;letter-spacing:.01em}
+.mb-left,.mb-right{display:flex;align-items:center;gap:13px}
+.mb-left .apple{font-size:14px;line-height:1}
+.mb-right .clock{font-size:12px}
+.mb-ic{width:15px;height:15px;stroke:rgba(255,255,255,.92);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mb-fill{fill:rgba(255,255,255,.92)}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:200px;height:38px;background:#000;border-radius:0 0 11px 11px;z-index:6}
+.notch::after{content:"";position:absolute;top:11px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#0a0a10;box-shadow:0 0 0 1.5px #050508}
+/* 岛体通用 */
+.island{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--island);border-radius:0 0 17px 17px;height:38px;
+  display:flex;align-items:center;justify-content:center;z-index:5}
+.island.panel-open{height:auto;align-items:stretch;flex-direction:column;justify-content:flex-start;border-radius:0 0 20px 20px;
+  box-shadow:0 26px 70px rgba(0,0,0,.55),0 4px 18px rgba(0,0,0,.4)}
+.cursor{position:absolute;z-index:9;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.5))}
+
+/* ── 岛内组件 ─────────────────────────── */
+.dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(54,199,147,.7)}
+.dot.amber{background:var(--amber);box-shadow:0 0 6px rgba(227,173,87,.7)}
+.track{height:2px;border-radius:2px;background:rgba(255,255,255,.14);position:relative;overflow:hidden}
+.track i{position:absolute;left:0;top:0;bottom:0;background:var(--green);border-radius:2px}
+.ilabel{font-family:'Geist Mono',monospace;font-size:8.5px;letter-spacing:.06em;color:var(--muted)}
+.ival{font-family:'Geist Mono',monospace;font-size:12px;color:var(--fg);font-variant-numeric:tabular-nums}
+.ival.amber{color:var(--amber)}
+.ival.dimv{color:var(--muted)}
+.imuted{font-family:'Geist Mono',monospace;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ivdiv{width:1px;height:15px;background:var(--hair2)}
+.msegs{display:flex;gap:2px}
+.msegs i{width:7px;height:6px;background:var(--green-pale);border-radius:1px}
+.msegs i.f{background:var(--green)}
+.msegs.amber i{background:var(--amber-pale)}
+.msegs.amber i.f{background:var(--amber)}
+.msegs.s i{width:5px}
+/* 耳区：刘海(200px 保守半宽)两侧的可用屏幕，内容锚定刘海边缘，中心留 16px 缓冲 */
+.ear-l{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:6px;right:calc(50% + 108px)}
+.ear-r{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:6px;left:calc(50% + 108px)}
+
+/* 面板内部 */
+.pl-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px}
+.pl-head .l{display:flex;align-items:center;gap:8px}
+.pl-head img{width:15px;height:15px;display:block;color:var(--fg)}
+.pl-head .name{font-size:11.5px;font-weight:500;color:var(--fg)}
+.pl-head .live{display:flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:.05em}
+.pl-body{padding:2px 18px 0}
+.pl-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 18px 13px;border-top:1px solid var(--hair);margin-top:15px}
+.chips{display:flex;gap:6px;align-items:center}
+.chip{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--hair);padding:3px 8px;border-radius:3px}
+.chip .dot{width:4px;height:4px;box-shadow:none}
+.chip .dot.off{background:transparent;border:1px solid var(--muted);box-shadow:none}
+.plink{font-size:10px;color:var(--muted)}
+.qblock{margin-top:11px}
+.qtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.qtop .qn{font-size:11px;color:var(--fg)}
+.qtop .qv{font-family:'Geist Mono',monospace;font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums}
+.qmeta{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--muted)}
+.qmeta b{font-family:'Geist Mono',monospace;font-weight:400;color:var(--muted);font-size:9px}
+.segs{display:flex;gap:2.5px;height:9px}
+.segs i{flex:1;background:var(--green-pale);border-radius:1px}
+.segs i.f{background:var(--green)}
+.segs.amber i{background:var(--amber-pale)}
+.segs.amber i.f{background:var(--amber)}
+.statgrid{display:flex;gap:0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin-top:14px}
+.statgrid>div{flex:1;padding:10px 0 11px}
+.statgrid>div+div{border-left:1px solid var(--hair);padding-left:14px}
+.statgrid .sl{font-size:8.5px;color:var(--muted);letter-spacing:.03em}
+.statgrid .sv{font-family:'Geist Mono',monospace;font-size:16.5px;color:var(--fg);margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.statgrid .sv.pu{color:var(--purple)}
+.statgrid .sv small{font-size:9.5px;color:var(--muted);margin-left:3px;letter-spacing:0}
+.forecast{display:flex;align-items:center;gap:7px;margin-top:10px}
+.ftar{font-family:'Geist Mono',monospace;font-size:8px;letter-spacing:.06em;color:var(--amber);background:var(--amber-pale);padding:2.5px 6px;border-radius:2px}
+.ftxt{font-size:9.5px;color:var(--muted)}
+.ftxt b{color:var(--amber);font-weight:400;font-family:'Geist Mono',monospace;font-size:9.5px}
+.hairline{height:1px;background:var(--hair);margin-top:13px}
+.dist{display:flex;gap:2.5px;height:7px;margin-top:9px}
+.dist i:first-child{flex:8;background:var(--purple);border-radius:1px}
+.dist i:last-child{flex:2;background:var(--purple-pale);border-radius:1px}
+.dlegend{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:var(--muted)}
+.dlegend .mk{display:inline-block;width:4px;height:4px;background:var(--purple);margin-right:4px;vertical-align:1px}
+.dlegend .mk.o{background:var(--purple-pale)}
+.kv{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:9px}
+.kv b{font-family:'Geist Mono',monospace;font-weight:400;color:var(--fg);font-size:10.5px;font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,.05);border:1px solid var(--hair);padding:2.5px;margin:2px 0 4px}
+.tabs button{flex:1;padding:4.5px 0;font-size:9.5px;color:var(--muted);background:transparent;border:0;font-family:inherit;border-radius:2px}
+.tabs button.sel{background:#212129;color:var(--fg)}
+.acct{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:10.5px;color:var(--fg)}
+.acct:last-child{border-bottom:0}
+.acct .an{flex:1}
+.acct .as{font-family:'Geist Mono',monospace;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums}
+.acct.off{color:var(--muted)}
+.acct .dot.off{background:transparent;border:1px solid var(--muted);box-shadow:none}
+
+/* 方案A rest：296 = 200 刘海 + 两侧 48px 耳区 */
+.a-rest{width:296px}
+.a-rest .track{width:30px}
+/* 方案A peek */
+.a-peek{width:460px;cursor:pointer}
+/* 方案B rest：360 = 200 + 两侧 80px 耳区 */
+.b-rest{width:360px;opacity:.82}
+.b-peek{width:420px;box-shadow:inset 0 0 0 1px var(--hair2)}
+/* 方案C */
+.c-rest{width:232px}
+.c-peek{width:352px}
+.b-peek{width:440px}
+/* 面板尺寸 */
+.pa{width:470px}
+.pb{width:540px}
+.pb .cols{display:flex;gap:18px;padding:2px 18px 0}
+.pb .colL{flex:1.06}.pb .colR{flex:1}
+.pc{width:560px}
+
+/* 设置页 mockup（亮色，沿用 settings-panel 语言） */
+.setmock{width:840px;border:1px solid var(--doc-line);background:#fff;padding:4px 28px 18px;margin-top:22px}
+.setmock .shead{font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.07em;color:var(--doc-muted);padding:16px 0 14px;border-bottom:1px solid var(--doc-line)}
+.setmock .srow{display:flex;justify-content:space-between;align-items:flex-start;gap:25px;border-bottom:1px solid var(--doc-line);padding:19px 0;position:relative}
+.setmock .srow:last-child{border-bottom:0}
+.setmock h3{font-size:13px;font-weight:500;margin:0 0 6px}
+.setmock p{font-size:11px;color:var(--doc-muted);margin:0;line-height:1.6;max-width:430px}
+.seglight{display:flex;gap:2px;background:var(--doc-soft);padding:3px;border:1px solid var(--doc-line)}
+.seglight button{padding:5px 13px;font-size:11px;color:var(--doc-muted);background:transparent;border:0;font-family:inherit}
+.seglight button.sel{background:#fff;box-shadow:0 1px 3px #0000000a;color:var(--doc-fg)}
+.selbox{min-width:270px;border:1px solid var(--doc-line);padding:8px 12px;font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;position:relative;color:var(--doc-fg)}
+.selbox .chev{color:var(--doc-muted);font-size:9px}
+.selopen{position:absolute;top:calc(100% + 5px);left:-1px;right:-1px;background:#fff;border:1px solid var(--doc-line);box-shadow:0 10px 30px #00000014;z-index:8;text-align:left}
+.selopen div{padding:8px 12px;font-size:11px;color:var(--doc-fg);display:flex;justify-content:space-between;gap:12px;white-space:nowrap}
+.selopen div.cur{background:var(--doc-soft)}
+.selopen div.dim{color:var(--doc-muted)}
+.selopen .sep{padding:5px 12px;font-size:9px;color:var(--doc-muted);letter-spacing:.05em;background:var(--doc-soft)}
+.tgl{width:32px;height:19px;background:var(--green);border-radius:20px;position:relative;flex-shrink:0}
+.tgl i{position:absolute;width:13px;height:13px;top:3px;right:3px;border-radius:50%;background:#fff}
+.stepper{display:flex;align-items:center;border:1px solid var(--doc-line)}
+.stepper button{width:28px;height:30px;font-size:13px;color:var(--doc-muted);background:#fff;border:0}
+.stepper b{width:76px;text-align:center;font-family:'Geist Mono',monospace;font-size:11px;font-weight:400;border-left:1px solid var(--doc-line);border-right:1px solid var(--doc-line);align-self:stretch;display:flex;align-items:center;justify-content:center}
+
+/* ── 对比总览 ─────────────────────────── */
+#overview{max-width:1560px;background:#fff;border:1px solid var(--doc-line);padding:26px 28px}
+#overview h2{font-size:17px;font-weight:600}
+.ovgrid{display:flex;gap:26px;margin-top:20px}
+.ovgrid .frame{width:470px}
+table.ov{width:100%;border-collapse:collapse;margin-top:24px;font-size:11.5px}
+table.ov th{font-family:'Geist Mono',monospace;font-size:9.5px;color:var(--doc-muted);letter-spacing:.06em;text-align:left;font-weight:400;border-bottom:1px solid var(--doc-line);padding:8px 10px}
+table.ov td{border-bottom:1px solid var(--doc-line);padding:11px 10px;vertical-align:top;line-height:1.65}
+table.ov td:first-child{font-weight:500;white-space:nowrap}
+table.ov .dim{color:var(--doc-muted);font-size:10.5px}
+</style><style>
+.proposal{max-width:1560px}
+.ival.red{color:#ff8a95}
+.msegs.red i{background:#7a3039}.msegs.red i.f{background:#ff6b78}
+.ilabel.amber{color:var(--amber)}.ilabel.red{color:#ffb3ba}
+.acct{font-family:'Geist Mono',monospace;font-size:8.5px;letter-spacing:.06em;color:var(--amber);background:var(--amber-pale);padding:1px 4px;border-radius:2px}
+.acct.red{color:#ff8a95;background:#5a2a30}
+.cnt{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:12px;height:12px;padding:0 3px;border-radius:6px;font-family:'Geist Mono',monospace;font-size:8px;color:#18130a;background:var(--amber)}
+.cnt.red{background:#ff6b78;color:#1a0507;font-weight:600}
+.cnt.over{position:absolute;top:4px;left:-9px;box-shadow:0 0 0 1.5px #050507}
+.ear-l.ov{overflow:visible}
+.ear-l{padding-right:12px}.ear-r{padding-left:6px}.grid{display:grid;grid-template-columns:170px 620px 620px;gap:22px 24px;align-items:start;margin-top:22px}
+.grid .colh{font-family:'Geist Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:var(--doc-muted)}
+.rowh b{display:block;font-size:12px;font-weight:500}
+.rowh span{display:block;font-size:10.5px;color:var(--doc-muted);margin-top:5px;line-height:1.6}
+.cell .cap{font-size:10px;color:var(--doc-muted);margin-top:8px;text-align:center;line-height:1.5}
+.cell .cap.same{color:#14815e}
+.pick{font-family:'Geist Mono',monospace;font-size:9px;color:#14815e;background:#e0f6ed;padding:2px 6px;margin-left:8px;letter-spacing:.06em}
+.mini-panel{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:300px;background:var(--island);border-radius:0 0 14px 14px;padding:9px 12px 10px;z-index:4;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.mini-panel .r{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:var(--muted);padding:3px 0}
+.mini-panel .r b{font-family:'Geist Mono',monospace;font-weight:400;font-size:9.5px}
+.mini-panel .r b.red{color:#ff8a95}.mini-panel .r b.amber{color:var(--amber)}.mini-panel .r b.ok{color:var(--fg)}
+.mini-panel .r.sep{border-top:1px solid var(--hair);margin-top:4px;padding-top:6px}
+</style></head><body>
+<div class="doc-head"><h1>告警接管视觉 · 小稿（待拍板 ②）</h1>
+<p>A 整耳替换为告警槽（建议）vs B 原槽保留 + 右上角叠计数角标 · 收纳态 360px · 演示数据，非真实账户</p>
+<p class="doc-note">告警沿用现有判定：窗口 remainingPercent &lt; 用户设置的阈值（10 / 20 / 30%）为琥珀，exceeded 为红；余额低于用户自设阈值为琥珀；缺数据不告警。角标数字 = 当前告警总数（含耳区正在显示的那条）；只有 1 条且已在耳区可见时不显示角标。解除后耳位恢复用户绑定。</p>
+<p class="doc-note">下方每个屏同时画出悬停面板的告警行，示意「耳区只显示最优先一条，详情在悬停面板」。耳区几何沿用定稿设计（内容从中心偏移 108px 起，刘海按保守半宽 100px 绘制）。数值最宽按 5 位（如 ¥1,286）预留。</p></div>
+<section class="proposal" style="padding-bottom:30px"><h2>告警接管：整耳替换 vs 叠加角标 <span class="pick">建议 A</span></h2>
+<div class="grid"><div></div><div class="colh">A · 整耳替换为告警槽（建议）</div><div class="colh">B · 原槽保留 + 角标</div><div class="rowh"><b>场景 1 · 仅余额低</b><span>DeepSeek 余额 ¥38 低于自设阈值 ¥50（琥珀）。左耳绑定 5H，右耳绑定周。</span></div><div class="cell"><div class="screen" style="height:130px"><div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div><div class="island"><span class="ear-l ov"><span class="acct">DS</span><span class="ival amber" style="font-size:10px">¥38</span></span><span class="ear-r"><span class="ilabel">周</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span></div><div class="mini-panel"><div class="r"><span>DeepSeek · 余额</span><b class="amber">¥38.00 · 低于 ¥50</b></div><div class="r"><span>Command Code · 5H</span><b class="ok">58%</b></div><div class="r"><span>Command Code · 周</span><b class="ok">67%</b></div></div></div><div class="cap">左耳整体换成 DS 告警槽；5H 暂时看不到（悬停面板仍完整）</div></div><div class="cell"><div class="screen" style="height:130px"><div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div><div class="island"><span class="ear-l ov"><span class="ilabel">5H</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">58</span><span class="cnt over">1</span></span><span class="ear-r"><span class="ilabel">周</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span></div><div class="mini-panel"><div class="r"><span>DeepSeek · 余额</span><b class="amber">¥38.00 · 低于 ¥50</b></div><div class="r"><span>Command Code · 5H</span><b class="ok">58%</b></div><div class="r"><span>Command Code · 周</span><b class="ok">67%</b></div></div></div><div class="cap ">左耳保持 5H 58，仅在右上角叠计数角标「1」；看不出是哪个账户，需悬停</div></div><div class="rowh"><b>场景 2 · 仅窗口用尽</b><span>5H 窗口 exceeded（红）。其它槽正常。</span></div><div class="cell"><div class="screen" style="height:130px"><div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div><div class="island"><span class="ear-l ov"><span class="ilabel red">5H</span><span class="msegs s red"><i></i><i></i><i></i><i></i><i></i></span><span class="ival red" style="font-size:10px">0</span></span><span class="ear-r"><span class="ilabel">周</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span></div><div class="mini-panel"><div class="r"><span>Command Code · 5H</span><b class="red">已用尽 · 14:32 重置</b></div><div class="r"><span>Command Code · 周</span><b class="ok">67%</b></div></div></div><div class="cap">告警槽就是原槽，整耳转红；无需替换，也无角标</div></div><div class="cell"><div class="screen" style="height:130px"><div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div><div class="island"><span class="ear-l ov"><span class="ilabel red">5H</span><span class="msegs s red"><i></i><i></i><i></i><i></i><i></i></span><span class="ival red" style="font-size:10px">0</span></span><span class="ear-r"><span class="ilabel">周</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span></div><div class="mini-panel"><div class="r"><span>Command Code · 5H</span><b class="red">已用尽 · 14:32 重置</b></div><div class="r"><span>Command Code · 周</span><b class="ok">67%</b></div></div></div><div class="cap same">与 A 完全相同：此场景两方案等价</div></div><div class="rowh"><b>场景 3 · 多账户同时告警</b><span>5H 已用尽（红）+ DS 余额偏低（琥珀）。红 > 琥珀，红者占左耳；角标 = 当前告警总数。</span></div><div class="cell"><div class="screen" style="height:130px"><div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div><div class="island"><span class="ear-l ov"><span class="ilabel red">5H</span><span class="msegs s red"><i></i><i></i><i></i><i></i><i></i></span><span class="ival red" style="font-size:10px">0</span><span class="cnt red over">2</span></span><span class="ear-r"><span class="ilabel">周</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span></div><div class="mini-panel"><div class="r"><span>Command Code · 5H</span><b class="red">已用尽 · 14:32 重置</b></div><div class="r"><span>DeepSeek · 余额</span><b class="amber">¥38.00 · 低于 ¥50</b></div><div class="r sep"><span>其余未告警</span><b class="ok">周 67%</b></div></div></div><div class="cap">左耳显示最优先的红色 5H，叠总数「2」；DS 告警在悬停面板中</div></div><div class="cell"><div class="screen" style="height:130px"><div class="menubar"><div class="mb-left"><svg class="mb-fill" width="13" height="13" viewBox="0 0 16 16"><path d="M11.6 8.6c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2-1.3-2.5-1.3-1 0-1.9.6-2.4.6-.5 0-1.3-.6-2.2-.6C4.7 4.7 3 5.9 3 8.2c0 1.5.5 3 1.2 4 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 1-2 1-2.1-.1 0-2.6-1-2.6-3.6zM9.9 3.6c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z"/></svg></div><div class="mb-right"><svg class="mb-ic" viewBox="0 0 16 16"><path d="M2 11.5h9M11.5 11.5a2 2 0 1 1 3 1.7M4 6.5c2.5-2.4 5.5-2.4 8 0M6 9c1.3-1.2 2.7-1.2 4 0M8 11.5h.01"/></svg><svg class="mb-ic" viewBox="0 0 16 16"><rect x="1.5" y="5" width="11" height="6.5" rx="1.8"/><path d="M14.2 7.2v2.6M3.3 6.8v3"/></svg><span class="clock mono">10:24</span></div><div class="notch"></div></div><div class="island"><span class="ear-l ov"><span class="ilabel red">5H</span><span class="msegs s red"><i></i><i></i><i></i><i></i><i></i></span><span class="ival red" style="font-size:10px">0</span><span class="cnt red over">2</span></span><span class="ear-r"><span class="ilabel">周</span><span class="msegs s "><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span><span class="ival" style="font-size:10px">67</span></span></div><div class="mini-panel"><div class="r"><span>Command Code · 5H</span><b class="red">已用尽 · 14:32 重置</b></div><div class="r"><span>DeepSeek · 余额</span><b class="amber">¥38.00 · 低于 ¥50</b></div><div class="r sep"><span>其余未告警</span><b class="ok">周 67%</b></div></div></div><div class="cap same">与 A 相同：多告警时两方案都必须用角标计数</div></div></div>
+<div class="side-note" style="margin-top:26px"><h3>取舍</h3><ul>
+<li><b>A 整耳替换：</b>告警内容直接在耳区可见，扫一眼即得；规则单一：耳位绑定被告警临时覆盖。<span class="dim">代价：被替换的原槽暂时看不到。</span></li>
+<li><b>B 叠加角标：</b>保留用户绑定的内容，但角标只能表示「有告警」，具体是哪个账户要悬停；耳区约 80px，角标再占宽度。</li>
+<li><b>两者的真实差别只在场景 1：</b>场景 2 告警槽恰好就是原槽，场景 3 两方案都需要角标，所以选 A 或 B 只影响「告警来自未绑定槽」这一种情形。</li>
+<li><b>多告警（待拍板 ④）：</b>红 &gt; 琥珀，同级最近重置者优先；其余以计数角标体现，悬停面板列出全部。</li>
+<li><b>解除：</b>恢复正常后耳位回到用户绑定；「告警临时接管」默认开，可在设置关闭。</li></ul></div>
+</section></body></html>

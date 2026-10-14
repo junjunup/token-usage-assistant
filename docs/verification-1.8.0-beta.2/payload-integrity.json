@@ -1,0 +1,15 @@
+{
+  "version": "1.8.0-beta.2",
+  "payloads": [
+    {
+      "kind": "Setup",
+      "asarSha256": "031a7e3516164da3a62197776f103b8d81a0df3725c1afc1de02fb01f5de9ce4"
+    },
+    {
+      "kind": "Portable",
+      "asarSha256": "031a7e3516164da3a62197776f103b8d81a0df3725c1afc1de02fb01f5de9ce4"
+    }
+  ],
+  "ok": true,
+  "asarSha256": "031a7e3516164da3a62197776f103b8d81a0df3725c1afc1de02fb01f5de9ce4"
+}

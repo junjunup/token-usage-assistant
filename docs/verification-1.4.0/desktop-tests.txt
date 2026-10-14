@@ -1,0 +1,204 @@
+(node:147808) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ today and seven-day ranges use local calendar boundaries; missing billing is unavailable (1.107ms)
+✔ cache is a partition of input, never added again to token total or price (1.6964ms)
+✔ missing cache columns stay unknown and do not create a zero-cost request (0.3956ms)
+✔ unknown token counts do not masquerade as complete totals (0.2301ms)
+✔ status accounting keeps failed and cancelled requests out of completed-token totals (0.2229ms)
+✔ model prices are provider-specific; mixed unknown prices remain partial (0.9965ms)
+✔ model/project/session filters affect all aggregates; options stay discoverable (0.2418ms)
+✔ previous-period comparison excludes present, future and older records (0.2248ms)
+✔ account trend leaves unobserved bins empty and ignores resets and long gaps (0.2831ms)
+✔ quota forecast waits ten minutes, rejects stale or discontinuous samples (0.5026ms)
+✔ forecast measures rates and distinguishes cap-before-reset from reset-before-cap (0.2752ms)
+✔ quota reset, null usage and zero burn do not produce invented depletion dates (0.2741ms)
+✔ history is account-isolated and deduplicates minute samples (5.0772ms)
+✔ SQLite metadata adapter is read-only, excludes private columns, avoids duplicate joins (18.7382ms)
+✔ missing or incompatible local DB reports an empty state instead of zero totals (2.5876ms)
+✔ account range requests cache independently and preserve the requested since value (3.1607ms)
+✔ analytics honors 429 cooldown even for another range and force refresh (2.1651ms)
+✔ account switch rejects old in-flight analytics responses (2.0643ms)
+✔ billing analysis refuses to label an all-time fallback as current-period data (2.0991ms)
+✔ price changes invalidate local analytics and recompute costs (3.9388ms)
+✔ account request health and funding fields retain unknown values (0.1528ms)
+✔ inconsistent cache counts stay unavailable instead of being silently clamped (0.1476ms)
+✔ unknown fields never become zero or full allowance (0.7863ms)
+✔ quota percentages clamp over-cap usage and preserve actual values (0.1187ms)
+✔ dates accept seconds, milliseconds and ISO; inactive reset stays absent (0.1512ms)
+✔ summary has explicit period and never fills unknown request/cost with zero (0.3979ms)
+✔ balance does not assume absent purchased/free credits are zero (0.1119ms)
+✔ subscription missing is a valid no-subscription state (0.0801ms)
+✔ preference validation whitelists supported keys and types (0.1192ms)
+✔ backoff honors Retry-After and stops automatic auth retries (0.1089ms)
+✔ alerts notify only on crossing/escalation, then rearm after recovery (0.2667ms)
+✔ API uses only fixed read-only origin, disallows redirects, applies billing since (16.7984ms)
+✔ organization scope propagates to all billing endpoints (0.7269ms)
+✔ organization mismatch stops billing requests (0.6162ms)
+✔ partial subscription failure labels summary as historical (1.1247ms)
+✔ server text and secrets never appear in exposed errors (0.1948ms)
+✔ malformed JSON becomes schema error without body leakage (0.4177ms)
+✔ monitor retains successful quotas on outage and emits stale status (0.6436ms)
+✔ monitor keeps successful section while another endpoint fails (0.2151ms)
+✔ old in-flight account cannot overwrite a newly connected account (0.4445ms)
+✔ manual refresh cannot bypass server rate limit (0.1451ms)
+✔ encrypted store separates accounts and removes only local credentials/cache (12.6743ms)
+✔ unavailable platform encryption never writes plaintext fallback (0.2103ms)
+✔ changing preferences does not resume automatic queries after authentication failure (0.5019ms)
+✔ monthly depletion overrides available short-window quota (0.4648ms)
+✔ monthly pool derives only from same-period synchronized balances and spending (0.196ms)
+✔ missing monthly figures remain unknown; low monthly balance affects global state (0.1338ms)
+✔ explicit inactive reset differs from missing, active and expired timestamps (0.2325ms)
+✔ monthly alerts emit only when exhausted or crossing a known threshold (0.1568ms)
+✔ widget expansion is an explicitly allowed boolean preference (0.0871ms)
+✔ Harness final usage replaces embedded stream and same-attempt prior sample exactly once (48.7766ms)
+✔ Harness retry retains failed reported usage and creates a distinct stable attempt (54.3893ms)
+✔ Harness cancelled requests retain reported usage and missing usage stays unknown (56.418ms)
+✔ Harness duplicate events, source restart, inherited fork prefix and subagents do not duplicate attempts (53.373ms)
+✔ Harness metadata export never reads bodies, tool output, failure text or credentials (32.8482ms)
+✔ Harness unknown runtime and session formats explicitly fail closed without throwing into host (59.9161ms)
+✔ Harness missing attempt boundary is disclosed instead of inventing history (27.0031ms)
+✔ Harness missing cache counters stay unknown and contradictory counters fail explicitly (49.6977ms)
+✔ Harness disk failures and queue overflow never interrupt host execution or expose exceptions (35.2407ms)
+✔ Harness transient append error publishes a fixed failure status without requiring shutdown (23.2209ms)
+✔ Harness concurrent exporters share one source identity and serialize complete JSONL lines (60.359ms)
+✔ Harness one process stopping does not hide another active writer or erase its failure gap (45.1043ms)
+✔ Harness multi-step turns and concurrent sessions keep retry status and model attribution isolated (63.1645ms)
+✔ Pinned installed Harness Cordis SessionStore publishes the exact plugin contract (95.1736ms)
+✔ Pinned Cordis loads the shipped plugin entrypoint and unload flushes its local export (75.9869ms)
+✔ Official dsh CLI installs, composes, boots a linked plugin and removes it in an isolated profile (3437.2698ms)
+✔ GLM preserves window types, units, percentage-only limits and tool counters (1.3042ms)
+✔ GLM missing counters and reset fields remain unknown; no fabricated timer (0.2537ms)
+✔ GLM unknown window units are not silently assigned a weekly window; ordering does not change IDs (0.605ms)
+✔ MiniMax percentage-only plans never appear as exhausted 0/0 counts (0.4267ms)
+✔ MiniMax old remaining-count and newer consumed-count shapes agree with explicit percentages (0.2889ms)
+✔ MiniMax unlimited, excluded models, explicit exhaustion and boosts stay distinct (0.2627ms)
+✔ MiniMax uses the matching reset duration, leaves absent weekly metrics unknown, and rejects duplicate pools (0.2631ms)
+✔ Volcengine official AFP example produces independent 5h/day/week/month quotas (0.3139ms)
+✔ Volcengine zero cap and missing fields never mean unlimited or zero usage (0.195ms)
+✔ glm/cn uses a fixed read-only query and never leaks credentials (16.1039ms)
+✔ glm/global uses a fixed read-only query and never leaks credentials (0.4077ms)
+✔ minimax/cn uses a fixed read-only query and never leaks credentials (0.5041ms)
+✔ minimax/global uses a fixed read-only query and never leaks credentials (0.3598ms)
+✔ volcengine/cn-beijing uses a fixed read-only query and never leaks credentials (2.6432ms)
+✔ AFP signature matches an offline vector from the official Volcengine SDK (0.2317ms)
+✔ MiniMax requires an explicit valid success code even when quota fields exist (1.1084ms)
+✔ vendor body errors in HTTP 200 pause authentication/limit retries without exposing raw messages (3.37ms)
+✔ malformed payloads, network exceptions and huge responses become sanitized errors (5.3642ms)
+✔ request timeout aborts the operation and does not leak transport details (7.3793ms)
+✔ arbitrary regions and credential header injection are rejected before requests (0.2659ms)
+✔ dynamic quota health and notifications respect unknown/excluded/unlimited pools (0.598ms)
+✔ a 429 response preserves the last known quotas; force refresh cannot bypass Retry-After (2.1463ms)
+✔ multiple encrypted connections persist active choice and keep all accounts refreshing (27.6927ms)
+✔ duplicate credential updates same connection while region and different keys remain isolated (18.2548ms)
+✔ failed validation or encryption retains previous accounts and active selection (8.3732ms)
+✔ updating/removing an account cannot leave an in-flight request writing its old cache (14.302ms)
+✔ removing one account preserves other credentials, cache, settings and refresh timer (19.2539ms)
+✔ legacy Command Code migrates without losing cache, settings, bounds or credentials (17.6271ms)
+✔ a corrupt encrypted vault is never replaced with an empty vault (7.2983ms)
+✔ a damaged legacy credential file blocks migration instead of being silently replaced (4.4664ms)
+✔ new providers do not call Command Code summaries or fabricate token/cost analytics (20.8723ms)
+✔ one failing provider does not stop the other account monitors (12.7033ms)
+✔ tool normalizers whitelist metadata and never assign the selected platform account (2.1116ms)
+✔ Harness partitions uncached input and cache, and reasoning stays inside output (2.1519ms)
+✔ failed and cancelled attempts with reported usage count tokens independently from completion statistics (0.5155ms)
+✔ absent usage remains unknown, including empty reports and zero-token reported attempts (1.3842ms)
+✔ partial token fields are not silently zero-filled and estimates require an exact partition (0.6179ms)
+✔ inconsistent token subsets or totals produce unknown values and no fabricated estimate (0.9992ms)
+✔ stream updates replace the same attempt, retries count separately, replay order is stable (0.6215ms)
+✔ terminal status-only records retain the latest usage regardless of import order (0.7422ms)
+✔ sessions and attempt identities stay isolated across tools, with consistent filtering (0.9579ms)
+✔ observed metadata does not prove full coverage or enable a fabricated period comparison (2.4719ms)
+✔ currencies remain explicit, mixed estimates are grouped without implicit exchange or summed totals (0.7353ms)
+✔ unknown model prices remain partial instead of treating unpriced requests as free (0.2806ms)
+✔ unsupported Harness version, schema and non-count values fail explicitly without raw error data (0.4884ms)
+✔ long stable identities remain distinct and oversized identities fail explicitly (0.3078ms)
+✔ 100,000 metadata attempts aggregate without recursive or spread-stack limits (636.381ms)
+✔ empty source selection means all enabled inputs rather than no data (0.4927ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ 1.3 source migration preserves source config, prices, encrypted credentials and preferences (121.7027ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ two independent sources aggregate reported attempts and never borrow active account billing or credits (120.3432ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ duplicate path, hardlink and copied Harness installation are rejected; same-id relocation is safe (112.6408ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ incremental JSONL replay/restart/stream final replacement/retry/failed and cancelled usage stay exact (284.8792ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ partial final line waits, unknown schema rolls back entire batch, no body or secret enters index (178.752ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ source disable/removal/error are isolated and original files remain byte-identical (130.7173ms)
+✔ corrupt migration config is preserved and refuses destructive replacement (22.2351ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ 100k metadata analysis runs off-thread; cancellation, supersession and timeouts recover (2830.2664ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ actual exporter output imports through reader with stopped/error health and no private event content (167.6844ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ actual 32 KB protocol export preserves 2048-character identities and metadata without truncation (139.2221ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ copied Zcode sources with overlapping request identities cannot inflate a combined report (97.5609ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ last successful tool sync survives restart and legacy local selects only Zcode with its currency (94.3672ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ malformed request identities isolate only that source instead of hiding another tool (60.4475ms)
+✔ missing plugin health is disclosed as stale even when its existing records remain readable (61.7965ms)
+(node:117872) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ℹ tests 128
+ℹ suites 0
+ℹ pass 128
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4584.8423

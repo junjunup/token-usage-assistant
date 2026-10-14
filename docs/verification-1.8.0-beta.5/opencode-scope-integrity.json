@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "version": "1.8.0-beta.5",
+  "uiStylesUnchanged": true,
+  "brandingUnchanged": true,
+  "checks": [
+    "src/account-links.css",
+    "src/analytics.css",
+    "src/balance.css",
+    "src/desktop.css",
+    "src/providers.css",
+    "src/Select.css",
+    "src/styles.css",
+    "src/tool-sources.css",
+    "src/BrandMark.jsx",
+    "desktop/branding.cjs",
+    "desktop/assets/brand-mark.svg",
+    "desktop/assets/app.ico",
+    "desktop/assets/app.icns"
+  ]
+}

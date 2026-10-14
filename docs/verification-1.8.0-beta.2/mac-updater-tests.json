@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "passed": 7,
+  "checks": {
+    "originalShellSyntax": true,
+    "successfulUpgradeAndBackupPreservesRuntimeAndSettings": true,
+    "repeatIsIdempotent": true,
+    "unknownArchiveRejectedWithoutOverwrite": true,
+    "corruptPayloadRejectedBeforeChanges": true,
+    "partialInstallFailureRestoresAllOldFiles": true,
+    "cancelDoesNotModifyKit": true
+  },
+  "environment": "Windows Git Bash; synthetic kit, OS chooser and hash-command substitutions",
+  "nativeMacExecution": false,
+  "realUserDataAccess": false
+}

@@ -1,0 +1,15 @@
+﻿{
+    "ok":  true,
+    "payloads":  [
+                     {
+                         "kind":  "Setup",
+                         "asarSha256":  "cb59f76922d45a008490769d1de36fd9c59e3f8be5c012be8212dc95c7a916aa"
+                     },
+                     {
+                         "kind":  "Portable",
+                         "asarSha256":  "cb59f76922d45a008490769d1de36fd9c59e3f8be5c012be8212dc95c7a916aa"
+                     }
+                 ],
+    "version":  "1.6.0",
+    "asarSha256":  "cb59f76922d45a008490769d1de36fd9c59e3f8be5c012be8212dc95c7a916aa"
+}

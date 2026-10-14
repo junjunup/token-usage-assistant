@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "payloads": [
+    {
+      "asarSha256": "018514bf11374c98bac2738b765374ff730923ffa30354e1fb244db65aebc319",
+      "kind": "Setup"
+    },
+    {
+      "asarSha256": "018514bf11374c98bac2738b765374ff730923ffa30354e1fb244db65aebc319",
+      "kind": "Portable"
+    }
+  ],
+  "asarSha256": "018514bf11374c98bac2738b765374ff730923ffa30354e1fb244db65aebc319",
+  "version": "1.5.1"
+}

@@ -1,0 +1,15 @@
+{
+  "payloads": [
+    {
+      "kind": "Setup",
+      "asarSha256": "09ddcebd13a6315d2eedaa41a1854fdab483c6b3d85e0fe2cf4d4818f8fe2334"
+    },
+    {
+      "kind": "Portable",
+      "asarSha256": "09ddcebd13a6315d2eedaa41a1854fdab483c6b3d85e0fe2cf4d4818f8fe2334"
+    }
+  ],
+  "version": "1.8.0-beta.3",
+  "asarSha256": "09ddcebd13a6315d2eedaa41a1854fdab483c6b3d85e0fe2cf4d4818f8fe2334",
+  "ok": true
+}

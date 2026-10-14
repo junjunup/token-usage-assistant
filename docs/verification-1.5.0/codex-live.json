@@ -1,0 +1,19 @@
+{
+  "kind": "read-only-local-codex-observation",
+  "at": "2026-09-24T11:34:04.282Z",
+  "ok": true,
+  "plan": "pro",
+  "officialClientVersion": "Codex Desktop/0.155.0-alpha.16.4 (Windows 10.0.26200; x86_64) dumb (token_usage_assistant; 1.5.0)",
+  "quotaWindows": 1,
+  "allQuotaPercentagesValid": true,
+  "modelCalls": false,
+  "credentialsExported": false,
+  "conversationContentExported": false,
+  "realClaudeAccount": false,
+  "metadata": {
+    "sampledFiles": 2,
+    "supportedFiles": 1,
+    "unsupportedFiles": 1,
+    "hasReportedTokens": true
+  }
+}

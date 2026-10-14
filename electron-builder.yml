@@ -1,0 +1,48 @@
+appId: local.commandcode.tokenusageassistant
+productName: Token 用量助手
+executableName: TokenUsageAssistant
+directories:
+  output: release-v1.8.0-beta.5
+files:
+  - desktop/**/*
+  - dist/client/**/*
+  - package.json
+  - '!desktop/**/*.test.cjs'
+asar: true
+npmRebuild: false
+win:
+  icon: desktop/assets/app.ico
+  signExecutable: false
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Token 用量助手
+  artifactName: TokenUsageAssistant-Setup-${version}.${ext}
+portable:
+  artifactName: TokenUsageAssistant-Portable-${version}.${ext}
+
+mac:
+  icon: desktop/assets/app.icns
+  category: public.app-category.developer-tools
+  minimumSystemVersion: "13.0"
+  executableName: "Token 用量助手"
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  artifactName: TokenUsageAssistant-Mac-arm64-${version}.${ext}
+  identity: "-"
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  gatekeeperAssess: false
+  notarize: false

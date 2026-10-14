@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "version": "1.8.0-beta.2",
+  "asarSha256": "031a7e3516164da3a62197776f103b8d81a0df3725c1afc1de02fb01f5de9ce4",
+  "runtimeSha256": "da15aa8c48f3eeb1622c820249e57a2b7b85048adc7ac792d8b97da86e6edcf8",
+  "runtimeUnmodified": true,
+  "archiveFilesVerified": true,
+  "commandLfNoBomUnix755": true,
+  "nativeMacExecution": false,
+  "artifacts": [
+    {
+      "file": "TokenUsageAssistant-Mac-Update-1.8.0-beta.2.zip",
+      "bytes": 697621,
+      "sha256": "85500aec3a5c78fc09070951a4ab2dbc1b4f002f39bc037586e7c575953b5be7"
+    },
+    {
+      "file": "TokenUsageAssistant-Mac-arm64-Trial-1.8.0-beta.2.zip",
+      "bytes": 131085006,
+      "sha256": "ce9f9e96d93325f0e47a0649d251aa3c7437bf1124a3eb6ada8fa11a02ef6153"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+Already up to date
+Done in 232ms using pnpm v11.19.0
+$ node --test tests/sites-worker.test.mjs
+✔ serves existing static assets without a fallback (12.0732ms)
+✔ falls back to index.html for an unknown app route (0.6724ms)
+✔ does not turn missing API or write requests into the app shell (0.3847ms)
+✔ emits the files required by Sites packaging (2.0036ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 89.6487

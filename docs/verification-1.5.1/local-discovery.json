@@ -1,0 +1,15 @@
+{
+  "version": "1.5.1",
+  "at": "2026-09-24T12:02:21.410Z",
+  "kind": "local-config-discovery-only",
+  "profiles": 1,
+  "automaticSelection": true,
+  "multipleProfileSelection": false,
+  "folderDialogs": 0,
+  "programDialogs": 0,
+  "defaultHomeSelected": true,
+  "executableResolved": true,
+  "credentialFilesRead": false,
+  "accountQueries": false,
+  "modelCalls": false
+}

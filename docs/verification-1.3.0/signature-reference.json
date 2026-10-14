@@ -1,0 +1,6 @@
+{
+  "ok": true,
+  "sourceCommit": "6e8d98cfca31b83f2f920570882785b3283b57ce",
+  "now": 1790157600000,
+  "authorization": "HMAC-SHA256 Credential=synthetic-access-key/20260923/cn-beijing/ark/request, SignedHeaders=content-type;host;x-content-sha256;x-date, Signature=4de45265d3c5d04f81b53142d3d9756fb865a4a1ed3fa4ad6bb0c33625f6fa4b"
+}

@@ -1,0 +1,22 @@
+{
+  "version": "1.8.0-beta.4",
+  "scope": "Logo button centering and Windows native/taskbar icon repair",
+  "build": "passed",
+  "targetedTests": {
+    "command": "node --test tests/desktop.test.cjs tests/platform.test.cjs tests/sites-worker.test.mjs",
+    "passed": 46,
+    "failed": 0,
+    "skipped": 0
+  },
+  "packageNativeSmoke": "passed; isolated synthetic profile, no real model calls",
+  "windowsArtifacts": "Installer and portable source/payload hashes match",
+  "designQa": "passed with four final native rail captures and actual OS window icon",
+  "centering": "SVG X/Y offsets zero at 1260/780 px in light/dark; visible path offset below 0.04 px",
+  "actualWindowIcon": "32x32 OS-reported icon; average channel delta from ring 0.098/255",
+  "taskbarMetadata": "Explicit icon path; portable outer launcher used, real filesystem resource",
+  "originalLogoArtworkAndPageMarkup": "unchanged",
+  "actualNsisInstallation": false,
+  "nativeMacVisualAcceptance": false,
+  "newLongStabilityTest": false,
+  "knownBuildWarning": "Existing main chunk exceeds Vite's 500 kB warning threshold"
+}

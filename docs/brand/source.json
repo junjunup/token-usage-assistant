@@ -1,0 +1,14 @@
+{
+  "source": "approved-ring-r2.png",
+  "sha256": "a2f4470e854dc52d89a44e3369a6fcc1ca1ec40122bc0523c1703930fcd1c59f",
+  "crop": {
+    "left": 236,
+    "top": 228,
+    "width": 512,
+    "height": 512
+  },
+  "method": "Potrace 2.1.8 trace of approved black master; monochrome; transparent background; 32 px additional optical padding",
+  "threshold": 128,
+  "optTolerance": 0.3,
+  "turdSize": 8
+}

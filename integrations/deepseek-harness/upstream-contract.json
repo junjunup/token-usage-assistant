@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "reviewedCommit": "46a7f68b0922371ce7144b668b90e377d8e799f4",
+  "harnessVersion": "0.1.7-rc.1",
+  "sessionFormatVersion": 4,
+  "sessionPackageIntegrity": "sha512-5R3g4UQ7KoezqHJ9LxqMgaGZWw0R3zZCypPm4R5dPxSB8xHCQvjfgaCrHYdPBT63B4coxollWupjyQTOdiWSKQ==",
+  "events": ["session/event"],
+  "metadataReferences": [
+    "packages/core/session/src/types.ts",
+    "packages/core/session/src/index.ts",
+    "packages/llm/llm/src/types.ts",
+    "packages/llm/llm/src/assistant-stream.ts",
+    "packages/llm/token-meter/src/usage-projection.ts",
+    "packages/llm/token-meter/src/turn-usage.ts",
+    "packages/llm/llm-retry/src/types.ts",
+    "docs/user/develop/basic/publish.md"
+  ]
+}

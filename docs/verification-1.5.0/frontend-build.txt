@@ -1,0 +1,60 @@
+Already up to date
+Done in 241ms using pnpm v11.19.0
+$ node scripts/prepare-analytics-preview.mjs && vite build && node scripts/prepare-sites-build.mjs
+Prepared shared analytics preview modules.
+vite v6.4.2 building for production...
+transforming...
+✓ 4601 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/index.html                                               0.42 kB │ gzip:   0.30 kB
+dist/client/assets/geist-vietnamese-600-normal-BFUgqsz8.woff2        4.16 kB
+dist/client/assets/geist-cyrillic-ext-400-normal-ChfpGzr5.woff       4.29 kB
+dist/client/assets/geist-cyrillic-ext-600-normal-PR76dHFV.woff       4.33 kB
+dist/client/assets/geist-cyrillic-ext-500-normal-BXrH8YSv.woff       4.33 kB
+dist/client/assets/geist-mono-symbols2-500-normal-CmnCPGa0.woff      4.99 kB
+dist/client/assets/geist-mono-symbols2-400-normal-DjbiTEEA.woff      5.01 kB
+dist/client/assets/geist-mono-vietnamese-400-normal-CZEPLOgu.woff    5.31 kB
+dist/client/assets/geist-mono-vietnamese-500-normal-Dx9-epDo.woff    5.39 kB
+dist/client/assets/geist-mono-cyrillic-400-normal-C51Di1Mf.woff2     5.56 kB
+dist/client/assets/geist-vietnamese-400-normal-C8xY9-dI.woff         5.66 kB
+dist/client/assets/geist-mono-cyrillic-500-normal-D2cXvDHF.woff2     5.72 kB
+dist/client/assets/geist-vietnamese-500-normal-_b1ojCbH.woff         5.72 kB
+dist/client/assets/geist-vietnamese-600-normal-B5MZcNo4.woff         5.76 kB
+dist/client/assets/geist-cyrillic-400-normal-DXusLSnH.woff2          6.12 kB
+dist/client/assets/geist-cyrillic-500-normal-NWpm63d5.woff2          6.33 kB
+dist/client/assets/geist-cyrillic-600-normal-BeW5VFD_.woff2          6.36 kB
+dist/client/assets/geist-mono-latin-ext-400-normal-DI-rJ0UV.woff2    7.01 kB
+dist/client/assets/geist-mono-cyrillic-400-normal-CPJFfJgk.woff      7.10 kB
+dist/client/assets/geist-mono-latin-ext-500-normal-Buglb9-a.woff2    7.16 kB
+dist/client/assets/geist-mono-cyrillic-500-normal-DfuvdVgn.woff      7.30 kB
+dist/client/assets/geist-latin-ext-400-normal-CND6cjiG.woff2         7.83 kB
+dist/client/assets/geist-cyrillic-400-normal-DkrqoNl2.woff           7.92 kB
+dist/client/assets/geist-latin-ext-500-normal-BovoTgeE.woff2         7.94 kB
+dist/client/assets/geist-latin-ext-600-normal-CVFbg5dS.woff2         8.00 kB
+dist/client/assets/geist-cyrillic-500-normal-BboVsk8R.woff           8.08 kB
+dist/client/assets/geist-cyrillic-600-normal-CnEeIcMC.woff           8.10 kB
+dist/client/assets/geist-mono-latin-ext-400-normal-CfzLURNc.woff     9.67 kB
+dist/client/assets/geist-mono-latin-ext-500-normal-CrWEgvU_.woff     9.80 kB
+dist/client/assets/geist-mono-latin-400-normal-DTRLJnHl.woff2        9.86 kB
+dist/client/assets/geist-mono-latin-500-normal-YINYabwD.woff2       10.12 kB
+dist/client/assets/geist-latin-ext-400-normal-Bz1pQMyt.woff         10.68 kB
+dist/client/assets/geist-latin-ext-500-normal-C9fx-R30.woff         10.80 kB
+dist/client/assets/geist-latin-ext-600-normal-TmIUreF9.woff         10.87 kB
+dist/client/assets/geist-latin-400-normal-B40WzpMT.woff2            12.96 kB
+dist/client/assets/geist-mono-latin-400-normal-B2yvC1Cq.woff        13.04 kB
+dist/client/assets/geist-latin-500-normal-CTWBw9NS.woff2            13.30 kB
+dist/client/assets/geist-mono-latin-500-normal-D-GG86Jb.woff        13.34 kB
+dist/client/assets/geist-latin-600-normal-CSETrqM2.woff2            13.37 kB
+dist/client/assets/geist-latin-400-normal-akEymXtG.woff             16.76 kB
+dist/client/assets/geist-latin-500-normal-BDXIbFrL.woff             17.10 kB
+dist/client/assets/geist-latin-600-normal-DsPlZH-9.woff             17.15 kB
+dist/client/assets/index-D4HPp7sR.css                              126.03 kB │ gzip:  57.18 kB
+dist/client/assets/index-CdQmTSIv.js                               647.98 kB │ gzip: 204.59 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.86s
+Prepared Sites build: dist/server/index.js and dist/.openai/hosting.json
