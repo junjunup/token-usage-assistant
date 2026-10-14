@@ -1,42 +1,428 @@
-const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {DatabaseSync}=require('node:sqlite');
-const {normalizeCodex,normalizeClaude,SubscriptionClient}=require('../desktop/subscriptions.cjs');
-const {ClaudeCollector,parseOtel,scanClaude}=require('../desktop/claude-collector.cjs');
-const {projectJSON}=require('../desktop/metadata-json.cjs');
-const {readFile,scanCodex}=require('../desktop/codex-reader.cjs');
-const {normalizeSubscriptionRecord,aggregateTools}=require('../desktop/tool-analytics.cjs');
-const {ToolSources}=require('../desktop/tool-sources.cjs');
-const {LocalStore}=require('../desktop/store.cjs');
-const {UsageMonitor}=require('../desktop/monitor.cjs');
-const {AccountManager,validateConnection}=require('../desktop/accounts.cjs');
-const {DEFAULT_SETTINGS}=require('../desktop/domain.cjs');
-const now=Date.now(),range={id:'today',start:now-3600000,end:now+1000};
-function setup(t){const parent=path.resolve(__dirname,'../work/subscription-tests');fs.mkdirSync(parent,{recursive:true});const root=fs.mkdtempSync(path.join(parent,'case-'));t.after(()=>{assert.ok(path.resolve(root).startsWith(parent+path.sep));fs.rmSync(root,{recursive:true,force:true,maxRetries:5,retryDelay:100});});return root;}
-function limits(){return {rateLimits:{primary:{usedPercent:99,windowDurationMins:5,resetsAt:100}},rateLimitsByLimitId:{codex:{primary:{usedPercent:20,windowDurationMins:300,resetsAt:Math.floor(now/1000)+1000},secondary:{usedPercent:0,windowDurationMins:10080,resetsAt:Math.floor(now/1000)+2000}},fast:{primary:{usedPercent:100,windowDurationMins:60,resetsAt:null}}}};}
-const tokens=(n)=>({input_tokens:n,cached_input_tokens:4,cache_write_input_tokens:2,output_tokens:10,reasoning_output_tokens:3,total_tokens:n+10});
-function rollout({id='s1',version='0.155.0-alpha.16.4',born=now-2000,events}={}){return [
- {timestamp:new Date(born).toISOString(),type:'session_meta',payload:{id,cwd:'D:/project',cli_version:version,instructions:'PRIVATE_BODY',apiKey:'PRIVATE_KEY'}},
- {timestamp:new Date(born).toISOString(),type:'turn_context',payload:{model:'gpt-test',cwd:'D:/project',input:'PRIVATE_BODY'}},
- ...(events||[{timestamp:new Date(now).toISOString(),type:'event_msg',payload:{type:'token_count',info:{total_token_usage:tokens(20),last_token_usage:tokens(20)}}}])].map(x=>JSON.stringify(x)).join('\n')+'\n';}
-const otel=(extra={},resourceExtra={})=>({resourceLogs:[{resource:{attributes:Object.entries({'service.version':'2.1.251',...resourceExtra}).map(([key,stringValue])=>({key,value:{stringValue}}))},scopeLogs:[{logRecords:[{body:{stringValue:'PRIVATE_BODY'},attributes:Object.entries({'event.name':'api_request','event.timestamp':new Date(now).toISOString(),'event.sequence':1,'session.id':'claude-s',request_id:'req1',model:'claude-test',input_tokens:10,output_tokens:5,cache_read_tokens:20,cache_creation_tokens:3,prompt:'PRIVATE_BODY',apiKey:'PRIVATE_KEY',...extra}).map(([key,v])=>({key,value:typeof v==='number'?{intValue:String(v)}:{stringValue:v}}))}]}]}]});
-test('Codex uses every distinct official pool, map precedence and dynamic windows without adding them',()=>{const c=normalizeCodex(limits(),'pro');assert.equal(c.windows.length,3);assert.equal(c.windows[0].remainingPercent,80);assert.equal(c.windows[0].label,'5 小时窗口');assert.equal(c.windows[1].label,'1 周窗口');assert.equal(c.windows[2].remainingPercent,0);assert.equal(c.windows[2].resetAt,null);assert.equal(c.windows[0].used,null);});
-test('Codex missing vs zero, nullable windows and malformed percentages remain distinct',()=>{assert.equal(normalizeCodex({rateLimits:{primary:null,secondary:null}},'pro').windows.length,0);assert.throws(()=>normalizeCodex({},'pro'));assert.throws(()=>normalizeCodex({rateLimits:{primary:{usedPercent:'0'}}},'pro'));assert.equal(normalizeCodex({rateLimits:{primary:{usedPercent:0}}},'pro').windows[0].remainingPercent,100);});
-test('Codex local login binding rejects account switch and strips email from public identity',async()=>{const client=new SubscriptionClient('codex',{read:async()=>({account:{email:'private@example.test',planType:'pro'},limits:limits()})});const r=await client.usage({});assert.doesNotMatch(JSON.stringify(r),/private@example/);assert.equal(r.parts.identity.accountId.length,64);const switched=await client.usage({binding:'0'.repeat(64)});assert.equal(switched.errors[0].status,401);assert.equal(switched.clearParts,true);});
-test('local subscriptions validate paths without requiring or retaining API keys',()=>{const c=validateConnection({provider:'codex',home:path.resolve('fixture-profile'),executable:path.resolve('codex.exe'),apiKey:'PRIVATE_KEY'});assert.equal(c.credential.apiKey,undefined);assert.throws(()=>validateConnection({provider:'codex',home:'../relative',executable:path.resolve('codex.exe')}));});
-test('Claude percent observation accepts partial windows without inventing absent weekly quota',()=>{const c=normalizeClaude({schema:'token-usage-assistant.claude-quota',schemaVersion:1,observedAt:now,windows:{five_hour:{used_percentage:0,resets_at:now/1000+100}}},now);assert.equal(c.windows.length,1);assert.equal(c.windows[0].remainingPercent,100);assert.throws(()=>normalizeClaude({schemaVersion:999},now));});
-test('Claude waiting, old and reset snapshots remain stale; monitor never refreshes their timestamp or sends stale alerts',async t=>{const home=setup(t),c=new ClaudeCollector(home);c.prepare();const client=new SubscriptionClient('claude',{now:()=>now+600001});assert.equal((await client.usage({home})).stale,true);c.receiveQuota({version:'2.1.251',sessionId:'s',windows:{five_hour:{used_percentage:99,resets_at:now/1000+10000}}});let notifications=0;const monitor=new UsageMonitor(client,{settings:{...DEFAULT_SETTINGS,refreshSeconds:60},notify:()=>notifications++,now:()=>now+600001});t.after(()=>monitor.dispose());monitor.configure({home});await monitor.refresh();const stamp=monitor.state.updatedAt.credits;assert.ok(stamp>0);assert.equal(monitor.state.status,'stale');assert.equal(notifications,0);await monitor.refresh();assert.equal(monitor.state.updatedAt.credits,stamp);});
-test('Claude repaint retains original observation time and removal of a window removes that window',t=>{const home=setup(t),c=new ClaudeCollector(home);c.prepare();const data={version:'2.1.251',sessionId:'s',windows:{five_hour:{used_percentage:15,resets_at:now/1000+1000}}};c.receiveQuota(data);const file=path.join(home,'quota.json'),old=JSON.parse(fs.readFileSync(file));old.observedAt=now-5000;fs.writeFileSync(file,JSON.stringify(old));c.receiveQuota(data);assert.equal(JSON.parse(fs.readFileSync(file)).observedAt,old.observedAt);c.receiveQuota({...data,windows:{}});assert.deepEqual(JSON.parse(fs.readFileSync(file)).windows,{});});
-test('selective JSON decoder excludes nested bodies, escapes, credentials and prototype fields',()=>{const input=JSON.stringify({payload:{info:{total_tokens:4},messages:[{content:'PRIVATE_BODY'}],apiKey:'PRIVATE_KEY'},__proto__:{bad:true},other:'\\\"'});const r=projectJSON(input,{payload:{info:{total_tokens:true}}});assert.equal(r.payload.info.total_tokens,4);assert.doesNotMatch(JSON.stringify(r),/PRIVATE|messages|apiKey|bad/);assert.throws(()=>projectJSON('{bad',{}));});
-test('Codex duplicate snapshots, copies and repeated scans never multiply reported usage',t=>{const home=setup(t),file=path.join(home,'rollout-test.jsonl'),text=rollout();fs.writeFileSync(file,text+text.split('\n').filter(x=>x.includes('token_count')).join('\n')+'\n');const rows=readFile(file,'source');assert.equal(rows.length,1);assert.equal(rows[0].total,30);assert.equal(rows[0].fresh,14);assert.equal(rows[0].reasoning,3);assert.equal(rows[0].status,'unknown');assert.doesNotMatch(JSON.stringify(rows),/PRIVATE/);});
-test('Codex fork inherited events are excluded and subsequent usage keeps model/project metadata',t=>{const home=setup(t),file=path.join(home,'rollout-fork.jsonl'),event=(at,n)=>({timestamp:new Date(at).toISOString(),type:'event_msg',payload:{type:'token_count',info:{total_token_usage:tokens(n),last_token_usage:tokens(20)}}});fs.writeFileSync(file,rollout({id:'fork',born:now-500,events:[event(now-1000,20),event(now,50)]}));assert.equal(readFile(file,'source').length,1);assert.equal(readFile(file,'source')[0].total,30);});
-test('Codex compaction counter reduction establishes a new baseline without recharging old last usage',t=>{const home=setup(t),file=path.join(home,'rollout-reset.jsonl'),event=(offset,n)=>({timestamp:new Date(now+offset).toISOString(),type:'event_msg',payload:{type:'token_count',info:{total_token_usage:tokens(n),last_token_usage:tokens(20)}}});fs.writeFileSync(file,rollout({events:[event(-500,100),event(-400,50),event(0,80)]}));assert.equal(readFile(file,'source').length,2);});
-test('unknown Codex version and malformed token fields fail closed; incomplete last line deferred',t=>{const home=setup(t),file=path.join(home,'rollout-x.jsonl');fs.writeFileSync(file,rollout({version:'9.0.0'}));assert.throws(()=>readFile(file,'source'),/version/);fs.writeFileSync(file,rollout()+'{"type":');assert.equal(readFile(file,'source').length,1);});
-test('Claude OTLP whitelist preserves disjoint caches and excludes all content/credentials',()=>{const p=parseOtel(otel(),'source',{'claude-s':{project:'D:/project',version:'2.1.251'}},now);assert.equal(p.rows.length,1);assert.equal(p.rows[0].input,33);assert.equal(p.rows[0].total,38);assert.equal(p.rows[0].fresh,10);assert.doesNotMatch(JSON.stringify(p),/PRIVATE|prompt|apiKey/);});
-test('Claude never accesses non-whitelisted OTLP attribute values',()=>{const data=otel();data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes.push({key:'apiKey',get value(){throw new Error('private value read');}});assert.equal(parseOtel(data,'s',{},now).rows.length,1);});
-test('local Codex login binding and Claude source location survive encrypted account reload alongside existing providers',async t=>{const root=setup(t),store=new LocalStore(root,{isEncryptionAvailable:()=>true,encryptString:s=>Buffer.from(s).reverse(),decryptString:b=>Buffer.from(b).reverse().toString()}),clientFactory=p=>p==='codex'?new SubscriptionClient('codex',{read:async()=>({account:{email:'fixture@example.test',planType:'pro'},limits:limits()})}):p==='claude'?new SubscriptionClient('claude'):{usage:async()=>({parts:{identity:{accountId:'cc'},credits:{windows:[]}},errors:[]})};const manager=new AccountManager({store,settings:DEFAULT_SETTINGS,clientFactory});t.after(()=>manager.dispose());await manager.connect({provider:'commandcode',apiKey:'fixture-key-only'});await manager.connect({provider:'codex',home:root,executable:path.join(root,'codex.exe')});assert.equal(manager.entries[1].credential.binding.length,64);await manager.connect({provider:'claude',home:path.join(root,'claude')});const restored=new AccountManager({store,settings:DEFAULT_SETTINGS,clientFactory});t.after(()=>restored.dispose());restored.load();assert.equal(restored.issue,'');assert.equal(restored.entries.length,3);assert.equal(restored.entries[1].credential.binding,manager.entries[1].credential.binding);assert.doesNotMatch(fs.readFileSync(store.file('accounts.encrypted.json'),'utf8'),/fixture-key-only|fixture@example/);});
-test('Claude error with usage is counted, error without usage stays unknown; ignored events produce no rows',()=>{let p=parseOtel(otel({'event.name':'api_error'}),'source',{},now);assert.equal(p.rows[0].status,'failed');assert.equal(p.rows[0].total,38);p=parseOtel(otel({'event.name':'api_error',input_tokens:undefined,output_tokens:undefined,cache_read_tokens:undefined,cache_creation_tokens:undefined}),'source',{},now);assert.equal(p.rows[0].usageReported,false);assert.equal(p.rows[0].total,null);assert.equal(parseOtel(otel({'event.name':'user_prompt'}),'source',{},now).rows.length,0);});
-test('Claude unknown versions and missing session identities produce explicit unsupported counts',()=>{assert.equal(parseOtel(otel({}, {'service.version':'3.0.0'}),'s',{},now).unsupported,1);assert.equal(parseOtel(otel({'session.id':''}),'s',{},now).unsupported,1);});
-test('Claude retries have separate request identities, OTLP replay and stream final values merge',()=>{const a=parseOtel(otel(),'source',{},now).rows[0],b=parseOtel(otel({request_id:'req2'}),'source',{},now).rows[0],result=aggregateTools([a,a,b],range,{},{});assert.equal(result.summary.total,76);assert.equal(result.summary.requests,2);});
-test('Claude loopback authenticates, rejects browser origin, records only metadata, and closes cleanly',async t=>{const home=setup(t),c=new ClaudeCollector(home);c.prepare();await c.start();t.after(()=>c.close());const url='http://127.0.0.1:'+c.config.port,headers={'Content-Type':'application/json','x-tua-token':c.config.token};assert.equal((await fetch(url+'/v1/logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(otel())})).status,403);assert.equal((await fetch(url+'/v1/logs',{method:'POST',headers:{...headers,Origin:'https://evil.test'},body:'{}'})).status,403);for(let i=0;i<2;i++)assert.equal((await fetch(url+'/v1/logs',{method:'POST',headers,body:JSON.stringify(otel())})).status,200);c.receiveQuota({version:'2.1.251',sessionId:'claude-s',project:'D:/late-project',windows:{}});const r=scanClaude(null,{file:path.join(home,'usage.jsonl'),id:'test'},range);assert.equal(r.rows.length,1);assert.equal(r.rows[0].project,'D:/late-project');assert.doesNotMatch(fs.readFileSync(path.join(home,'usage.jsonl'),'utf8'),/PRIVATE|apiKey|prompt/);});
-test('collector launcher confines export to loopback, disables content signals and does not edit global settings',t=>{const home=setup(t),c=new ClaudeCollector(home);c.generateLauncher();const s=JSON.parse(fs.readFileSync(path.join(home,'claude-settings.json')));assert.match(s.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,/^http:\/\/127\.0\.0\.1:/);assert.equal(s.env.OTEL_LOG_RAW_API_BODIES,'0');assert.equal(s.env.OTEL_LOG_ASSISTANT_RESPONSES,'0');assert.equal(s.env.OTEL_METRICS_EXPORTER,'none');assert.ok(fs.existsSync(path.join(home,require('../desktop/platform.cjs').launcherName())));});
-test('subscription sources query and restart independently, isolate versions, and cannot inflate copied Codex logs',async t=>{const root=setup(t),home=path.join(root,'codex');fs.mkdirSync(path.join(home,'sessions'),{recursive:true});fs.writeFileSync(path.join(home,'sessions','rollout-one.jsonl'),rollout());const store=new LocalStore(path.join(root,'store'),{}),sources=new ToolSources({store});t.after(()=>sources.dispose());const a=sources.add({kind:'codex',file:home});assert.throws(()=>sources.add({kind:'codex',file:home}),/已添加/);const copy=path.join(root,'copy');fs.cpSync(home,copy,{recursive:true});sources.add({kind:'codex',file:copy});let r=await sources.query({range:'today'});assert.equal(r.summary.total,30);assert.equal(r.sourceReports[1].status,'overlap');r=await sources.query({range:'today',sourceIds:[a.id]});assert.equal(r.summary.total,30);assert.equal(r.accountId,null);assert.equal(r.summary.successRate,null);const db=new DatabaseSync(store.file('tool-usage.sqlite'));assert.doesNotMatch(JSON.stringify(db.prepare('SELECT rows FROM codex_files').all()),/PRIVATE/);db.close();});
+const test = require('node:test'),
+  assert = require('node:assert/strict'),
+  fs = require('node:fs'),
+  path = require('node:path');
+const { DatabaseSync } = require('node:sqlite');
+const { normalizeCodex, normalizeClaude, SubscriptionClient } = require('../desktop/subscriptions.cjs');
+const { ClaudeCollector, parseOtel, scanClaude } = require('../desktop/claude-collector.cjs');
+const { projectJSON } = require('../desktop/metadata-json.cjs');
+const { readFile, scanCodex } = require('../desktop/codex-reader.cjs');
+const { normalizeSubscriptionRecord, aggregateTools } = require('../desktop/tool-analytics.cjs');
+const { ToolSources } = require('../desktop/tool-sources.cjs');
+const { LocalStore } = require('../desktop/store.cjs');
+const { UsageMonitor } = require('../desktop/monitor.cjs');
+const { AccountManager, validateConnection } = require('../desktop/accounts.cjs');
+const { DEFAULT_SETTINGS } = require('../desktop/domain.cjs');
+const now = Date.now(),
+  range = { id: 'today', start: now - 3600000, end: now + 1000 };
+function setup(t) {
+  const parent = path.resolve(__dirname, '../work/subscription-tests');
+  fs.mkdirSync(parent, { recursive: true });
+  const root = fs.mkdtempSync(path.join(parent, 'case-'));
+  t.after(() => {
+    assert.ok(path.resolve(root).startsWith(parent + path.sep));
+    fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
+  return root;
+}
+function limits() {
+  return {
+    rateLimits: { primary: { usedPercent: 99, windowDurationMins: 5, resetsAt: 100 } },
+    rateLimitsByLimitId: {
+      codex: {
+        primary: { usedPercent: 20, windowDurationMins: 300, resetsAt: Math.floor(now / 1000) + 1000 },
+        secondary: { usedPercent: 0, windowDurationMins: 10080, resetsAt: Math.floor(now / 1000) + 2000 },
+      },
+      fast: { primary: { usedPercent: 100, windowDurationMins: 60, resetsAt: null } },
+    },
+  };
+}
+const tokens = (n) => ({
+  input_tokens: n,
+  cached_input_tokens: 4,
+  cache_write_input_tokens: 2,
+  output_tokens: 10,
+  reasoning_output_tokens: 3,
+  total_tokens: n + 10,
+});
+function rollout({ id = 's1', version = '0.155.0-alpha.16.4', born = now - 2000, events } = {}) {
+  return (
+    [
+      {
+        timestamp: new Date(born).toISOString(),
+        type: 'session_meta',
+        payload: { id, cwd: 'D:/project', cli_version: version, instructions: 'PRIVATE_BODY', apiKey: 'PRIVATE_KEY' },
+      },
+      {
+        timestamp: new Date(born).toISOString(),
+        type: 'turn_context',
+        payload: { model: 'gpt-test', cwd: 'D:/project', input: 'PRIVATE_BODY' },
+      },
+      ...(events || [
+        {
+          timestamp: new Date(now).toISOString(),
+          type: 'event_msg',
+          payload: { type: 'token_count', info: { total_token_usage: tokens(20), last_token_usage: tokens(20) } },
+        },
+      ]),
+    ]
+      .map((x) => JSON.stringify(x))
+      .join('\n') + '\n'
+  );
+}
+const otel = (extra = {}, resourceExtra = {}) => ({
+  resourceLogs: [
+    {
+      resource: {
+        attributes: Object.entries({ 'service.version': '2.1.251', ...resourceExtra }).map(([key, stringValue]) => ({
+          key,
+          value: { stringValue },
+        })),
+      },
+      scopeLogs: [
+        {
+          logRecords: [
+            {
+              body: { stringValue: 'PRIVATE_BODY' },
+              attributes: Object.entries({
+                'event.name': 'api_request',
+                'event.timestamp': new Date(now).toISOString(),
+                'event.sequence': 1,
+                'session.id': 'claude-s',
+                request_id: 'req1',
+                model: 'claude-test',
+                input_tokens: 10,
+                output_tokens: 5,
+                cache_read_tokens: 20,
+                cache_creation_tokens: 3,
+                prompt: 'PRIVATE_BODY',
+                apiKey: 'PRIVATE_KEY',
+                ...extra,
+              }).map(([key, v]) => ({
+                key,
+                value: typeof v === 'number' ? { intValue: String(v) } : { stringValue: v },
+              })),
+            },
+          ],
+        },
+      ],
+    },
+  ],
+});
+test('Codex uses every distinct official pool, map precedence and dynamic windows without adding them', () => {
+  const c = normalizeCodex(limits(), 'pro');
+  assert.equal(c.windows.length, 3);
+  assert.equal(c.windows[0].remainingPercent, 80);
+  assert.equal(c.windows[0].label, '5 小时窗口');
+  assert.equal(c.windows[1].label, '1 周窗口');
+  assert.equal(c.windows[2].remainingPercent, 0);
+  assert.equal(c.windows[2].resetAt, null);
+  assert.equal(c.windows[0].used, null);
+});
+test('Codex missing vs zero, nullable windows and malformed percentages remain distinct', () => {
+  assert.equal(normalizeCodex({ rateLimits: { primary: null, secondary: null } }, 'pro').windows.length, 0);
+  assert.throws(() => normalizeCodex({}, 'pro'));
+  assert.throws(() => normalizeCodex({ rateLimits: { primary: { usedPercent: '0' } } }, 'pro'));
+  assert.equal(normalizeCodex({ rateLimits: { primary: { usedPercent: 0 } } }, 'pro').windows[0].remainingPercent, 100);
+});
+test('Codex local login binding rejects account switch and strips email from public identity', async () => {
+  const client = new SubscriptionClient('codex', {
+    read: async () => ({ account: { email: 'private@example.test', planType: 'pro' }, limits: limits() }),
+  });
+  const r = await client.usage({});
+  assert.doesNotMatch(JSON.stringify(r), /private@example/);
+  assert.equal(r.parts.identity.accountId.length, 64);
+  const switched = await client.usage({ binding: '0'.repeat(64) });
+  assert.equal(switched.errors[0].status, 401);
+  assert.equal(switched.clearParts, true);
+});
+test('local subscriptions validate paths without requiring or retaining API keys', () => {
+  const c = validateConnection({
+    provider: 'codex',
+    home: path.resolve('fixture-profile'),
+    executable: path.resolve('codex.exe'),
+    apiKey: 'PRIVATE_KEY',
+  });
+  assert.equal(c.credential.apiKey, undefined);
+  assert.throws(() =>
+    validateConnection({ provider: 'codex', home: '../relative', executable: path.resolve('codex.exe') }),
+  );
+});
+test('Claude percent observation accepts partial windows without inventing absent weekly quota', () => {
+  const c = normalizeClaude(
+    {
+      schema: 'token-usage-assistant.claude-quota',
+      schemaVersion: 1,
+      observedAt: now,
+      windows: { five_hour: { used_percentage: 0, resets_at: now / 1000 + 100 } },
+    },
+    now,
+  );
+  assert.equal(c.windows.length, 1);
+  assert.equal(c.windows[0].remainingPercent, 100);
+  assert.throws(() => normalizeClaude({ schemaVersion: 999 }, now));
+});
+test('Claude waiting, old and reset snapshots remain stale; monitor never refreshes their timestamp or sends stale alerts', async (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  const client = new SubscriptionClient('claude', { now: () => now + 600001 });
+  assert.equal((await client.usage({ home })).stale, true);
+  c.receiveQuota({
+    version: '2.1.251',
+    sessionId: 's',
+    windows: { five_hour: { used_percentage: 99, resets_at: now / 1000 + 10000 } },
+  });
+  let notifications = 0;
+  const monitor = new UsageMonitor(client, {
+    settings: { ...DEFAULT_SETTINGS, refreshSeconds: 60 },
+    notify: () => notifications++,
+    now: () => now + 600001,
+  });
+  t.after(() => monitor.dispose());
+  monitor.configure({ home });
+  await monitor.refresh();
+  const stamp = monitor.state.updatedAt.credits;
+  assert.ok(stamp > 0);
+  assert.equal(monitor.state.status, 'stale');
+  assert.equal(notifications, 0);
+  await monitor.refresh();
+  assert.equal(monitor.state.updatedAt.credits, stamp);
+});
+test('Claude repaint retains original observation time and removal of a window removes that window', (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  const data = {
+    version: '2.1.251',
+    sessionId: 's',
+    windows: { five_hour: { used_percentage: 15, resets_at: now / 1000 + 1000 } },
+  };
+  c.receiveQuota(data);
+  const file = path.join(home, 'quota.json'),
+    old = JSON.parse(fs.readFileSync(file));
+  old.observedAt = now - 5000;
+  fs.writeFileSync(file, JSON.stringify(old));
+  c.receiveQuota(data);
+  assert.equal(JSON.parse(fs.readFileSync(file)).observedAt, old.observedAt);
+  c.receiveQuota({ ...data, windows: {} });
+  assert.deepEqual(JSON.parse(fs.readFileSync(file)).windows, {});
+});
+test('selective JSON decoder excludes nested bodies, escapes, credentials and prototype fields', () => {
+  const input = JSON.stringify({
+    payload: { info: { total_tokens: 4 }, messages: [{ content: 'PRIVATE_BODY' }], apiKey: 'PRIVATE_KEY' },
+    __proto__: { bad: true },
+    other: '\\\"',
+  });
+  const r = projectJSON(input, { payload: { info: { total_tokens: true } } });
+  assert.equal(r.payload.info.total_tokens, 4);
+  assert.doesNotMatch(JSON.stringify(r), /PRIVATE|messages|apiKey|bad/);
+  assert.throws(() => projectJSON('{bad', {}));
+});
+test('Codex duplicate snapshots, copies and repeated scans never multiply reported usage', (t) => {
+  const home = setup(t),
+    file = path.join(home, 'rollout-test.jsonl'),
+    text = rollout();
+  fs.writeFileSync(
+    file,
+    text +
+      text
+        .split('\n')
+        .filter((x) => x.includes('token_count'))
+        .join('\n') +
+      '\n',
+  );
+  const rows = readFile(file, 'source');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].total, 30);
+  assert.equal(rows[0].fresh, 14);
+  assert.equal(rows[0].reasoning, 3);
+  assert.equal(rows[0].status, 'unknown');
+  assert.doesNotMatch(JSON.stringify(rows), /PRIVATE/);
+});
+test('Codex fork inherited events are excluded and subsequent usage keeps model/project metadata', (t) => {
+  const home = setup(t),
+    file = path.join(home, 'rollout-fork.jsonl'),
+    event = (at, n) => ({
+      timestamp: new Date(at).toISOString(),
+      type: 'event_msg',
+      payload: { type: 'token_count', info: { total_token_usage: tokens(n), last_token_usage: tokens(20) } },
+    });
+  fs.writeFileSync(file, rollout({ id: 'fork', born: now - 500, events: [event(now - 1000, 20), event(now, 50)] }));
+  assert.equal(readFile(file, 'source').length, 1);
+  assert.equal(readFile(file, 'source')[0].total, 30);
+});
+test('Codex compaction counter reduction establishes a new baseline without recharging old last usage', (t) => {
+  const home = setup(t),
+    file = path.join(home, 'rollout-reset.jsonl'),
+    event = (offset, n) => ({
+      timestamp: new Date(now + offset).toISOString(),
+      type: 'event_msg',
+      payload: { type: 'token_count', info: { total_token_usage: tokens(n), last_token_usage: tokens(20) } },
+    });
+  fs.writeFileSync(file, rollout({ events: [event(-500, 100), event(-400, 50), event(0, 80)] }));
+  assert.equal(readFile(file, 'source').length, 2);
+});
+test('unknown Codex version and malformed token fields fail closed; incomplete last line deferred', (t) => {
+  const home = setup(t),
+    file = path.join(home, 'rollout-x.jsonl');
+  fs.writeFileSync(file, rollout({ version: '9.0.0' }));
+  assert.throws(() => readFile(file, 'source'), /version/);
+  fs.writeFileSync(file, rollout() + '{"type":');
+  assert.equal(readFile(file, 'source').length, 1);
+});
+test('Claude OTLP whitelist preserves disjoint caches and excludes all content/credentials', () => {
+  const p = parseOtel(otel(), 'source', { 'claude-s': { project: 'D:/project', version: '2.1.251' } }, now);
+  assert.equal(p.rows.length, 1);
+  assert.equal(p.rows[0].input, 33);
+  assert.equal(p.rows[0].total, 38);
+  assert.equal(p.rows[0].fresh, 10);
+  assert.doesNotMatch(JSON.stringify(p), /PRIVATE|prompt|apiKey/);
+});
+test('Claude never accesses non-whitelisted OTLP attribute values', () => {
+  const data = otel();
+  data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes.push({
+    key: 'apiKey',
+    get value() {
+      throw new Error('private value read');
+    },
+  });
+  assert.equal(parseOtel(data, 's', {}, now).rows.length, 1);
+});
+test('local Codex login binding and Claude source location survive encrypted account reload alongside existing providers', async (t) => {
+  const root = setup(t),
+    store = new LocalStore(root, {
+      isEncryptionAvailable: () => true,
+      encryptString: (s) => Buffer.from(s).reverse(),
+      decryptString: (b) => Buffer.from(b).reverse().toString(),
+    }),
+    clientFactory = (p) =>
+      p === 'codex'
+        ? new SubscriptionClient('codex', {
+            read: async () => ({ account: { email: 'fixture@example.test', planType: 'pro' }, limits: limits() }),
+          })
+        : p === 'claude'
+          ? new SubscriptionClient('claude')
+          : { usage: async () => ({ parts: { identity: { accountId: 'cc' }, credits: { windows: [] } }, errors: [] }) };
+  const manager = new AccountManager({ store, settings: DEFAULT_SETTINGS, clientFactory });
+  t.after(() => manager.dispose());
+  await manager.connect({ provider: 'commandcode', apiKey: 'fixture-key-only' });
+  await manager.connect({ provider: 'codex', home: root, executable: path.join(root, 'codex.exe') });
+  assert.equal(manager.entries[1].credential.binding.length, 64);
+  await manager.connect({ provider: 'claude', home: path.join(root, 'claude') });
+  const restored = new AccountManager({ store, settings: DEFAULT_SETTINGS, clientFactory });
+  t.after(() => restored.dispose());
+  restored.load();
+  assert.equal(restored.issue, '');
+  assert.equal(restored.entries.length, 3);
+  assert.equal(restored.entries[1].credential.binding, manager.entries[1].credential.binding);
+  assert.doesNotMatch(
+    fs.readFileSync(store.file('accounts.encrypted.json'), 'utf8'),
+    /fixture-key-only|fixture@example/,
+  );
+});
+test('Claude error with usage is counted, error without usage stays unknown; ignored events produce no rows', () => {
+  let p = parseOtel(otel({ 'event.name': 'api_error' }), 'source', {}, now);
+  assert.equal(p.rows[0].status, 'failed');
+  assert.equal(p.rows[0].total, 38);
+  p = parseOtel(
+    otel({
+      'event.name': 'api_error',
+      input_tokens: undefined,
+      output_tokens: undefined,
+      cache_read_tokens: undefined,
+      cache_creation_tokens: undefined,
+    }),
+    'source',
+    {},
+    now,
+  );
+  assert.equal(p.rows[0].usageReported, false);
+  assert.equal(p.rows[0].total, null);
+  assert.equal(parseOtel(otel({ 'event.name': 'user_prompt' }), 'source', {}, now).rows.length, 0);
+});
+test('Claude unknown versions and missing session identities produce explicit unsupported counts', () => {
+  assert.equal(parseOtel(otel({}, { 'service.version': '3.0.0' }), 's', {}, now).unsupported, 1);
+  assert.equal(parseOtel(otel({ 'session.id': '' }), 's', {}, now).unsupported, 1);
+});
+test('Claude retries have separate request identities, OTLP replay and stream final values merge', () => {
+  const a = parseOtel(otel(), 'source', {}, now).rows[0],
+    b = parseOtel(otel({ request_id: 'req2' }), 'source', {}, now).rows[0],
+    result = aggregateTools([a, a, b], range, {}, {});
+  assert.equal(result.summary.total, 76);
+  assert.equal(result.summary.requests, 2);
+});
+test('Claude loopback authenticates, rejects browser origin, records only metadata, and closes cleanly', async (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  await c.start();
+  t.after(() => c.close());
+  const url = 'http://127.0.0.1:' + c.config.port,
+    headers = { 'Content-Type': 'application/json', 'x-tua-token': c.config.token };
+  assert.equal(
+    (
+      await fetch(url + '/v1/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(otel()),
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await fetch(url + '/v1/logs', {
+        method: 'POST',
+        headers: { ...headers, Origin: 'https://evil.test' },
+        body: '{}',
+      })
+    ).status,
+    403,
+  );
+  for (let i = 0; i < 2; i++)
+    assert.equal(
+      (await fetch(url + '/v1/logs', { method: 'POST', headers, body: JSON.stringify(otel()) })).status,
+      200,
+    );
+  c.receiveQuota({ version: '2.1.251', sessionId: 'claude-s', project: 'D:/late-project', windows: {} });
+  const r = scanClaude(null, { file: path.join(home, 'usage.jsonl'), id: 'test' }, range);
+  assert.equal(r.rows.length, 1);
+  assert.equal(r.rows[0].project, 'D:/late-project');
+  assert.doesNotMatch(fs.readFileSync(path.join(home, 'usage.jsonl'), 'utf8'), /PRIVATE|apiKey|prompt/);
+});
+test('collector launcher confines export to loopback, disables content signals and does not edit global settings', (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.generateLauncher();
+  const s = JSON.parse(fs.readFileSync(path.join(home, 'claude-settings.json')));
+  assert.match(s.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, /^http:\/\/127\.0\.0\.1:/);
+  assert.equal(s.env.OTEL_LOG_RAW_API_BODIES, '0');
+  assert.equal(s.env.OTEL_LOG_ASSISTANT_RESPONSES, '0');
+  assert.equal(s.env.OTEL_METRICS_EXPORTER, 'none');
+  assert.ok(fs.existsSync(path.join(home, require('../desktop/platform.cjs').launcherName())));
+});
+test('subscription sources query and restart independently, isolate versions, and cannot inflate copied Codex logs', async (t) => {
+  const root = setup(t),
+    home = path.join(root, 'codex');
+  fs.mkdirSync(path.join(home, 'sessions'), { recursive: true });
+  fs.writeFileSync(path.join(home, 'sessions', 'rollout-one.jsonl'), rollout());
+  const store = new LocalStore(path.join(root, 'store'), {}),
+    sources = new ToolSources({ store });
+  t.after(() => sources.dispose());
+  const a = sources.add({ kind: 'codex', file: home });
+  assert.throws(() => sources.add({ kind: 'codex', file: home }), /已添加/);
+  const copy = path.join(root, 'copy');
+  fs.cpSync(home, copy, { recursive: true });
+  sources.add({ kind: 'codex', file: copy });
+  let r = await sources.query({ range: 'today' });
+  assert.equal(r.summary.total, 30);
+  assert.equal(r.sourceReports[1].status, 'overlap');
+  r = await sources.query({ range: 'today', sourceIds: [a.id] });
+  assert.equal(r.summary.total, 30);
+  assert.equal(r.accountId, null);
+  assert.equal(r.summary.successRate, null);
+  const db = new DatabaseSync(store.file('tool-usage.sqlite'));
+  assert.doesNotMatch(JSON.stringify(db.prepare('SELECT rows FROM codex_files').all()), /PRIVATE/);
+  db.close();
+});

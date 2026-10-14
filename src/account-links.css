@@ -1,1 +1,227 @@
-.account-links-panel{padding:26px;margin:22px 0}.account-links-panel h2,.reconciliation-page h2{font-size:16px;font-weight:500;margin:16px 0}.account-links-panel h3{font-size:13px;font-weight:500;border-top:1px solid var(--line);padding-top:24px;margin:26px 0 15px}.association-note,.reconciliation-page p,.reconciliation-page small{font-size:11px;line-height:1.9;color:var(--muted)}.association-note>svg{vertical-align:middle;margin-right:6px}.association-form{display:flex;flex-direction:column;gap:16px;margin-top:18px}.association-form label{font-size:12px;display:flex;flex-direction:column;gap:8px}.association-form input:not([type=checkbox]){font:12px 'Geist',sans-serif;width:100%;padding:11px;background:var(--bg);color:var(--fg);border:1px solid var(--line);color-scheme:light dark}.association-form .ui-select,.association-form .ui-select>button{width:100%}.association-form fieldset{border:1px solid var(--line);padding:14px;display:flex;gap:14px;flex-wrap:wrap}.association-form legend{font-size:12px;padding:0 6px}.association-form label.association-check{flex-direction:row;align-items:flex-start;gap:8px;font-size:11px;line-height:1.8}.association-check input{margin-top:4px;accent-color:var(--purple)}.association-check small{display:block;color:var(--muted);font-size:10px}.association-actions{display:flex;align-items:center;gap:18px}.association-grid,.reconciliation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.association-list{list-style:none;padding:0;margin:0}.association-list li{display:flex;gap:16px;align-items:center;border-bottom:1px solid var(--line);padding:15px 0}.association-list li>div{flex:1;min-width:0}.association-list strong,.association-list span,.association-list small{display:block;overflow-wrap:anywhere;font-size:11px;line-height:1.8}.association-list span,.association-list small{color:var(--muted)}.association-list button{flex-shrink:0}.reconciliation-toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:22px}.reconciliation-toolbar>.ui-select{min-width:220px}.reconciliation-toolbar>.ui-select>button{width:100%}.reconciliation-result{padding:25px}.reconciliation-result h2{font-size:24px}.reconciliation-result li{font-size:12px;line-height:2;color:var(--muted)}.reconciliation-difference{display:flex;gap:40px;padding-top:15px;border-top:1px solid var(--line);font-size:12px}.reconciliation-difference b{margin-left:10px;font-family:'Geist Mono',monospace}.reconciliation-grid{margin:22px 0}.reconciliation-grid>.panel{padding:22px;min-width:0}.reconciliation-grid dl>div{display:flex;justify-content:space-between;gap:12px;margin:16px 0;font-size:12px}.reconciliation-grid dt{color:var(--muted)}.reconciliation-grid dd{margin:0;font-family:'Geist Mono',monospace;overflow-wrap:anywhere}.reconciliation-coverage{padding:22px}.reconciliation-coverage>div{border-top:1px solid var(--line);padding:14px 0;display:flex;flex-direction:column;gap:6px;font-size:11px}.reconciliation-empty{padding:35px;text-align:center}.account-association-summary{margin:12px 0;font-size:11px;color:var(--muted);line-height:1.8}.tool-account-filter{display:flex;align-items:center;gap:12px;margin:16px 0}.tool-account-filter .ui-select{min-width:210px}.tool-account-filter>span{font-size:11px;color:var(--muted)}@media(max-width:850px){.association-grid,.reconciliation-grid{grid-template-columns:1fr}.association-list li{flex-wrap:wrap}.association-list li>div{flex-basis:100%}}
+.account-links-panel {
+  padding: 26px;
+  margin: 22px 0;
+}
+.account-links-panel h2,
+.reconciliation-page h2 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 16px 0;
+}
+.account-links-panel h3 {
+  font-size: 13px;
+  font-weight: 500;
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+  margin: 26px 0 15px;
+}
+.association-note,
+.reconciliation-page p,
+.reconciliation-page small {
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+.association-note > svg {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.association-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+.association-form label {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.association-form input:not([type='checkbox']) {
+  font:
+    12px 'Geist',
+    sans-serif;
+  width: 100%;
+  padding: 11px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  color-scheme: light dark;
+}
+.association-form .ui-select,
+.association-form .ui-select > button {
+  width: 100%;
+}
+.association-form fieldset {
+  border: 1px solid var(--line);
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.association-form legend {
+  font-size: 12px;
+  padding: 0 6px;
+}
+.association-form label.association-check {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.association-check input {
+  margin-top: 4px;
+  accent-color: var(--purple);
+}
+.association-check small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+.association-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.association-grid,
+.reconciliation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.association-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.association-list li {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 15px 0;
+}
+.association-list li > div {
+  flex: 1;
+  min-width: 0;
+}
+.association-list strong,
+.association-list span,
+.association-list small {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.association-list span,
+.association-list small {
+  color: var(--muted);
+}
+.association-list button {
+  flex-shrink: 0;
+}
+.reconciliation-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.reconciliation-toolbar > .ui-select {
+  min-width: 220px;
+}
+.reconciliation-toolbar > .ui-select > button {
+  width: 100%;
+}
+.reconciliation-result {
+  padding: 25px;
+}
+.reconciliation-result h2 {
+  font-size: 24px;
+}
+.reconciliation-result li {
+  font-size: 12px;
+  line-height: 2;
+  color: var(--muted);
+}
+.reconciliation-difference {
+  display: flex;
+  gap: 40px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.reconciliation-difference b {
+  margin-left: 10px;
+  font-family: 'Geist Mono', monospace;
+}
+.reconciliation-grid {
+  margin: 22px 0;
+}
+.reconciliation-grid > .panel {
+  padding: 22px;
+  min-width: 0;
+}
+.reconciliation-grid dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+  font-size: 12px;
+}
+.reconciliation-grid dt {
+  color: var(--muted);
+}
+.reconciliation-grid dd {
+  margin: 0;
+  font-family: 'Geist Mono', monospace;
+  overflow-wrap: anywhere;
+}
+.reconciliation-coverage {
+  padding: 22px;
+}
+.reconciliation-coverage > div {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+.reconciliation-empty {
+  padding: 35px;
+  text-align: center;
+}
+.account-association-summary {
+  margin: 12px 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.tool-account-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+.tool-account-filter .ui-select {
+  min-width: 210px;
+}
+.tool-account-filter > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 850px) {
+  .association-grid,
+  .reconciliation-grid {
+    grid-template-columns: 1fr;
+  }
+  .association-list li {
+    flex-wrap: wrap;
+  }
+  .association-list li > div {
+    flex-basis: 100%;
+  }
+}
