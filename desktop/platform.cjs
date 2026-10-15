@@ -102,8 +102,12 @@ const shellQuote = (value) => "'" + String(value).replaceAll("'", "'\\''") + "'"
 // a development run (`pnpm run desktop`, not packaged) uses its own name, so it never touches the real
 // account data and does not share the packaged app's Keychain Safe Storage item.
 const macDataName = (isPackaged) => (isPackaged ? 'TokenUsageAssistant' : 'TokenUsageAssistant-Dev');
+// --smoke-test runs (packaged or development) use their own app name, so the Keychain Safe Storage item they
+// touch is never the packaged or development one. userData still comes from --test-directory.
+const macSmokeName = 'TokenUsageAssistant-Smoke';
 module.exports = {
   macDataName,
+  macSmokeName,
   pathKey,
   sameFile,
   executableShape,

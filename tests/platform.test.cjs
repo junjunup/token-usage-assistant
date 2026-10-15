@@ -5,6 +5,7 @@ const test = require('node:test'),
   { spawn } = require('node:child_process');
 const {
   macDataName,
+  macSmokeName,
   pathKey,
   sameFile,
   executableShape,
@@ -206,9 +207,19 @@ test('Mac packaged app keeps TokenUsageAssistant; development runs use a separat
   assert.equal(macDataName(true), 'TokenUsageAssistant');
   assert.equal(macDataName(false), 'TokenUsageAssistant-Dev');
   assert.notEqual(macDataName(true), macDataName(false));
-  // main.cjs derives both app.setName and the userData folder from this single value.
+  // main.cjs derives the userData folder and (outside --smoke-test) app.setName from this single value.
   const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.cjs'), 'utf8');
   assert.match(main, /const macName = macDataName\(app\.isPackaged\);/);
-  assert.match(main, /app\.setName\(macName\);/);
+  assert.match(main, /app\.setName\(smoke \? macSmokeName : macName\);/);
   assert.match(main, /app\.setPath\('userData', path\.join\(app\.getPath\('appData'\), macName\)\);/);
+});
+
+test('Mac smoke runs use their own app name, so they never touch the real Keychain Safe Storage items', () => {
+  assert.equal(macSmokeName, 'TokenUsageAssistant-Smoke');
+  assert.notEqual(macSmokeName, macDataName(true));
+  assert.notEqual(macSmokeName, macDataName(false));
+  const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.cjs'), 'utf8');
+  // The smoke flag is read before the Mac name is set, and the smoke report fails on any other name.
+  assert.ok(main.indexOf("const smoke = process.argv.includes('--smoke-test')") < main.indexOf('app.setName('));
+  assert.match(main, /\(!isMac \|\| app\.getName\(\) === macSmokeName\)/);
 });
