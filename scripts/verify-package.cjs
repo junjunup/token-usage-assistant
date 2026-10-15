@@ -1,10 +1,14 @@
 // Verify a Windows package build against the source tree and write package-integrity.json.
-// Usage: node scripts/verify-package.cjs [--out <dir>] [--report <file>]
+// Usage: node scripts/verify-package.cjs [--out <dir>] [--report <file>] [--payloads [--7z <path>]]
 // Defaults: --out release-v<version>, --report docs/verification-<version>/package-integrity.json
+// --payloads extracts resources\app.asar from the Setup and Portable EXEs with 7-Zip (default: 7z on PATH)
+// and requires both to be byte-identical to the verified win-unpacked app.asar.
 const fs = require('node:fs'),
   path = require('node:path'),
   crypto = require('node:crypto'),
-  assert = require('node:assert/strict');
+  assert = require('node:assert/strict'),
+  os = require('node:os'),
+  { spawnSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
 const source = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -55,12 +59,30 @@ const files = ['TokenUsageAssistant-Portable-' + version + '.exe', 'TokenUsageAs
     return { file, bytes: bytes.length, sha256: digest(bytes) };
   },
 );
+const asarSha256 = digest(fs.readFileSync(archive));
+let payloads = null;
+if (process.argv.includes('--payloads')) {
+  const i = process.argv.indexOf('--7z');
+  const sevenZip = i > 0 && process.argv[i + 1] ? process.argv[i + 1] : '7z';
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tua-payloads-'));
+  payloads = ['Setup', 'Portable'].map((kind) => {
+    const exe = path.join(out, 'TokenUsageAssistant-' + kind + '-' + version + '.exe');
+    const target = path.join(scratch, kind);
+    const run = spawnSync(sevenZip, ['x', exe, 'resources\\app.asar', '-o' + target, '-y'], { stdio: 'ignore' });
+    assert.equal(run.status, 0, 'payload extraction failed: ' + kind);
+    const sha256 = digest(fs.readFileSync(path.join(target, 'resources', 'app.asar')));
+    assert.equal(sha256, asarSha256, 'embedded payload differs from win-unpacked app.asar: ' + kind);
+    return { kind, asarSha256: sha256 };
+  });
+  fs.rmSync(scratch, { recursive: true, force: true });
+}
 const report = {
   ok: true,
   version: packaged.version,
   sourceVersion: version,
   at: new Date().toISOString(),
-  asarSha256: digest(fs.readFileSync(archive)),
+  asarSha256,
+  payloads,
   verifiedFiles: checks.length,
   desktopFiles: checks.filter((p) => p.file.startsWith('desktop/')).length,
   files,

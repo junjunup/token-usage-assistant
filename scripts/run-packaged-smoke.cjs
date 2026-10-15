@@ -1,5 +1,7 @@
 // Run the native smoke test of a packaged executable in a fresh isolated directory.
-// Usage: node scripts/run-packaged-smoke.cjs --exe <path> --report <file> [--timeout <seconds>] [-- <extra args>]
+// Usage: node scripts/run-packaged-smoke.cjs --exe <path> --report <file> [--timeout <seconds>]
+//   [--evidence-dir <dir>] [-- <extra args>]
+// --evidence-dir keeps brand-native.json (OS-reported native window icon) and the smoke screenshots.
 // Passes only when smoke-result.json has ok:true and the packaged version equals package.json.
 const fs = require('node:fs'),
   os = require('node:os'),
@@ -49,6 +51,13 @@ function tick() {
   }
   fs.mkdirSync(path.dirname(reportFile), { recursive: true });
   fs.writeFileSync(reportFile, JSON.stringify(result, null, 2) + '\n');
+  const evidence = arg('--evidence-dir');
+  if (evidence) {
+    fs.mkdirSync(evidence, { recursive: true });
+    for (const name of fs.readdirSync(dir))
+      if (name === 'brand-native.json' || name.endsWith('.png'))
+        fs.copyFileSync(path.join(dir, name), path.join(evidence, name));
+  }
   const failed = Object.entries(result)
     .filter(([, v]) => v && typeof v === 'object' && 'ok' in v && v.ok !== true)
     .map(([k]) => k);

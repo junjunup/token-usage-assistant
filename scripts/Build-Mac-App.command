@@ -17,5 +17,6 @@ export ELECTRON_BUILDER_BINARIES_MIRROR="${ELECTRON_BUILDER_BINARIES_MIRROR:-htt
 pnpm install --frozen-lockfile
 pnpm run build
 pnpm run package:mac
-echo '构建完成。产物在 release-v1.8.0-beta.5：DMG 用于安装，ZIP 用于传输。'
+VERSION="$(node -p "require('./package.json').version")"
+echo "构建完成。产物在 release-v${VERSION}：DMG 用于安装，ZIP 用于传输。"
 echo '本包使用本机 ad-hoc 临时签名，未做 Developer ID 签名与公证；首次打开需右键 → 打开。'
