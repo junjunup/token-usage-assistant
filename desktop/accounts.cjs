@@ -159,9 +159,26 @@ class AccountManager extends EventEmitter {
       for (const entry of entries) this.runtimes.set(entry.id, this.runtime(entry));
       this.activeId = this.runtimes.has(value.activeId) ? value.activeId : entries[0]?.id || '';
     } catch {
+      log.warn('accounts', 'load-failed');
       this.issue = '本机账户列表暂不可用，已有加密文件未被覆盖。请恢复备份后重启助手。';
     }
     this.emitState();
+  }
+  // Re-read the encrypted account list after a failed load (e.g. Keychain access was denied) without a
+  // restart. Read-only: the existing encrypted file is never written or replaced here.
+  retryLoad() {
+    if (!this.issue) return true;
+    for (const runtime of this.runtimes.values()) runtime.monitor.dispose();
+    this.runtimes.clear();
+    this.entries = [];
+    this.activeId = '';
+    this.issue = '';
+    this.load();
+    log.info('accounts', 'credential-retry', {
+      status: this.issue ? 'failed' : 'recovered',
+      count: this.entries.length,
+    });
+    return !this.issue;
   }
   async connect(value) {
     if (this.issue) throw publicError(this.issue);

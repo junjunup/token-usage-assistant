@@ -216,7 +216,24 @@ const listeners = new Set(),
     for (const cb of listeners) cb(structuredClone(state));
   };
 const associationPreview = async () => ({ ok: false, error: '请在 Windows 应用中管理真实账户关联。' });
+// Preview of a failed account-list load (?desktop-preview=credential-issue): re-read succeeds after a moment.
+const credentialIssuePreview = new URLSearchParams(location.search).get('desktop-preview') === 'credential-issue';
+if (credentialIssuePreview)
+  state = {
+    ...state,
+    hasCredential: false,
+    credentialIssue: '本机账户列表暂不可用，已有加密文件未被覆盖。请恢复备份后重启助手。',
+    accounts: [],
+    activeAccountId: '',
+    data: { ...state.data, parts: {}, updatedAt: {}, errors: [], status: 'unconfigured', nextRefreshAt: null },
+  };
 export const previewBridge = {
+  retryCredentials: async () => {
+    await new Promise((r) => setTimeout(r, 400));
+    state = { ...state, credentialIssue: '' };
+    publish();
+    return { ok: true, value: state };
+  },
   saveBillingGroup: associationPreview,
   removeBillingGroup: associationPreview,
   saveAccountLink: associationPreview,

@@ -78,7 +78,7 @@
 ## 5. 未完成的验收项
 
 - 各平台的真实账户核账：GLM、MiniMax、火山、DeepSeek、OpenCode Go、Claude（需要用户开通并在应用内配置）。
-- Mac 真机验收（T3.4 会产出清单）：DMG 安装与首次打开、Keychain 授权（包括覆盖升级后）、菜单栏托盘、悬浮窗（所有桌面空间、全屏之上）、睡眠唤醒刷新、登录项、真实 Codex 连接、Zcode / OpenCode 同步、通知权限、空闲资源占用、窗口位置保留。
+- Mac 真机验收（逐项清单见 [docs/MAC-ACCEPTANCE-CHECKLIST.md](docs/MAC-ACCEPTANCE-CHECKLIST.md)，由用户在真机执行）：DMG 安装与首次打开、Keychain 授权（包括覆盖升级后）、菜单栏托盘、悬浮窗（所有桌面空间、全屏之上）、睡眠唤醒刷新、登录项、真实 Codex 连接、Zcode / OpenCode 同步、通知权限、空闲资源占用、窗口位置保留。
 - Windows：NSIS 覆盖安装升级、重启后自启动、真实工具的持续使用。
 - 两小时稳定性测试：未完成，用户已叫停，不再进行。
 
