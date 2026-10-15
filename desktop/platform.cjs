@@ -98,7 +98,12 @@ function windowChrome(kind, platform = process.platform) {
 const launcherName = (platform = process.platform) =>
   platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1';
 const shellQuote = (value) => "'" + String(value).replaceAll("'", "'\\''") + "'";
+// Mac app name and userData folder. The packaged app keeps the stable TokenUsageAssistant name/path;
+// a development run (`pnpm run desktop`, not packaged) uses its own name, so it never touches the real
+// account data and does not share the packaged app's Keychain Safe Storage item.
+const macDataName = (isPackaged) => (isPackaged ? 'TokenUsageAssistant' : 'TokenUsageAssistant-Dev');
 module.exports = {
+  macDataName,
   pathKey,
   sameFile,
   executableShape,

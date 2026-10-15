@@ -4,6 +4,7 @@ const test = require('node:test'),
   path = require('node:path'),
   { spawn } = require('node:child_process');
 const {
+  macDataName,
   pathKey,
   sameFile,
   executableShape,
@@ -199,4 +200,15 @@ test('portable status-line remains fail-open for malformed input, offline collec
     assert.equal(r.err, '');
   }
   assert.equal(fs.existsSync(path.join(dir, 'quota.json')), false);
+});
+
+test('Mac packaged app keeps TokenUsageAssistant; development runs use a separate name and folder', () => {
+  assert.equal(macDataName(true), 'TokenUsageAssistant');
+  assert.equal(macDataName(false), 'TokenUsageAssistant-Dev');
+  assert.notEqual(macDataName(true), macDataName(false));
+  // main.cjs derives both app.setName and the userData folder from this single value.
+  const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.cjs'), 'utf8');
+  assert.match(main, /const macName = macDataName\(app\.isPackaged\);/);
+  assert.match(main, /app\.setName\(macName\);/);
+  assert.match(main, /app\.setPath\('userData', path\.join\(app\.getPath\('appData'\), macName\)\);/);
 });

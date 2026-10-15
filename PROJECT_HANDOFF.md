@@ -71,7 +71,7 @@
 | `account-links.json` | 账户组和关联规则（不含凭据） |
 | `claude-collector/` | Claude 组件配置、导出（`usage.jsonl`）、状态、会话映射、启动器 |
 
-目录：Windows 为原 Electron userData；Mac 为 `~/Library/Application Support/TokenUsageAssistant`（开发版目前也用这个目录，T3.1 会分开）。
+目录：Windows 为原 Electron userData；Mac 打包版为 `~/Library/Application Support/TokenUsageAssistant`，Keychain 条目 `TokenUsageAssistant Safe Storage`；Mac 开发版（T3.1 起）为 `TokenUsageAssistant-Dev` 目录和 `TokenUsageAssistant-Dev Safe Storage` 条目。
 
 ## 5. 未完成的验收项
 
