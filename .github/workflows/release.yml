@@ -1,0 +1,126 @@
+name: Release
+
+# Builds all four installers, runs the packaged native smoke test on each platform and records
+# integrity reports. A v* tag also creates a draft prerelease in this (private) repository.
+# Publishing to the public installer repository (D8) is a separate, manually triggered step
+# that is not part of this workflow yet.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Disable line-ending conversion
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # electron is not in allowBuilds, so fetch its checksum-verified binary explicitly.
+      - name: Download Electron runtime
+        run: node node_modules/electron/install.js
+      - run: pnpm run build
+      - name: Package (NSIS + portable)
+        run: pnpm exec electron-builder --win --x64 --config.electronDist=node_modules/electron/dist --config.directories.output=release-out
+      - name: Native smoke test (portable EXE, isolated directory)
+        run: |
+          V=$(node -p "require('./package.json').version")
+          node scripts/run-packaged-smoke.cjs --exe "release-out/TokenUsageAssistant-Portable-$V.exe" --report release-out/smoke-result-windows.json
+      - name: Package integrity
+        run: node scripts/verify-package.cjs --out release-out --report release-out/package-integrity.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows
+          if-no-files-found: error
+          path: |
+            release-out/TokenUsageAssistant-Setup-*.exe
+            release-out/TokenUsageAssistant-Portable-*.exe
+            release-out/package-integrity.json
+            release-out/smoke-result-windows.json
+
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.12.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Download Electron runtime
+        run: node node_modules/electron/install.js
+      - run: pnpm run build
+      - name: Package (DMG + ZIP, arm64, ad-hoc)
+        run: pnpm run package:mac -- --config.directories.output=release-out
+      # codesign --verify --deep --strict, packaged native smoke, Info.plist, entitlements.
+      # spctl is recorded (expected rejected without notarization) and is never a gate.
+      - name: Verify Mac app
+        env:
+          TUA_RELEASE_DIR: release-out
+          TUA_REPORT_DIR: release-out
+        run: bash scripts/Verify-Mac-Native.command
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mac
+          if-no-files-found: error
+          path: |
+            release-out/TokenUsageAssistant-Mac-arm64-*.dmg
+            release-out/TokenUsageAssistant-Mac-arm64-*.zip
+            release-out/mac-app-integrity.json
+
+  release:
+    needs: [windows, mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Check versions are consistent
+        run: |
+          V=$(node -p "require('./package.json').version")
+          node -e '
+            const fs = require("fs"), v = process.argv[1], a = "artifacts/";
+            const pkg = JSON.parse(fs.readFileSync(a + "package-integrity.json"));
+            const win = JSON.parse(fs.readFileSync(a + "smoke-result-windows.json"));
+            const mac = JSON.parse(fs.readFileSync(a + "mac-app-integrity.json"));
+            const seen = { packageIntegrity: pkg.version, windowsSmoke: win.version, macReport: mac.version, macSmoke: mac.smokeEvidence && mac.smokeEvidence.version };
+            console.log(JSON.stringify({ expected: v, ...seen }));
+            if (!pkg.ok || !win.ok || !mac.ok || Object.values(seen).some((x) => x !== v)) process.exit(1);
+          ' "$V"
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$V" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $V"; exit 1
+          fi
+          ls -l artifacts
+      - name: Create draft prerelease (tag pushes only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" artifacts/* --draft --prerelease \
+            --title "Token 用量助手 $GITHUB_REF_NAME" \
+            --notes "CI build. Evidence level ②: packaged native smoke in isolated directories on GitHub runners; not real-account or real-device acceptance. Mac build is ad-hoc signed and not notarized."

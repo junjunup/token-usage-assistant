@@ -9,8 +9,9 @@ command -v node >/dev/null || { echo '需要 ARM64 Node.js 24。'; exit 1; }
 command -v codesign >/dev/null || { echo '需要 codesign（Xcode 命令行工具）。'; exit 1; }
 
 VERSION="$(node -p "require('./package.json').version")"
-OUT="$ROOT/release-v$VERSION"
-REPORT_DIR="$ROOT/docs/verification-$VERSION"
+# CI overrides: TUA_RELEASE_DIR (build output) and TUA_REPORT_DIR (where mac-app-integrity.json goes).
+OUT="${TUA_RELEASE_DIR:-$ROOT/release-v$VERSION}"
+REPORT_DIR="${TUA_REPORT_DIR:-$ROOT/docs/verification-$VERSION}"
 APP="$(find "$OUT" -maxdepth 3 -type d -name 'Token 用量助手.app' 2>/dev/null | head -1)"
 if [ -z "$APP" ]; then
   echo "未在 $OUT 下找到 Token 用量助手.app；请先运行 scripts/Build-Mac-App.command。"
@@ -113,7 +114,10 @@ fi
 
 # 6. Default userData stays at ~/Library/Application Support/TokenUsageAssistant (source-level confirmation).
 ASAR="$APP/Contents/Resources/app.asar"
-if [ -f "$ASAR" ] && grep -aq "app.setPath('userData',path.join(app.getPath('appData'),'TokenUsageAssistant'))" "$ASAR"; then
+# Whitespace-tolerant: the source is Prettier-formatted since T1.3.
+S='[[:space:]]*'
+USERDATA_RE="app\.setPath\(${S}'userData'${S},${S}path\.join\(${S}app\.getPath\(${S}'appData'${S}\)${S},${S}'TokenUsageAssistant'${S}\)${S}\)"
+if [ -f "$ASAR" ] && grep -aqE "$USERDATA_RE" "$ASAR"; then
   record 'defaultUserDataPath' 1 'asar 内主进程源码确认 userData 默认仍为 ~/Library/Application Support/TokenUsageAssistant'
 else
   record 'defaultUserDataPath' 0 '未在 app.asar 中确认默认 userData 路径设置'
