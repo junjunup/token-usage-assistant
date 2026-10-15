@@ -23,6 +23,8 @@ jobs:
       - name: Disable line-ending conversion
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags are needed to find the previous version for the upgrade check
       - uses: pnpm/action-setup@v6
         with:
           version: 11.19.0
@@ -44,6 +46,35 @@ jobs:
           node scripts/run-packaged-smoke.cjs --exe "release-out/TokenUsageAssistant-Portable-$V.exe" --report release-out/smoke-result-windows.json
       - name: Package integrity
         run: node scripts/verify-package.cjs --out release-out --report release-out/package-integrity.json
+      # Upgrade check with real DPAPI: the previous v* tag is rebuilt from source (app.asar only, no installer)
+      # and upgraded to this build in an isolated directory. The old package is a source rebuild of the tag,
+      # not a downloaded release binary. The profile is chosen from the two versions (scripts/upgrade-profiles).
+      - name: Build previous version from its tag
+        run: |
+          git -c versionsort.suffix=- tag --merged HEAD --list 'v*' --sort=-v:refname > tags.txt
+          git tag --points-at HEAD > head-tags.txt
+          PREV=$(grep -vxF -f head-tags.txt tags.txt | head -1 || true)
+          [ -n "$PREV" ] || { echo "No previous v* tag found"; exit 1; }
+          echo "Previous version tag: $PREV"
+          echo "PREV_TAG=$PREV" >> "$GITHUB_ENV"
+          ROOT=$(pwd -W)
+          git worktree add ../prev-src "$PREV"
+          cd ../prev-src
+          pnpm install --frozen-lockfile
+          pnpm run build
+          pnpm exec electron-builder --win --x64 --dir --publish never --config.electronDist="$ROOT/node_modules/electron/dist" --config.directories.output="$ROOT/prev-out"
+      - name: Upgrade verification (previous tag -> this build, real DPAPI)
+        run: |
+          ROOT=$(pwd -W)
+          ./node_modules/electron/dist/electron.exe scripts/verify-upgrade.cjs \
+            --old-asar="$ROOT/prev-out/win-unpacked/resources/app.asar" \
+            --new-asar="$ROOT/release-out/win-unpacked/resources/app.asar" \
+            --test-directory="$ROOT/work/upgrade-ci"
+      - name: Keep upgrade report
+        if: always()
+        run: |
+          [ -f work/upgrade-ci/upgrade-native-report.json ] || exit 0
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync("work/upgrade-ci/upgrade-native-report.json"));r.oldPackageSource="source rebuild of tag "+process.env.PREV_TAG+" (not a downloaded release binary)";fs.writeFileSync("release-out/upgrade-native-report.json",JSON.stringify(r,null,2)+"\n")'
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -54,6 +85,7 @@ jobs:
             release-out/TokenUsageAssistant-Portable-*.exe
             release-out/package-integrity.json
             release-out/smoke-result-windows.json
+            release-out/upgrade-native-report.json
 
   mac:
     runs-on: macos-14
@@ -109,6 +141,9 @@ jobs:
             const pkg = JSON.parse(fs.readFileSync(a + "package-integrity.json"));
             const win = JSON.parse(fs.readFileSync(a + "smoke-result-windows.json"));
             const mac = JSON.parse(fs.readFileSync(a + "mac-app-integrity.json"));
+            const upgrade = JSON.parse(fs.readFileSync(a + "upgrade-native-report.json"));
+            console.log(JSON.stringify({ upgrade: upgrade.status, profile: upgrade.profile, from: upgrade.fromVersion, to: upgrade.toVersion }));
+            if (upgrade.status !== "passed" || upgrade.toVersion !== v) process.exit(1);
             const seen = { packageIntegrity: pkg.version, windowsSmoke: win.version, macReport: mac.version, macSmoke: mac.smokeEvidence && mac.smokeEvidence.version };
             console.log(JSON.stringify({ expected: v, ...seen }));
             if (!pkg.ok || !win.ok || !mac.ok || Object.values(seen).some((x) => x !== v)) process.exit(1);
