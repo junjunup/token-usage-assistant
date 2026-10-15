@@ -250,6 +250,16 @@ export function DesktopApp() {
   ];
   const changeTheme = () => pref({ theme: dark ? 'light' : 'dark' });
   const refresh = () => action(() => bridge.refresh());
+  // Re-read the encrypted account list after a failed load (e.g. Keychain access denied); never overwrites it.
+  const retryCredentials = async () => {
+    const value = await action(() => bridge.retryCredentials());
+    if (value)
+      setToast(
+        value.credentialIssue
+          ? { title: '仍无法读取本机账户列表，已有加密文件未被覆盖。', error: true }
+          : { title: '已重新读取本机账户列表。' },
+      );
+  };
 
   if (widget)
     return (
@@ -563,10 +573,17 @@ export function DesktopApp() {
                         {state.credentialIssue || data.errors[0].message}
                         {c ? ' 已保留上次成功数据。' : ''}
                       </span>
-                      <button onClick={() => (data.status === 'auth-error' ? setView('settings') : refresh())}>
-                        {data.status === 'auth-error' ? '重新连接' : '重试'}
-                        <ArrowUpRight size={14} />
-                      </button>
+                      {state.credentialIssue ? (
+                        <button onClick={retryCredentials}>
+                          重新读取
+                          <ArrowsClockwise size={14} />
+                        </button>
+                      ) : (
+                        <button onClick={() => (data.status === 'auth-error' ? setView('settings') : refresh())}>
+                          {data.status === 'auth-error' ? '重新连接' : '重试'}
+                          <ArrowUpRight size={14} />
+                        </button>
+                      )}
                     </div>
                   )}
                   <div className="overview-grid">
