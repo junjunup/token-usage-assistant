@@ -3,6 +3,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { Worker } = require('node:worker_threads');
 const { readJson, atomicWrite } = require('./store.cjs');
+const { log } = require('./logger.cjs');
 const { rangeFor, accountBins, forecast, validatePrice } = require('./analytics-core.cjs');
 class AnalyticsService {
   constructor({ store, monitor, history, client, now = Date.now, localReader = null, tools = null }) {
@@ -22,7 +23,10 @@ class AnalyticsService {
     for (const [key, v] of Object.entries(p)) {
       try {
         this.prices[key] = validatePrice(v);
-      } catch {}
+      } catch {
+        // An invalid stored price entry is skipped, as before.
+        log.warn('analytics', 'invalid-price-skipped');
+      }
     }
     const cfg = readJson(store.file('local-source.json'), {});
     const roots = (process.env.ZCODE_HOME || path.join(os.homedir(), '.zcode'))

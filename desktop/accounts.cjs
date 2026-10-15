@@ -3,6 +3,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { LocalStore, fingerprint } = require('./store.cjs');
+const { log } = require('./logger.cjs');
 const { UsageMonitor } = require('./monitor.cjs');
 const { HistoryStore } = require('./history.cjs');
 const { providerInfo } = require('./provider-catalog.cjs');
@@ -236,7 +237,9 @@ class AccountManager extends EventEmitter {
     for (const name of ['snapshot.json', 'history.json'])
       try {
         fs.unlinkSync(runtime.scoped.file(name));
-      } catch {}
+      } catch (e) {
+        if (e?.code !== 'ENOENT') log.warn('accounts', 'cache-remove-failed', { errno: e?.code });
+      }
     runtime.history.clear();
     this.emitState();
   }

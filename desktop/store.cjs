@@ -2,11 +2,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { DEFAULT_SETTINGS, patchSettings } = require('./domain.cjs');
+const { log } = require('./logger.cjs');
 function atomicWrite(file, value) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const temp = file + '.tmp';
-  fs.writeFileSync(temp, JSON.stringify(value), { encoding: 'utf8', mode: 0o600 });
-  fs.renameSync(temp, file);
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const temp = file + '.tmp';
+    fs.writeFileSync(temp, JSON.stringify(value), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(temp, file);
+  } catch (e) {
+    log.warn('store', 'write-failed', { errno: e?.code });
+    throw e;
+  }
 }
 function readJson(file, fallback = null) {
   try {
@@ -35,7 +41,10 @@ class LocalStore {
     for (const [k, v] of Object.entries(raw.preferences || {})) {
       try {
         settings = patchSettings(settings, { [k]: v });
-      } catch {}
+      } catch {
+        // An invalid stored preference is skipped and the default kept, as before.
+        log.warn('store', 'invalid-preference-skipped');
+      }
     }
     return { preferences: settings, bounds: raw.bounds || {} };
   }

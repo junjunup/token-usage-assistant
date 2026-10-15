@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { retryAfter } = require('./domain.cjs');
+const { log } = require('./logger.cjs');
 const { ApiError, CommandCodeClient } = require('./api.cjs');
 const { providerInfo } = require('./provider-catalog.cjs');
 const { normalizeGlm, normalizeMiniMax, normalizeVolcengine, normalizeOpenCodeGo } = require('./provider-domain.cjs');
@@ -159,7 +160,8 @@ class QuotaClient {
             },
           };
     const controller = new AbortController(),
-      timer = setTimeout(() => controller.abort(), this.timeout);
+      timer = setTimeout(() => controller.abort(), this.timeout),
+      started = Date.now();
     try {
       const { url, ...options } = req;
       const response = await this.fetch(url, { ...options, redirect: 'error', signal: controller.signal });
@@ -198,8 +200,13 @@ class QuotaClient {
       if (failure) throw new ProviderError(p, failure[1], failure[0], retryAfter(response.headers.get('retry-after')));
       return parsed;
     } catch (e) {
-      if (e instanceof ProviderError) throw e;
-      throw new ProviderError(p);
+      const failure = e instanceof ProviderError ? e : new ProviderError(p);
+      log.warn('providers', failure.status ? 'http' : /^[a-z]+$/.test(failure.code) ? failure.code : 'network', {
+        provider: p,
+        status: failure.status,
+        durationMs: Date.now() - started,
+      });
+      throw failure;
     } finally {
       clearTimeout(timer);
     }

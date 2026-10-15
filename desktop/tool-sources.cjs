@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const { Worker } = require('node:worker_threads');
 const { atomicWrite, readJson } = require('./store.cjs');
+const { log } = require('./logger.cjs');
 const { rangeFor } = require('./analytics-core.cjs');
 const { pathKey } = require('./platform.cjs');
 const KINDS = new Set(['zcode', 'harness', 'codex', 'claude-code', 'opencode']);
@@ -72,7 +73,9 @@ class ToolSources extends EventEmitter {
         let identity = null;
         try {
           identity = canonical(legacyFile).identity;
-        } catch {}
+        } catch {
+          // Probe: the legacy file may be missing; the source is kept without an identity, as before.
+        }
         this.entries = [
           {
             id: 'legacy-zcode',
@@ -151,7 +154,9 @@ class ToolSources extends EventEmitter {
       let sameFile = pathKey(s.file) === pathKey(item.file) || s.identity === item.identity;
       try {
         sameFile ||= canonical(s.file, s.kind === 'codex').identity === item.identity;
-      } catch {}
+      } catch {
+        // Probe: an existing source file may be gone; it then simply cannot be the same file.
+      }
       if (sameFile || (installationId && s.installationId === installationId))
         throw publicError('该工具来源已添加；副本也不需要重复添加。');
     }
@@ -273,12 +278,28 @@ class ToolSources extends EventEmitter {
       const worker = new Worker(path.join(__dirname, 'tool-worker.cjs'), {
         workerData: { ...data, indexFile: this.indexFile },
       });
+      const started = Date.now();
       const active = {
         worker,
         requestId,
         finish: (result) => {
           if (done) return;
           done = true;
+          // Per-source timings travel in an internal field and are removed before the result is used.
+          const timings = Array.isArray(result?.timings) ? result.timings : [];
+          if (result && 'timings' in result) delete result.timings;
+          for (const item of timings)
+            log.info('tool-sources', 'source', {
+              kind: item.kind,
+              status: item.status,
+              count: item.count,
+              durationMs: item.durationMs,
+            });
+          log[['ready', 'stale', 'cancelled'].includes(result?.status) ? 'info' : 'warn']('tool-sources', 'run', {
+            stage: data.operation,
+            status: result?.status,
+            durationMs: Date.now() - started,
+          });
           clearTimeout(timer);
           if (this.active === active) this.active = null;
           resolve(result);
@@ -386,7 +407,9 @@ class ToolSources extends EventEmitter {
     );
     try {
       atomicWrite(this.store.file('tool-source-status.json'), timestamps);
-    } catch {}
+    } catch (e) {
+      log.warn('tool-sources', 'status-write-failed', { errno: e?.code });
+    }
     this.emit('status');
     return {
       ...result,

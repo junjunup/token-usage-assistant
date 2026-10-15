@@ -9,7 +9,11 @@ const { scanCodex } = require('./codex-reader.cjs');
 const { scanClaude } = require('./claude-collector.cjs');
 const { normalizeZcodeRecord, normalizeHarnessRecord, aggregateTools } = require('./tool-analytics.cjs');
 const { associateRows } = require('./association-rules.cjs');
-function execute({ operation, indexFile, sourceId, sources, range, filters, prices, associationRules = [] }) {
+// timings (optional): per-source diagnostics collected for the main-thread log; never part of the result.
+function execute(
+  { operation, indexFile, sourceId, sources, range, filters, prices, associationRules = [] },
+  timings = [],
+) {
   let db;
   try {
     fs.mkdirSync(path.dirname(indexFile), { recursive: true });
@@ -27,6 +31,7 @@ function execute({ operation, indexFile, sourceId, sources, range, filters, pric
       zcodeIdentities = new Set();
     for (const source of sources) {
       let result, rows;
+      const sourceStarted = Date.now();
       try {
         result =
           source.kind === 'opencode'
@@ -75,6 +80,12 @@ function execute({ operation, indexFile, sourceId, sources, range, filters, pric
         scannedRows: rows.length,
         missingUsage: current.filter((r) => !r.usageReported).length,
       });
+      timings.push({
+        kind: source.kind,
+        status: result.status,
+        count: rows.length,
+        durationMs: Date.now() - sourceStarted,
+      });
       for (const row of rows) records.push(row);
     }
     const available = reports.some((s) => ['ready', 'stale'].includes(s.status));
@@ -121,7 +132,8 @@ function execute({ operation, indexFile, sourceId, sources, range, filters, pric
 }
 if (parentPort) {
   try {
-    parentPort.postMessage(execute(workerData));
+    const timings = [];
+    parentPort.postMessage({ ...execute(workerData, timings), timings });
   } catch {
     parentPort.postMessage({
       source: 'tools',

@@ -1,5 +1,6 @@
 const { EventEmitter } = require('node:events');
 const { nextDelay, AlertTracker, monthlyQuota } = require('./domain.cjs');
+const { log } = require('./logger.cjs');
 class UsageMonitor extends EventEmitter {
   constructor(client, { settings, persist = () => {}, notify = () => {}, now = Date.now } = {}) {
     super();
@@ -72,6 +73,12 @@ class UsageMonitor extends EventEmitter {
       this.state.updatedAt[kind] = result.observedAt === undefined ? now : result.observedAt;
     }
     this.state.errors = result.errors;
+    for (const e of result.errors)
+      log.warn('monitor', /^[a-z0-9-]+$/i.test(e.code || '') ? e.code : 'refresh-error', {
+        provider: this.client?.provider || 'commandcode',
+        stage: e.endpoint,
+        status: e.status,
+      });
     const hasData = !!this.state.parts.credits || !!this.state.parts.summary || !!this.state.parts.balance,
       received = !!result.parts.credits || !!result.parts.summary || !!result.parts.balance;
     this.state.status = result.errors.some((e) => [401, 403].includes(e.status))
@@ -94,7 +101,9 @@ class UsageMonitor extends EventEmitter {
         this.notify(alert);
     try {
       this.persist({ parts: this.state.parts, updatedAt: this.state.updatedAt, alerts: this.alerts.levels });
-    } catch {}
+    } catch (e) {
+      log.warn('monitor', 'persist-failed', { errno: e?.code });
+    }
     this.schedule(nextDelay(result.errors, this.failures, this.settings.refreshSeconds));
   }
   schedule(delay) {
@@ -119,7 +128,11 @@ class UsageMonitor extends EventEmitter {
         const result = await this.client.usage(this.key, this.orgId);
         if (generation !== this.generation) return this.snapshot();
         this.receive(result);
-      } catch {
+      } catch (e) {
+        log.warn('monitor', 'refresh-exception', {
+          provider: this.client?.provider || 'commandcode',
+          status: e?.status,
+        });
         if (generation === this.generation) {
           this.state.status = 'offline';
           this.state.errors = [
