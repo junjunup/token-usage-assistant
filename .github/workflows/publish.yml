@@ -1,0 +1,77 @@
+name: Publish
+
+# Manually publishes an already-built release to the public installer repository (D8).
+# It reuses the exact installers attached to the private release for the tag (no rebuild) and
+# uploads only the four installers plus SHA256SUMS.txt: no source, no integrity JSON (they hold
+# runner paths), no smoke reports. Gate: the private release must be published (not a draft)
+# after review. dry_run (default) prepares and lists everything without publishing.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish, e.g. v1.8.0-beta.6'
+        required: true
+      dry_run:
+        description: 'Only prepare and list files; do not publish'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_REPO: junjunup/TokenUsageAssistant
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Invalid tag: $TAG"; exit 1; }
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Download installers from the private release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          mkdir public
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D public \
+            -p "TokenUsageAssistant-Setup-$VERSION.exe" \
+            -p "TokenUsageAssistant-Portable-$VERSION.exe" \
+            -p "TokenUsageAssistant-Mac-arm64-$VERSION.dmg" \
+            -p "TokenUsageAssistant-Mac-arm64-$VERSION.zip"
+          [ "$(ls public | wc -l)" -eq 4 ] || { echo "Expected exactly 4 installers"; ls -l public; exit 1; }
+
+      - name: Checksums and notes
+        run: |
+          (cd public && sha256sum TokenUsageAssistant-* > SHA256SUMS.txt)
+          cat > notes.md <<NOTES
+          Token 用量助手 $VERSION（测试版）
+
+          - Windows x64：Setup（安装版）或 Portable（免安装版），未签名。
+          - macOS Apple Silicon（13+）：DMG 或 ZIP。ad-hoc 签名、未公证：首次打开请在「应用程序」中右键 → 打开。
+          - 校验：SHA256SUMS.txt。
+          - 证据等级：CI 打包原生 smoke（隔离样例）；不代表真实账户或真机验收。
+          NOTES
+          {
+            echo "### Files to publish to $PUBLIC_REPO ($VERSION)"
+            echo '```'
+            ls -l public
+            cat public/SHA256SUMS.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish to the public installer repository
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASE_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "PUBLIC_RELEASE_TOKEN secret is not set"; exit 1; }
+          PRE=""; [[ "$VERSION" == *-* ]] && PRE="--prerelease"
+          gh release create "$TAG" public/* -R "$PUBLIC_REPO" $PRE \
+            --title "Token 用量助手 $VERSION" --notes-file notes.md
