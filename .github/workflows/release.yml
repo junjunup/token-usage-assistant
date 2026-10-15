@@ -36,8 +36,9 @@ jobs:
       - name: Download Electron runtime
         run: node node_modules/electron/install.js
       - run: pnpm run build
+      # --publish never: electron-builder would otherwise try to upload to GitHub on its own in CI.
       - name: Package (NSIS + portable)
-        run: pnpm exec electron-builder --win --x64 --config.electronDist=node_modules/electron/dist --config.directories.output=release-out
+        run: pnpm exec electron-builder --win --x64 --publish never --config.electronDist=node_modules/electron/dist --config.directories.output=release-out
       - name: Native smoke test (portable EXE, isolated directory)
         run: |
           V=$(node -p "require('./package.json').version")
@@ -72,7 +73,7 @@ jobs:
         run: node node_modules/electron/install.js
       - run: pnpm run build
       - name: Package (DMG + ZIP, arm64, ad-hoc)
-        run: pnpm run package:mac -- --config.directories.output=release-out
+        run: pnpm run package:mac -- --publish never --config.directories.output=release-out
       # codesign --verify --deep --strict, packaged native smoke, Info.plist, entitlements.
       # spctl is recorded (expected rejected without notarization) and is never a gate.
       - name: Verify Mac app
