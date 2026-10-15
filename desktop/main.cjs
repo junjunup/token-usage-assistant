@@ -68,6 +68,7 @@ let accounts,
   toolSources,
   associations,
   claudeCollector,
+  smokeHandshakeTimer,
   connectionBusy = false;
 const notifications = new Set(),
   readySurfaces = new Set();
@@ -668,6 +669,8 @@ function installIpc() {
 async function finishSmoke() {
   if (finishSmoke.started) return;
   finishSmoke.started = true;
+  // The handshake succeeded: its timeout must not exit the app while the smoke checks are still running.
+  clearTimeout(smokeHandshakeTimer);
   try {
     await monitor.refresh();
     const analyticsResult = await analytics.get({ source: 'local', range: '7d' });
@@ -935,7 +938,7 @@ else {
       installIpc();
       if (smoke) {
         monitor.configure('local-smoke-key');
-        setTimeout(() => {
+        smokeHandshakeTimer = setTimeout(() => {
           atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), {
             ok: false,
             error: 'renderer handshake timeout',
