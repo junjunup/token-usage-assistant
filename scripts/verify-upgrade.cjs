@@ -1,15 +1,79 @@
-// Run with Electron, never Node: this verifies actual Windows safeStorage and packaged modules.
-// Example: electron scripts/verify-upgrade-native.cjs --old-asar=<absolute app.asar> --new-asar=<absolute app.asar> --test-directory=<new project/work directory>
-const { app, safeStorage } = require('electron');
+// Packaged-module upgrade verifier (replaces the per-version verify-upgrade*-native.cjs scripts).
+// Version-specific expectations live in scripts/upgrade-profiles/<from>-to-<to>.cjs.
+//
+// Run with Electron on Windows, never Node: this verifies actual Windows safeStorage (DPAPI) and packaged modules.
+//   electron scripts/verify-upgrade.cjs --old-asar=<absolute app.asar> --new-asar=<absolute app.asar>
+//     --test-directory=<new project/work child> [--profile=<name>]
+// Without --profile, the profile is chosen from the two package versions.
+// List the planned checks of a profile (plain Node, no Electron):
+//   node scripts/verify-upgrade.cjs --list-checks --profile=<name>
 const fs = require('node:fs');
-const originalFs = require('original-fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { DatabaseSync } = require('node:sqlite');
 
 const projectRoot = path.resolve(__dirname, '..'),
-  workRoot = path.join(projectRoot, 'work');
+  workRoot = path.join(projectRoot, 'work'),
+  profileRoot = path.join(__dirname, 'upgrade-profiles');
 const option = (name) => process.argv.find((value) => value.startsWith(`--${name}=`))?.slice(name.length + 3);
+const loadProfile = (name) => ({ name, ...require(path.join(profileRoot, name + '.cjs')) });
+const profileNames = () =>
+  fs
+    .readdirSync(profileRoot)
+    .filter((file) => file.endsWith('.cjs'))
+    .map((file) => file.slice(0, -4))
+    .sort();
+const accountWord = (profile) => (profile.deepseekAccount ? 'Five' : 'Four');
+
+// The ordered check names a profile runs. A real run fails if the executed checks differ from this list.
+function plannedChecks(profile) {
+  return [
+    profile.oldVersionCheck,
+    profile.newVersionCheck,
+    'nativeSafeStorageAvailable',
+    `oldVaultDecrypts${accountWord(profile)}Accounts`,
+    'oldPricesHaveImplicitUSD',
+    'vaultContainsNoPlaintextSyntheticCredentials',
+    'preferencesAndWindowBoundsPreserved',
+    'nativeVaultStillDecrypts',
+    `all${accountWord(profile)}AccountsAndSelectionPreserved`,
+    'cachedSnapshotsAndHistoryLoaded',
+    'legacySourceMigratedIndependently',
+    'storedLegacyPriceRatesPreserved',
+    'packagedWorkerAnalyzesMigratedSource',
+    'reportPricesGainExplicitUSD',
+    'estimateUsesOriginalUSDRates',
+    'toolDataNotAttributedToSelectedAccount',
+    'legacyZcodeQueryStillWorks',
+    profile.platforms.check,
+    'existingFilesRemainByteIdentical',
+    `${profile.rollbackLabel}RollbackCanReadVaultAndSettings`,
+    `${profile.rollbackLabel}RollbackCanReadLegacySourceAndPrice`,
+    ...(profile.association
+      ? [
+          'upgradeDoesNotAutoAssociate',
+          'manualAssociationWorksAfterUpgrade',
+          'associationConfigurationSurvivesRestart',
+          'newMetadataDoesNotAffectOldVault',
+        ]
+      : []),
+    'noNetworkRequests',
+    'isolatedUserDataOnly',
+  ];
+}
+
+if (process.argv.includes('--list-checks')) {
+  const name = option('profile');
+  if (!name) {
+    console.log(JSON.stringify(profileNames()));
+  } else {
+    console.log(JSON.stringify(plannedChecks(loadProfile(name))));
+  }
+  process.exit(0);
+}
+
+const { app, safeStorage } = require('electron');
+const originalFs = require('original-fs');
+const { DatabaseSync } = require('node:sqlite');
 function requiredAbsolute(name) {
   const value = option(name);
   if (!value || !path.isAbsolute(value)) throw new Error(`Missing absolute --${name}`);
@@ -46,6 +110,7 @@ try {
 const report = {
   kind: 'native-packaged-module-upgrade',
   syntheticOnly: true,
+  profile: null,
   fromVersion: null,
   toVersion: null,
   platform: process.platform,
@@ -65,6 +130,7 @@ const check = (name, condition) => {
   report.checks[name] = !!condition;
   if (!condition) throw new Error(name);
 };
+let profile = null;
 let stage = 'ready',
   oldAccounts,
   newAccounts,
@@ -97,13 +163,24 @@ app
     stage = 'version-and-encryption';
     report.fromVersion = load(oldAsar, 'package.json').version;
     report.toVersion = load(newAsar, 'package.json').version;
-    check('oldPackageRecognized', ['1.7.0'].includes(report.fromVersion));
-    check('newPackageIs180Beta1', report.toVersion === '1.8.0-beta.1');
+    const requested = option('profile');
+    profile = requested
+      ? loadProfile(requested)
+      : profileNames()
+          .map(loadProfile)
+          .find((candidate) => candidate.from.includes(report.fromVersion) && candidate.to === report.toVersion);
+    if (!profile) {
+      report.missingProfile = `${report.fromVersion}-to-${report.toVersion}`;
+      throw new Error('missingProfile');
+    }
+    report.profile = profile.name;
+    check(profile.oldVersionCheck, profile.from.includes(report.fromVersion));
+    check(profile.newVersionCheck, report.toVersion === profile.to);
     check('nativeSafeStorageAvailable', safeStorage.isEncryptionAvailable());
     const archiveHash = (file) => crypto.createHash('sha256').update(originalFs.readFileSync(file)).digest('hex');
     report.packages = { oldAsarSha256: archiveHash(oldAsar), newAsarSha256: archiveHash(newAsar) };
 
-    stage = 'seed-with-packaged-180beta1';
+    stage = `seed-with-packaged-${profile.seedStage}`;
     const oldStoreModule = load(oldAsar, 'desktop/store.cjs'),
       oldDomain = load(oldAsar, 'desktop/domain.cjs'),
       oldAccountModule = load(oldAsar, 'desktop/accounts.cjs'),
@@ -145,14 +222,18 @@ app
         orgId: '',
         credential: { accessKeyId: 'synthetic-volcengine-access-only', secretKey: 'synthetic-volcengine-secret-only' },
       },
-      {
-        id: crypto.randomUUID(),
-        provider: 'deepseek',
-        region: 'global',
-        label: 'Synthetic DeepSeek',
-        orgId: '',
-        credential: { apiKey: 'synthetic-deepseek-upgrade-only' },
-      },
+      ...(profile.deepseekAccount
+        ? [
+            {
+              id: crypto.randomUUID(),
+              provider: 'deepseek',
+              region: 'global',
+              label: 'Synthetic DeepSeek',
+              orgId: '',
+              credential: { apiKey: 'synthetic-deepseek-upgrade-only' },
+            },
+          ]
+        : []),
     ];
     const vault = { activeId: accounts[0].id, accounts };
     oldStore.saveAccounts(vault);
@@ -202,8 +283,8 @@ app
     });
     oldAccounts.load();
     check(
-      'oldVaultDecryptsFiveAccounts',
-      !oldAccounts.issue && oldAccounts.entries.length === 5 && equal(oldStore.accounts(), vault),
+      `oldVaultDecrypts${accountWord(profile)}Accounts`,
+      !oldAccounts.issue && oldAccounts.entries.length === accounts.length && equal(oldStore.accounts(), vault),
     );
     const sample = {
       parts: {
@@ -279,7 +360,7 @@ app
     oldAccounts.dispose();
     oldAccounts = null;
 
-    stage = 'load-with-packaged-180beta1';
+    stage = `load-with-packaged-${profile.loadStage}`;
     const newStoreModule = load(newAsar, 'desktop/store.cjs'),
       { AccountManager } = load(newAsar, 'desktop/accounts.cjs'),
       { AnalyticsService } = load(newAsar, 'desktop/analytics-service.cjs'),
@@ -299,9 +380,9 @@ app
     });
     newAccounts.load();
     check(
-      'allFiveAccountsAndSelectionPreserved',
+      `all${accountWord(profile)}AccountsAndSelectionPreserved`,
       !newAccounts.issue &&
-        newAccounts.entries.length === 5 &&
+        newAccounts.entries.length === accounts.length &&
         newAccounts.activeId === vault.activeId &&
         equal(newAccounts.entries, accounts),
     );
@@ -353,9 +434,10 @@ app
     );
     const legacyResult = await analytics.get({ source: 'local', range: 'today' });
     check('legacyZcodeQueryStillWorks', legacyResult.source === 'local' && legacyResult.summary.total === 120);
+    const platforms = profile.platforms;
     check(
-      'sevenPlatformCapabilitiesPresent',
-      PROVIDERS.length === 7 &&
+      platforms.check,
+      PROVIDERS.length === platforms.count &&
         PROVIDERS.every(
           (provider) =>
             typeof provider.capabilities?.quota === 'boolean' &&
@@ -363,8 +445,10 @@ app
             typeof provider.capabilities?.usageSummary === 'boolean' &&
             typeof provider.capabilities?.actualBilling === 'boolean',
         ) &&
-        PROVIDERS.filter((provider) => provider.capabilities.quota).length === 6 &&
-        PROVIDERS.find((provider) => provider.id === 'deepseek').capabilities.balance,
+        (platforms.quota === 'all'
+          ? PROVIDERS.every((provider) => provider.capabilities.quota)
+          : PROVIDERS.filter((provider) => provider.capabilities.quota).length === platforms.quota) &&
+        (!platforms.deepseekBalance || PROVIDERS.find((provider) => provider.id === 'deepseek').capabilities.balance),
     );
 
     stage = 'verify-preservation-and-rollback';
@@ -382,47 +466,55 @@ app
       now: () => now,
     });
     check(
-      '170RollbackCanReadVaultAndSettings',
+      `${profile.rollbackLabel}RollbackCanReadVaultAndSettings`,
       equal(rollbackStore.accounts(), vault) && equal(rollbackSettings, { preferences, bounds }),
     );
     check(
-      '170RollbackCanReadLegacySourceAndPrice',
+      `${profile.rollbackLabel}RollbackCanReadLegacySourceAndPrice`,
       rollbackAnalytics.file === dbFile && equal(rollbackAnalytics.prices[modelKey], price),
     );
-    stage = 'manual-association-and-rollback';
-    const { Associations } = load(newAsar, 'desktop/associations.cjs'),
-      links = new Associations({ store: newStore, accounts: newAccounts, tools, now: () => now });
-    tools.associations = links;
-    check(
-      'upgradeDoesNotAutoAssociate',
-      links.groups.length === 0 && links.rules.length === 0 && !fs.existsSync(links.file),
-    );
-    const groupId = links.saveGroup({
-      label: 'Synthetic billing account',
-      memberIds: [accounts[0].id],
-      primaryId: accounts[0].id,
-      confirmed: true,
-    });
-    links.saveRule({
-      groupId,
-      sourceId: 'legacy-zcode',
-      from: now - 86400000,
-      to: null,
-      provider: '',
-      model: '',
-      confirmed: true,
-    });
-    const linked = await tools.query({ range: 'today', billingGroupId: groupId });
-    check('manualAssociationWorksAfterUpgrade', linked.accountId === groupId && linked.summary.total === 120);
-    const restored = new Associations({ store: newStore, accounts: newAccounts, tools, now: () => now });
-    check('associationConfigurationSurvivesRestart', equal(restored.publicState(), links.publicState()));
-    check(
-      'newMetadataDoesNotAffectOldVault',
-      equal(rollbackStore.accounts(), vault) &&
-        preservedFiles.every((name) => hash(newStore.file(name)) === before[name]),
-    );
+    if (profile.association) {
+      stage = 'manual-association-and-rollback';
+      const { Associations } = load(newAsar, 'desktop/associations.cjs'),
+        links = new Associations({ store: newStore, accounts: newAccounts, tools, now: () => now });
+      tools.associations = links;
+      check(
+        'upgradeDoesNotAutoAssociate',
+        links.groups.length === 0 && links.rules.length === 0 && !fs.existsSync(links.file),
+      );
+      const groupId = links.saveGroup({
+        label: 'Synthetic billing account',
+        memberIds: [accounts[0].id],
+        primaryId: accounts[0].id,
+        confirmed: true,
+      });
+      links.saveRule({
+        groupId,
+        sourceId: 'legacy-zcode',
+        from: now - 86400000,
+        to: null,
+        provider: '',
+        model: '',
+        confirmed: true,
+      });
+      const linked = await tools.query({ range: 'today', billingGroupId: groupId });
+      check('manualAssociationWorksAfterUpgrade', linked.accountId === groupId && linked.summary.total === 120);
+      const restored = new Associations({ store: newStore, accounts: newAccounts, tools, now: () => now });
+      check('associationConfigurationSurvivesRestart', equal(restored.publicState(), links.publicState()));
+      check(
+        'newMetadataDoesNotAffectOldVault',
+        equal(rollbackStore.accounts(), vault) &&
+          preservedFiles.every((name) => hash(newStore.file(name)) === before[name]),
+      );
+    }
     check('noNetworkRequests', networkCalls === 0);
     check('isolatedUserDataOnly', app.getPath('userData') === path.join(directory, 'isolated-electron'));
+    // Guard against drift between plannedChecks() and the checks actually executed (not itself a check).
+    const planned = plannedChecks(profile);
+    if (!equal(Object.keys(report.checks), planned)) {
+      report.planMismatch = { planned, executed: Object.keys(report.checks) };
+      throw new Error('planMismatch');
+    }
     report.status = 'passed';
     report.finishedAt = new Date().toISOString();
   })
@@ -443,6 +535,7 @@ app
       console.log(
         JSON.stringify({
           status: report.status,
+          profile: report.profile,
           passedChecks: Object.values(report.checks).filter(Boolean).length,
           failedStage: report.failedStage || null,
           reportFile: output(),
