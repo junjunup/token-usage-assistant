@@ -9,6 +9,11 @@
 - 引入 Prettier + ESLint 并一次性格式化全部代码；构建产物经比对，语义不变（T1.3）。
 - 预览模块生成脚本改为不受空白影响，并在残留 `require` 时让构建报错（T1.3）。
 - 文档重构：新的 AGENTS.md、README、PROJECT_HANDOFF 和本文件；旧版文档归档到 `docs/history/`（T1.4）。
+- 处理 ESLint 基线的 26 个错误，运行行为不变（T1.5）。
+- 推送到私有仓库；新增 CI：Windows 和 macOS 上运行格式检查、lint、测试、构建（T2.1、T2.2）。
+- 新增 Release 工作流，由 CI 产出全部 4 个安装包，并做打包原生 smoke、包内容与源码比对、EXE 内嵌载荷比对；Mac 包还做签名校验。新增手动触发的 Publish 工作流，发布到公开安装包仓库 junjunup/TokenUsageAssistant（T2.3）。
+- 7 份升级验证脚本合并为一个通用脚本加按版本区分的 profile；Release 工作流从上一个版本标签重建旧版，做真实 DPAPI 升级验证（T2.4）。
+- 版本号只写在 `package.json` 一处；删除 beta.5 专用的交付脚本（T2.5）。
 
 ## 1.8.0-beta.5（2026-09-26，Mac 打包方式于 2026-09-30 更新）
 
