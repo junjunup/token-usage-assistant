@@ -73,7 +73,7 @@ jobs:
         run: node node_modules/electron/install.js
       - run: pnpm run build
       - name: Package (DMG + ZIP, arm64, ad-hoc)
-        run: pnpm run package:mac -- --publish never --config.directories.output=release-out
+        run: pnpm run package:mac --publish never --config.directories.output=release-out
       # codesign --verify --deep --strict, packaged native smoke, Info.plist, entitlements.
       # spctl is recorded (expected rejected without notarization) and is never a gate.
       - name: Verify Mac app
