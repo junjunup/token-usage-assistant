@@ -9,7 +9,9 @@
 | Windows x64 | `TokenUsageAssistant-Setup-<版本>.exe`、`TokenUsageAssistant-Portable-<版本>.exe` | 便携版在隔离目录跑原生 smoke（`smoke-result-windows.json`）；`scripts/verify-package.cjs` 核对包内每个文件与源码一致，以及包内版本与 `package.json` 一致（`package-integrity.json`，含 ASAR 哈希） |
 | macOS arm64 | `TokenUsageAssistant-Mac-arm64-<版本>.dmg`、`.zip` | `scripts/Verify-Mac-Native.command`：`codesign --verify --deep --strict`、ad-hoc 签名与 bundle seal、entitlements、Info.plist（ID / 图标 / 版本）、打包后原生 smoke、默认 userData 路径；`spctl` 预期为 rejected，只记录，不作为门禁（`mac-app-integrity.json`） |
 
-最后的 `release` 作业会核对以上各报告中的版本号都等于 `package.json` 的版本；打标签触发时，还会核对标签名等于 `v<版本>`。
+**升级验证（Windows 作业，真实 DPAPI）**：从源码重建上一个 `v*` 标签的 `app.asar`（不是下载的发布二进制），用 `scripts/verify-upgrade.cjs` 在隔离目录验证「旧版写入的凭据、设置、窗口位置、缓存与历史、旧 Zcode 来源和价格 → 新版能读取，且文件逐字节不变、旧版仍可回滚读取、不自动关联账户、无网络请求」（`upgrade-native-report.json`）。各版本的预期写在 `scripts/upgrade-profiles/<旧版本>-to-<新版本>.cjs`，按两个包的版本自动选择。**升级版本号时必须同时新增对应的 profile**（例如 `1.8.0-beta.5-to-1.8.0-beta.6.cjs`，平台数等预期按新版本填写），否则 Release 工作流会因找不到 profile 而失败。用 `node scripts/verify-upgrade.cjs --list-checks --profile=<名称>` 可以查看某个 profile 的检查项。
+
+最后的 `release` 作业会核对以上各报告中的版本号都等于 `package.json` 的版本、升级报告为 passed；打标签触发时，还会核对标签名等于 `v<版本>`。
 
 ## 步骤
 
