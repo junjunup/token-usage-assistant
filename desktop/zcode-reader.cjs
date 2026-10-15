@@ -63,7 +63,9 @@ function readZcodeRows(file, range) {
     if (db) {
       try {
         db.exec('ROLLBACK');
-      } catch {}
+      } catch {
+        // Best-effort rollback of the read transaction; no transaction may be open after an error.
+      }
       db.close();
     }
   }

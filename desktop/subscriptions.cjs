@@ -140,7 +140,9 @@ class SubscriptionClient {
       let health;
       try {
         health = JSON.parse(fs.readFileSync(path.join(credential.home, 'status.json'), 'utf8'));
-      } catch {}
+      } catch {
+        // Probe: the collector status file is optional.
+      }
       const stale =
         health?.state !== 'ready' ||
         !credits.windows.length ||

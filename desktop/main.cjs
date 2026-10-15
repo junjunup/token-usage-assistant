@@ -30,6 +30,7 @@ const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
 const { windowChrome, loginOptions, readLogin, launcherName, sameFile, macDataName } = require('./platform.cjs');
 const { windowIcon, taskbarDetails } = require('./branding.cjs');
+const { log } = require('./logger.cjs');
 const isMac = process.platform === 'darwin';
 const APP_ORIGIN = 'companion://app';
 const APP_ID = 'local.commandcode.tokenusageassistant';
@@ -46,6 +47,8 @@ if (smoke) {
   const testDir = path.resolve(smokeDirArg.slice('--test-directory='.length));
   app.setPath('userData', fs.existsSync(testDir) ? fs.realpathSync(testDir) : testDir);
 }
+log.configure({ dir: path.join(app.getPath('userData'), 'logs') });
+log.info('main', 'start', { version: app.getVersion(), stage: smoke ? 'smoke' : app.isPackaged ? 'packaged' : 'dev' });
 protocol.registerSchemesAsPrivileged([
   { scheme: 'companion', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } },
 ]);
@@ -121,7 +124,9 @@ function rememberWindow(key, win) {
     saveTimer = setTimeout(() => {
       try {
         savePreferences();
-      } catch {}
+      } catch (e) {
+        log.warn('main', 'save-bounds-failed', { errno: e?.code });
+      }
     }, 350);
   }
 }
@@ -246,18 +251,22 @@ function applySettings(next) {
     try {
       app.setLoginItemSettings(loginOptions(next.launchAtLogin));
     } catch {
+      log.warn('main', 'login-item-failed');
       throw inputError('启动项设置未成功，请检查系统登录项设置。');
     }
   }
   settings = next;
   try {
     savePreferences();
-  } catch {
+  } catch (e) {
+    log.warn('main', 'save-preferences-failed', { errno: e?.code });
     settings = previous;
     if (loginChanged) {
       try {
         app.setLoginItemSettings(loginOptions(previous.launchAtLogin));
-      } catch {}
+      } catch {
+        log.warn('main', 'login-item-restore-failed');
+      }
     }
     throw inputError('设置无法保存，请检查应用数据目录');
   }
@@ -368,6 +377,11 @@ function handle(channel, fn) {
     try {
       return { ok: true, value: await fn(event, value) };
     } catch (e) {
+      log.warn('ipc', e instanceof ApiError ? 'api-error' : e?.publicMessage ? 'public-error' : 'unexpected', {
+        stage: channel,
+        status: e instanceof ApiError ? e.status : undefined,
+        errno: typeof e?.code === 'string' ? e.code : undefined,
+      });
       return {
         ok: false,
         error: e instanceof ApiError ? e.message : e?.publicMessage || '操作未完成，请重试或检查本机设置。',
@@ -537,7 +551,8 @@ function installIpc() {
         try {
           await claudeCollector.start();
           claudeCollector.generateLauncher();
-        } catch {
+        } catch (e) {
+          log.warn('claude-collector', 'start-failed', { stage: 'connect', errno: e?.code });
           throw inputError('Claude 本机采集器启动失败，请检查端口占用或本机目录权限。');
         }
         value = { ...value, home };
@@ -552,6 +567,7 @@ function installIpc() {
         try {
           toolSources.add(source);
         } catch {
+          log.warn('tool-sources', 'add-failed', { kind: source.kind });
           connectionMessage += ' 工具来源暂未添加，请在工具数据源中检查。';
         }
       }
@@ -560,6 +576,7 @@ function installIpc() {
           const error = await shell.openPath(value.home);
           if (error) connectionMessage += ' 配置目录未能自动打开，请从工具数据源位置查看启动配置。';
         } catch {
+          log.warn('main', 'open-path-failed');
           connectionMessage += ' 配置目录未能自动打开。';
         }
       }
@@ -773,6 +790,8 @@ async function finishSmoke() {
       report.balance.ok;
     atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), report);
     quitting = true;
+    log.info('main', 'smoke-finished', { status: report.ok ? 1 : 0 });
+    log.flushSync();
     app.exit(report.ok ? 0 : 1);
   } catch (error) {
     atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), {
@@ -780,6 +799,8 @@ async function finishSmoke() {
       error: 'native smoke failed',
       detail: String(error.stack || error).slice(0, 1500),
     });
+    log.error('main', 'smoke-failed');
+    log.flushSync();
     app.exit(1);
   }
 }
@@ -840,7 +861,8 @@ else {
         try {
           await claudeCollector.start();
           claudeCollector.generateLauncher();
-        } catch {
+        } catch (e) {
+          log.warn('claude-collector', 'start-failed', { stage: 'startup', errno: e?.code });
           claudeCollector.issue = 'Claude 本地采集端口不可用，请重启或重新连接。';
         }
       }
@@ -866,6 +888,7 @@ else {
           tray.on('double-click', showMain);
         }
       } catch {
+        log.warn('main', 'tray-failed');
         tray = null;
       }
       if (isMac && !app.isPackaged)
@@ -918,6 +941,8 @@ else {
             error: 'renderer handshake timeout',
             readySurfaces: [...readySurfaces],
           });
+          log.error('main', 'smoke-handshake-timeout', { count: readySurfaces.size });
+          log.flushSync();
           app.exit(1);
         }, 45000);
       } else {
@@ -928,7 +953,9 @@ else {
       });
       broadcast();
     })
-    .catch(() => {
+    .catch((e) => {
+      log.error('main', 'startup-failed', { errno: typeof e?.code === 'string' ? e.code : undefined });
+      log.flushSync();
       if (smoke)
         atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), { ok: false, error: 'startup failed' });
       app.exit(1);
@@ -944,7 +971,11 @@ else {
     clearTimeout(saveTimer);
     try {
       if (settings && store) savePreferences();
-    } catch {}
+    } catch (e) {
+      log.warn('main', 'save-on-quit-failed', { errno: e?.code });
+    }
+    log.info('main', 'quit');
+    log.flushSync();
   });
   app.on('window-all-closed', () => {
     if (!tray) app.quit();

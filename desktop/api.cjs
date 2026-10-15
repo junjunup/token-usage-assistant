@@ -6,6 +6,7 @@ const {
   normalizeSummary,
   retryAfter,
 } = require('./domain.cjs');
+const { log } = require('./logger.cjs');
 const ORIGIN = 'https://api.commandcode.ai';
 class ApiError extends Error {
   constructor(status, retryAfterMs = 0, code = '') {
@@ -37,7 +38,8 @@ class CommandCodeClient {
     const url = new URL(ENDPOINTS[kind], ORIGIN);
     for (const p of ['orgId', 'since']) if (params[p]) url.searchParams.set(p, params[p]);
     const controller = new AbortController(),
-      timer = setTimeout(() => controller.abort(), this.timeout);
+      timer = setTimeout(() => controller.abort(), this.timeout),
+      started = Date.now();
     try {
       const response = await this.fetch(url.toString(), {
         method: 'GET',
@@ -57,8 +59,14 @@ class CommandCodeClient {
         throw new ApiError(0, 0, 'schema');
       }
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError(0);
+      const failure = error instanceof ApiError ? error : new ApiError(0);
+      log.warn('api', failure.status ? 'http' : failure.code === 'schema' ? 'schema' : 'network', {
+        provider: 'commandcode',
+        stage: kind,
+        status: failure.status,
+        durationMs: Date.now() - started,
+      });
+      throw failure;
     } finally {
       clearTimeout(timer);
     }

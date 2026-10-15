@@ -3,6 +3,7 @@ const path = require('node:path');
 const http = require('node:http');
 const crypto = require('node:crypto');
 const { atomicWrite, readJson } = require('./store.cjs');
+const { log } = require('./logger.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const { normalizeClaude } = require('./subscriptions.cjs');
 const { launcherName, shellQuote } = require('./platform.cjs');
@@ -227,7 +228,9 @@ class ClaudeCollector {
           : [];
       if (['unsupported-events', 'invalid-events'].includes(state) && !gaps.includes(state)) gaps.push(state);
       atomicWrite(file, { schemaVersion: 1, state, gaps, at: Date.now() });
-    } catch {}
+    } catch {
+      log.warn('claude-collector', 'status-write-failed');
+    }
   }
   receiveQuota(input) {
     if (!supported(input.version) || !clean(input.sessionId, 200)) throw new Error('version');

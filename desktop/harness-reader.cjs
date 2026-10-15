@@ -72,7 +72,9 @@ function scanHarness(db, source, range, normalize) {
             health.state !== 'ready' ||
             !Array.isArray(health.gaps) ||
             health.gaps.length > 0;
-        } catch {}
+        } catch {
+          // Probe: the optional status file may be missing or unreadable; the source then stays unhealthy.
+        }
       }
     }
     fd = fs.openSync(source.file, 'r');
@@ -180,7 +182,9 @@ function scanHarness(db, source, range, normalize) {
     if (transaction)
       try {
         db.exec('ROLLBACK');
-      } catch {}
+      } catch {
+        // Best-effort rollback; the original failure is returned below.
+      }
     return {
       rows: [],
       status: e.code === 'UNSUPPORTED_HARNESS_FORMAT' ? 'schema' : 'error',

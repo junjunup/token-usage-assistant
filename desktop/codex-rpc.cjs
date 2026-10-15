@@ -2,6 +2,9 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { StringDecoder } = require('node:string_decoder');
 const { codexCandidates, executableFile, toolEnvironment } = require('./platform.cjs');
+const { log } = require('./logger.cjs');
+// Only the version number of the Codex user agent is logged (e.g. 0.155.0), never the full string.
+const versionOf = (agent) => /\d+\.\d+\.\d+[0-9A-Za-z.-]*/.exec(agent || '')?.[0];
 function failure(message, code) {
   return Object.assign(new Error(message), { publicMessage: message, code });
 }
@@ -25,6 +28,7 @@ async function session({ executable, home }, { spawnImpl = spawn, timeoutMs = 20
   if (!path.isAbsolute(executable || '') || !path.isAbsolute(home || ''))
     throw failure('请先选择本机 Codex 程序和配置目录。', 'codex-location');
   let child;
+  const started = Date.now();
   try {
     child = spawnImpl(executable, ['app-server', '--listen', 'stdio://'], {
       cwd: home,
@@ -33,8 +37,10 @@ async function session({ executable, home }, { spawnImpl = spawn, timeoutMs = 20
       stdio: ['pipe', 'pipe', 'pipe'],
     });
   } catch {
+    log.warn('codex-rpc', 'codex-program-start', { stage: 'spawn', durationMs: Date.now() - started });
     throw failure('Codex 程序未能启动，请检查程序位置与执行权限。', 'codex-program-start');
   }
+  let exitCode;
   let buffer = '',
     stderrTail = '',
     badArguments = false,
@@ -71,6 +77,7 @@ async function session({ executable, home }, { spawnImpl = spawn, timeoutMs = 20
     clearTimeout(killTimer);
   });
   child.on('close', (code) => {
+    if (Number.isInteger(code)) exitCode = code;
     if (!closed)
       stop(
         badArguments
@@ -173,12 +180,23 @@ async function session({ executable, home }, { spawnImpl = spawn, timeoutMs = 20
       throw failure('Codex 初始化响应格式不支持，请更新官方客户端。', 'codex-protocol');
     child.stdin.write(JSON.stringify({ method: 'initialized', params: {} }) + '\n');
     const serverVersion = init.userAgent.slice(0, 200);
-    if (initializeOnly) return { serverVersion };
+    if (initializeOnly) {
+      log.info('codex-rpc', 'probe-ok', { durationMs: Date.now() - started, version: versionOf(serverVersion) });
+      return { serverVersion };
+    }
     const account = await request('account/read', { refreshToken: false });
     if (account?.account?.type !== 'chatgpt')
       throw failure('当前 Codex 未使用 ChatGPT 套餐登录，请先在官方 Codex 中登录订阅账户。', 'codex-login-required');
     const limits = await request('account/rateLimits/read', {});
+    log.info('codex-rpc', 'ok', { stage, durationMs: Date.now() - started, version: versionOf(serverVersion) });
     return { account: account.account, limits, serverVersion };
+  } catch (e) {
+    log.warn('codex-rpc', typeof e?.code === 'string' ? e.code : 'failed', {
+      stage,
+      exitCode,
+      durationMs: Date.now() - started,
+    });
+    throw e;
   } finally {
     stop();
   }
