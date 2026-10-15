@@ -1,8 +1,8 @@
 // Verify a Windows package build against the source tree and write package-integrity.json.
 // Usage: node scripts/verify-package.cjs [--out <dir>] [--report <file>] [--payloads [--7z <path>]]
 // Defaults: --out release-v<version>, --report docs/verification-<version>/package-integrity.json
-// --payloads extracts resources\app.asar from the Setup and Portable EXEs with 7-Zip (default: 7z on PATH)
-// and requires both to be byte-identical to the verified win-unpacked app.asar.
+// --payloads extracts the app.asar embedded in the Setup and Portable EXEs with 7-Zip (default: 7z on PATH;
+// nested *.7z archives are unpacked too) and requires exactly one, byte-identical to the verified win-unpacked app.asar.
 const fs = require('node:fs'),
   path = require('node:path'),
   crypto = require('node:crypto'),
@@ -65,14 +65,31 @@ if (process.argv.includes('--payloads')) {
   const i = process.argv.indexOf('--7z');
   const sevenZip = i > 0 && process.argv[i + 1] ? process.argv[i + 1] : '7z';
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tua-payloads-'));
+  const extract = (archive, target) => {
+    const run = spawnSync(sevenZip, ['x', archive, '-o' + target, '-y'], { stdio: 'ignore' });
+    assert.equal(run.status, 0, '7-Zip failed on ' + path.basename(archive));
+  };
+  const find = (dir, test) =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name);
+      return e.isDirectory() ? find(full, test) : test(e.name) ? [full] : [];
+    });
+  // NSIS installers (Setup and portable) keep the app inside an embedded *.7z archive.
   payloads = ['Setup', 'Portable'].map((kind) => {
     const exe = path.join(out, 'TokenUsageAssistant-' + kind + '-' + version + '.exe');
     const target = path.join(scratch, kind);
-    const run = spawnSync(sevenZip, ['x', exe, 'resources\\app.asar', '-o' + target, '-y'], { stdio: 'ignore' });
-    assert.equal(run.status, 0, 'payload extraction failed: ' + kind);
-    const sha256 = digest(fs.readFileSync(path.join(target, 'resources', 'app.asar')));
+    extract(exe, target);
+    let found = find(target, (name) => name === 'app.asar');
+    if (!found.length) {
+      find(target, (name) => name.endsWith('.7z')).forEach((inner, i) =>
+        extract(inner, path.join(target, 'inner-' + i)),
+      );
+      found = find(target, (name) => name === 'app.asar');
+    }
+    assert.equal(found.length, 1, `expected exactly one app.asar in ${kind}, found ${found.length}`);
+    const sha256 = digest(fs.readFileSync(found[0]));
     assert.equal(sha256, asarSha256, 'embedded payload differs from win-unpacked app.asar: ' + kind);
-    return { kind, asarSha256: sha256 };
+    return { kind, entry: path.relative(target, found[0]).replaceAll('\\', '/'), asarSha256: sha256 };
   });
   fs.rmSync(scratch, { recursive: true, force: true });
 }

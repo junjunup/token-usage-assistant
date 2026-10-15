@@ -45,6 +45,10 @@ jobs:
         run: |
           V=$(node -p "require('./package.json').version")
           node scripts/run-packaged-smoke.cjs --exe "release-out/TokenUsageAssistant-Portable-$V.exe" --report release-out/smoke-result-windows.json --evidence-dir evidence-windows
+      - name: List installer contents (diagnostics)
+        run: |
+          V=$(node -p "require('./package.json').version")
+          for kind in Setup Portable; do 7z l "release-out/TokenUsageAssistant-$kind-$V.exe" | tail -n 25; done
       # Also extracts app.asar from both EXEs (7-Zip is preinstalled on the runner) and requires it to match.
       - name: Package integrity (source match + embedded payloads)
         run: node scripts/verify-package.cjs --out release-out --report release-out/package-integrity.json --payloads
