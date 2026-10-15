@@ -7,7 +7,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-    branches: ['task/T2.5-version-source'] # TEMPORARY: verify before merge; reverted before merging
   workflow_dispatch:
 
 permissions:
