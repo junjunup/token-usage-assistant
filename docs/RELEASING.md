@@ -1,12 +1,12 @@
 # 发版流程
 
-所有安装包统一由 CI 产出（`.github/workflows/release.yml`）。版本节奏见 [AGENTS.md](../AGENTS.md) §7 与改进计划 D3。
+所有安装包统一由 CI 产出（`.github/workflows/release.yml`）。版本节奏见 [AGENTS.md](../AGENTS.md) §7 与改进计划 D3。版本号只写在 `package.json` 一处，打包输出目录（`release-v${version}`）、校验脚本与报告都从它读取。
 
 ## 产出内容
 
 | 平台 | 产物 | 校验 |
 |---|---|---|
-| Windows x64 | `TokenUsageAssistant-Setup-<版本>.exe`、`TokenUsageAssistant-Portable-<版本>.exe` | 便携版在隔离目录跑原生 smoke（`smoke-result-windows.json`）；`scripts/verify-package.cjs` 核对包内每个文件与源码一致，以及包内版本与 `package.json` 一致（`package-integrity.json`，含 ASAR 哈希） |
+| Windows x64 | `TokenUsageAssistant-Setup-<版本>.exe`、`TokenUsageAssistant-Portable-<版本>.exe` | 便携版在隔离目录跑原生 smoke（`smoke-result-windows.json`；`brand-native.json` 与截图另存为 `windows-evidence` 工作流产物，只供审阅，不进 Release）；`scripts/verify-package.cjs --payloads` 核对包内每个文件与源码一致、包内版本与 `package.json` 一致，并用 7-Zip 从 Setup 与 Portable 两个 EXE 中解出 `app.asar`，要求与校验过的版本逐字节一致（`package-integrity.json`，含 ASAR 哈希与 payloads） |
 | macOS arm64 | `TokenUsageAssistant-Mac-arm64-<版本>.dmg`、`.zip` | `scripts/Verify-Mac-Native.command`：`codesign --verify --deep --strict`、ad-hoc 签名与 bundle seal、entitlements、Info.plist（ID / 图标 / 版本）、打包后原生 smoke、默认 userData 路径；`spctl` 预期为 rejected，只记录，不作为门禁（`mac-app-integrity.json`） |
 
 **升级验证（Windows 作业，真实 DPAPI）**：从源码重建上一个 `v*` 标签的 `app.asar`（不是下载的发布二进制），用 `scripts/verify-upgrade.cjs` 在隔离目录验证「旧版写入的凭据、设置、窗口位置、缓存与历史、旧 Zcode 来源和价格 → 新版能读取，且文件逐字节不变、旧版仍可回滚读取、不自动关联账户、无网络请求」（`upgrade-native-report.json`）。各版本的预期写在 `scripts/upgrade-profiles/<旧版本>-to-<新版本>.cjs`，按两个包的版本自动选择。**升级版本号时必须同时新增对应的 profile**（例如 `1.8.0-beta.5-to-1.8.0-beta.6.cjs`，平台数等预期按新版本填写），否则 Release 工作流会因找不到 profile 而失败。用 `node scripts/verify-upgrade.cjs --list-checks --profile=<名称>` 可以查看某个 profile 的检查项。

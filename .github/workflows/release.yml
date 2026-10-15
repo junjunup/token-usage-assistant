@@ -43,9 +43,14 @@ jobs:
       - name: Native smoke test (portable EXE, isolated directory)
         run: |
           V=$(node -p "require('./package.json').version")
-          node scripts/run-packaged-smoke.cjs --exe "release-out/TokenUsageAssistant-Portable-$V.exe" --report release-out/smoke-result-windows.json
-      - name: Package integrity
-        run: node scripts/verify-package.cjs --out release-out --report release-out/package-integrity.json
+          node scripts/run-packaged-smoke.cjs --exe "release-out/TokenUsageAssistant-Portable-$V.exe" --report release-out/smoke-result-windows.json --evidence-dir evidence-windows
+      - name: List installer contents (diagnostics)
+        run: |
+          V=$(node -p "require('./package.json').version")
+          for kind in Setup Portable; do 7z l "release-out/TokenUsageAssistant-$kind-$V.exe" | tail -n 25; done
+      # Also extracts app.asar from both EXEs (7-Zip is preinstalled on the runner) and requires it to match.
+      - name: Package integrity (source match + embedded payloads)
+        run: node scripts/verify-package.cjs --out release-out --report release-out/package-integrity.json --payloads
       # Upgrade check with real DPAPI: the previous v* tag is rebuilt from source (app.asar only, no installer)
       # and upgraded to this build in an isolated directory. The old package is a source rebuild of the tag,
       # not a downloaded release binary. The profile is chosen from the two versions (scripts/upgrade-profiles).
@@ -86,6 +91,13 @@ jobs:
             release-out/package-integrity.json
             release-out/smoke-result-windows.json
             release-out/upgrade-native-report.json
+      # Review-only evidence (brand-native.json + smoke screenshots); never attached to a release.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows-evidence
+          if-no-files-found: warn
+          path: evidence-windows/
 
   mac:
     runs-on: macos-14
@@ -131,8 +143,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
+          name: windows
           path: artifacts
-          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: mac
+          path: artifacts
       - name: Check versions are consistent
         run: |
           V=$(node -p "require('./package.json').version")
@@ -144,6 +160,7 @@ jobs:
             const upgrade = JSON.parse(fs.readFileSync(a + "upgrade-native-report.json"));
             console.log(JSON.stringify({ upgrade: upgrade.status, profile: upgrade.profile, from: upgrade.fromVersion, to: upgrade.toVersion }));
             if (upgrade.status !== "passed" || upgrade.toVersion !== v) process.exit(1);
+            if (!Array.isArray(pkg.payloads) || pkg.payloads.length !== 2 || pkg.payloads.some((x) => x.asarSha256 !== pkg.asarSha256)) process.exit(1);
             const seen = { packageIntegrity: pkg.version, windowsSmoke: win.version, macReport: mac.version, macSmoke: mac.smokeEvidence && mac.smokeEvidence.version };
             console.log(JSON.stringify({ expected: v, ...seen }));
             if (!pkg.ok || !win.ok || !mac.ok || Object.values(seen).some((x) => x !== v)) process.exit(1);
