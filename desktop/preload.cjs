@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld(
     disconnect: () => call('assistant:disconnect'),
     selectAccount: (id) => call('assistant:select-account', id),
     refresh: () => call('assistant:refresh'),
+    retryCredentials: () => call('assistant:retry-credentials'),
     saveBillingGroup: (value) => call('assistant:save-billing-group', value),
     removeBillingGroup: (id) => call('assistant:remove-billing-group', id),
     saveAccountLink: (value) => call('assistant:save-account-link', value),

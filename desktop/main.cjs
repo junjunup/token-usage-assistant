@@ -396,6 +396,14 @@ function inputError(message) {
 }
 function installIpc() {
   handle('assistant:get-state', () => state());
+  // Retry reading the encrypted account list after a failed load (T3.4). Never overwrites the encrypted file.
+  handle('assistant:retry-credentials', (event) => {
+    mainOnly(event);
+    if (connectionBusy) throw inputError('请等待账户连接完成。');
+    if (accounts.retryLoad()) accounts.refreshAll();
+    broadcast();
+    return state();
+  });
   handle('assistant:save-billing-group', (event, value) => {
     mainOnly(event);
     if (connectionBusy) throw inputError('请等待账户连接完成。');
