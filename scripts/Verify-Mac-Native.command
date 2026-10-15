@@ -112,15 +112,18 @@ else
   fi
 fi
 
-# 6. Default userData stays at ~/Library/Application Support/TokenUsageAssistant (source-level confirmation).
+# 6. Packaged userData stays at ~/Library/Application Support/TokenUsageAssistant (source-level confirmation).
+# Since T3.1 main.cjs derives the name from macDataName(app.isPackaged) in platform.cjs; development runs use
+# TokenUsageAssistant-Dev. Whitespace-tolerant patterns (the source is Prettier-formatted).
 ASAR="$APP/Contents/Resources/app.asar"
-# Whitespace-tolerant: the source is Prettier-formatted since T1.3.
 S='[[:space:]]*'
-USERDATA_RE="app\.setPath\(${S}'userData'${S},${S}path\.join\(${S}app\.getPath\(${S}'appData'${S}\)${S},${S}'TokenUsageAssistant'${S}\)${S}\)"
-if [ -f "$ASAR" ] && grep -aqE "$USERDATA_RE" "$ASAR"; then
-  record 'defaultUserDataPath' 1 'asar 内主进程源码确认 userData 默认仍为 ~/Library/Application Support/TokenUsageAssistant'
+MAIN_RE="app\\.setPath\\(${S}'userData'${S},${S}path\\.join\\(${S}app\\.getPath\\(${S}'appData'${S}\\)${S},${S}macName${S}\\)${S}\\)"
+NAME_RE="const macName = macDataName\\(app\\.isPackaged\\)"
+PLATFORM_RE="isPackaged${S}\\?${S}'TokenUsageAssistant'${S}:${S}'TokenUsageAssistant-Dev'"
+if [ -f "$ASAR" ] && grep -aqE "$MAIN_RE" "$ASAR" && grep -aqE "$NAME_RE" "$ASAR" && grep -aqE "$PLATFORM_RE" "$ASAR"; then
+  record 'defaultUserDataPath' 1 'asar 内源码确认：打包版 userData 为 ~/Library/Application Support/TokenUsageAssistant（macDataName(app.isPackaged)），开发版另用 TokenUsageAssistant-Dev'
 else
-  record 'defaultUserDataPath' 0 '未在 app.asar 中确认默认 userData 路径设置'
+  record 'defaultUserDataPath' 0 '未在 app.asar 中确认打包版 userData 路径设置'
 fi
 
 # 7. Gatekeeper assessment — expected rejected (no Developer ID / notarization). Recorded honestly, never a gate.

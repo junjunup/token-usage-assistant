@@ -28,7 +28,7 @@ const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
-const { windowChrome, loginOptions, readLogin, launcherName, sameFile } = require('./platform.cjs');
+const { windowChrome, loginOptions, readLogin, launcherName, sameFile, macDataName } = require('./platform.cjs');
 const { windowIcon, taskbarDetails } = require('./branding.cjs');
 const isMac = process.platform === 'darwin';
 const APP_ORIGIN = 'companion://app';
@@ -36,8 +36,10 @@ const APP_ID = 'local.commandcode.tokenusageassistant';
 const smoke = process.argv.includes('--smoke-test');
 const smokeDirArg = process.argv.find((a) => a.startsWith('--test-directory='));
 if (isMac) {
-  app.setName('TokenUsageAssistant');
-  app.setPath('userData', path.join(app.getPath('appData'), 'TokenUsageAssistant'));
+  // Packaged: ~/Library/Application Support/TokenUsageAssistant (unchanged). Development: TokenUsageAssistant-Dev.
+  const macName = macDataName(app.isPackaged);
+  app.setName(macName);
+  app.setPath('userData', path.join(app.getPath('appData'), macName));
 }
 if (smoke) {
   if (!smokeDirArg) throw new Error('Smoke test requires an isolated directory');
