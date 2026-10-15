@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，私有仓库 https://github.com/junjunup/commandcode-companion（`main`），基线标签 `v1.8.0-beta.5`。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–2（T1.1–T2.5）已完成。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。本机只有 beta.5 的 Mac 产物；Windows 双包在旧 Windows 机器上。T2.3 起，四种安装包可以由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库为 https://github.com/junjunup/TokenUsageAssistant（只放安装包），由手动触发的 Publish 工作流发布，尚未发布过任何版本。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/commandcode-companion` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 250 项，247 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
+- 测试基线：`pnpm run test:desktop` 共 255 项，252 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
 
 ## 2. 各能力证据等级
 
@@ -40,6 +40,7 @@
 | `desktop/branding.cjs` | 窗口图标、任务栏信息 |
 | `desktop/widget-bounds.cjs` | 悬浮窗展开/收起时的位置计算 |
 | `desktop/store.cjs` | 加密本地存储（DPAPI / Keychain）、`atomicWrite`、设置 |
+| `desktop/logger.cjs` | 本机诊断日志（`logs/app.log`，JSON Lines，白名单字段 + 脱敏，1 MB 轮转保留 3 份；T3.2） |
 | `desktop/accounts.cjs`、`monitor.cjs`、`history.cjs` | 多账户管理、单账户轮询、额度历史（`history.json`） |
 | `desktop/api.cjs` | Command Code 客户端 |
 | `desktop/providers.cjs`、`provider-catalog.cjs`、`provider-domain.cjs` | GLM / MiniMax / 火山 / DeepSeek / OpenCode Go 客户端、平台目录、额度归一化 |
@@ -70,6 +71,7 @@
 | `local-source.json`、`local-pricing.json` | 1.3 旧 Zcode 来源（保留用于回退）、本机单价 |
 | `account-links.json` | 账户组和关联规则（不含凭据） |
 | `claude-collector/` | Claude 组件配置、导出（`usage.jsonl`）、状态、会话映射、启动器 |
+| `logs/app.log`（及 `.1`、`.2`） | 诊断日志：只有模块、错误分类和白名单字段（阶段、状态码、errno、平台、来源类型、耗时、退出码、计数、版本号），不含错误原文、路径、标签或密钥 |
 
 目录：Windows 为原 Electron userData；Mac 打包版为 `~/Library/Application Support/TokenUsageAssistant`，Keychain 条目 `TokenUsageAssistant Safe Storage`；Mac 开发版（T3.1 起）为 `TokenUsageAssistant-Dev` 目录和 `TokenUsageAssistant-Dev Safe Storage` 条目。
 
