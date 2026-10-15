@@ -68,7 +68,7 @@ pnpm run dev               # 浏览器预览模式（使用示例数据）
 ```
 
 - **原生 smoke**：`pnpm exec electron . --smoke-test --test-directory="$(mktemp -d)"`，必须使用新建的隔离目录。
-- **Mac 注意**：在 T3.1 完成之前，`pnpm run desktop`（开发版）会直接读写真实的应用数据和 Keychain 条目。
+- **Mac 开发版数据隔离**：`pnpm run desktop`（未打包的开发版）使用独立的数据目录 `~/Library/Application Support/TokenUsageAssistant-Dev` 和独立的 Keychain 条目 `TokenUsageAssistant-Dev Safe Storage`，不读写打包版的真实数据，第一次运行需要重新连接测试账户。打包版仍使用 `TokenUsageAssistant`。
 - **Mac 打包**（只能在 arm64 Mac 本机进行）：先运行 `scripts/Build-Mac-App.command`，再运行 `scripts/Verify-Mac-Native.command`，校验签名并跑打包后的 smoke。
 - **Windows 打包**：`pnpm exec electron-builder --win --x64 --config.electronDist=node_modules/electron/dist`
 - **生成文件**：`src/generated/` 由 `scripts/prepare-analytics-preview.mjs` 生成，要改就改 `desktop/` 下对应的纯模块。
