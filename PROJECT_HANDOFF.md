@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，私有仓库 https://github.com/junjunup/commandcode-companion（`main`），基线标签 `v1.8.0-beta.5`。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–2（T1.1–T2.5）已完成。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。本机只有 beta.5 的 Mac 产物；Windows 双包在旧 Windows 机器上。T2.3 起，四种安装包可以由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库为 https://github.com/junjunup/TokenUsageAssistant（只放安装包），由手动触发的 Publish 工作流发布，尚未发布过任何版本。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/commandcode-companion` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 256 项，253 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
+- 测试基线：`pnpm run test:desktop` 共 257 项，254 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
 
 ## 2. 各能力证据等级
 
@@ -78,7 +78,7 @@
 ## 5. 未完成的验收项
 
 - 各平台的真实账户核账：GLM、MiniMax、火山、DeepSeek、OpenCode Go、Claude（需要用户开通并在应用内配置）。
-- Mac 真机验收（T3.4 会产出清单）：DMG 安装与首次打开、Keychain 授权（包括覆盖升级后）、菜单栏托盘、悬浮窗（所有桌面空间、全屏之上）、睡眠唤醒刷新、登录项、真实 Codex 连接、Zcode / OpenCode 同步、通知权限、空闲资源占用、窗口位置保留。
+- Mac 真机验收（逐项清单见 [docs/MAC-ACCEPTANCE-CHECKLIST.md](docs/MAC-ACCEPTANCE-CHECKLIST.md)，由用户在真机执行）：DMG 安装与首次打开、Keychain 授权（包括覆盖升级后）、菜单栏托盘、悬浮窗（所有桌面空间、全屏之上）、睡眠唤醒刷新、登录项、真实 Codex 连接、Zcode / OpenCode 同步、通知权限、空闲资源占用、窗口位置保留。
 - Windows：NSIS 覆盖安装升级、重启后自启动、真实工具的持续使用。
 - 两小时稳定性测试：未完成，用户已叫停，不再进行。
 

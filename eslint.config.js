@@ -3,7 +3,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
 export default [
-  { ignores: ['dist/', 'release-*/', 'src/generated/', 'work/', 'docs/'] },
+  { ignores: ['dist/', 'release-*/', 'src/generated/', 'work/', 'docs/', '.claude/'] },
   js.configs.recommended,
   {
     rules: {

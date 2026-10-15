@@ -481,3 +481,43 @@ test('one failing provider does not stop the other account monitors', async (t) 
   assert.equal(manager.runtimes.get(b).monitor.state.status, 'connected');
   assert.ok(manager.runtimes.get(b).monitor.state.nextRefreshAt);
 });
+
+test('credential retry recovers after a failed decrypt without rewriting the encrypted file', (t) => {
+  const root = path.resolve(__dirname, '../work/provider-tests');
+  fs.mkdirSync(root, { recursive: true });
+  const dir = fs.mkdtempSync(path.join(root, 'retry-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const safe = vault(),
+    decrypt = safe.decryptString;
+  let failures = 0;
+  safe.decryptString = (b) => {
+    if (failures > 0) {
+      failures--;
+      throw new Error('keychain access denied');
+    }
+    return decrypt(b);
+  };
+  const store = new LocalStore(dir, safe),
+    id = crypto.randomUUID(),
+    entry = { id, provider: 'glm', region: 'cn', label: 'glm', orgId: '', credential: { apiKey: syntheticKey } };
+  store.saveAccounts({ accounts: [entry], activeId: id });
+  const file = store.file('accounts.encrypted.json'),
+    bytes = fs.readFileSync(file);
+  failures = 2;
+  const manager = new AccountManager({ store, settings, clientFactory: (p, r) => createClient(p, r, fixtureFetch) });
+  t.after(() => manager.dispose());
+  manager.load();
+  assert.match(manager.issue, /已有加密文件未被覆盖/);
+  assert.equal(manager.entries.length, 0);
+  assert.equal(manager.retryLoad(), false, 'second failure keeps the issue');
+  assert.match(manager.issue, /已有加密文件未被覆盖/);
+  assert.deepEqual(fs.readFileSync(file), bytes);
+  assert.equal(manager.retryLoad(), true, 'third read succeeds');
+  assert.equal(manager.issue, '');
+  assert.equal(manager.activeId, id);
+  assert.equal(manager.entries.length, 1);
+  assert.equal(manager.entries[0].credential.apiKey, syntheticKey);
+  assert.deepEqual(fs.readFileSync(file), bytes, 'encrypted file is byte-identical');
+  assert.equal(manager.retryLoad(), true, 'no issue: nothing to retry');
+  assert.equal(manager.entries.length, 1);
+});

@@ -6,6 +6,7 @@
 
 - Mac 开发版（未打包）改用独立的应用名、数据目录和 Keychain 条目（`TokenUsageAssistant-Dev`），不再读写打包版的真实数据；打包版和 Windows 不变（T3.1）。
 - 新增本机诊断日志 `logs/app.log`：只记录模块、错误分类和白名单字段（不含错误原文、路径、账户名称或密钥），1 MB 轮转保留 3 份；原来静默吞掉的 9 处失败改为记录警告（T3.2）。
+- 本机账户列表读取失败（例如拒绝了系统加密授权）后，可以在总览提示条上点「重新读取」恢复，不用重启；不会覆盖已有的加密文件。新增 Mac 真机验收清单 `docs/MAC-ACCEPTANCE-CHECKLIST.md`（T3.4）。
 - 修复原生 smoke 的偶发失败：45 秒「渲染进程握手超时」定时器在握手成功后没有清除，冷启动较慢时会在 smoke 检查进行中强制退出并销毁窗口（报 `Object has been destroyed`）。现在握手完成即清除定时器；smoke 断言不变，只影响 `--smoke-test`。
 - Mac 上的 smoke 改用独立的应用名 `TokenUsageAssistant-Smoke` 和独立的 Keychain 条目，不再访问真实的 `TokenUsageAssistant Safe Storage`（开发版的 `-Dev` 条目同样不再访问）。原先每次新构建首次跑 smoke 都会弹出访问真实条目的授权窗，没人点允许时主线程卡住，smoke 就会失败。smoke 报告新增 `keychainName` 字段，名称不对时判为失败。
 
