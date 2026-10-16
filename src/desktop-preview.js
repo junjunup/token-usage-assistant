@@ -1,7 +1,13 @@
 import { demoAnalytics, demoPrices } from './preview-analytics.js';
 import { demoTools } from './tools-preview.js';
 import { fixtureBody } from './generated/provider-fixture.js';
-import { normalizeGlm, normalizeMiniMax, normalizeVolcengine, quota } from './generated/provider-domain.js';
+import {
+  normalizeGlm,
+  normalizeMiniMax,
+  normalizeVolcengine,
+  normalizeOpenCodeGo,
+  quota,
+} from './generated/provider-domain.js';
 import { normalizeDeepSeek } from './generated/balance-domain.js';
 import { PROVIDERS } from './generated/provider-catalog.js';
 const now = Date.now();
@@ -85,6 +91,8 @@ for (const [provider, normalize] of Object.entries({
   glm: normalizeGlm,
   minimax: normalizeMiniMax,
   volcengine: normalizeVolcengine,
+  // OpenCode Go (beta.5) was missing here, so selecting its preview account blanked the page.
+  'opencode-go': normalizeOpenCodeGo,
 })) {
   snapshots[provider] = {
     parts: { credits: normalize(fixtureBody(provider, now), now) },
