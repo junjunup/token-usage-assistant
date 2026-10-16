@@ -1,4 +1,21 @@
+// @ts-check
 // Query-time metadata only. Source records and their on-disk indexes remain unchanged.
+/**
+ * A user-confirmed association rule (T5.5: JSDoc types only).
+ * @typedef {object} AssociationRule
+ * @property {string} id
+ * @property {string} groupId
+ * @property {string} sourceId
+ * @property {number} from
+ * @property {number|null} to open-ended when null
+ * @property {string} [provider]
+ * @property {string} [model]
+ * @property {boolean} [valid]
+ */
+/**
+ * @param {AssociationRule} rule
+ * @param {any} row tool record
+ */
 function matches(rule, row) {
   return (
     rule.sourceId === row.sourceId &&
@@ -8,6 +25,10 @@ function matches(rule, row) {
     (!rule.model || rule.model === row.model)
   );
 }
+/**
+ * @param {AssociationRule} a
+ * @param {AssociationRule} b
+ */
 function overlaps(a, b) {
   return (
     a.sourceId === b.sourceId &&
@@ -17,6 +38,10 @@ function overlaps(a, b) {
     (!a.model || !b.model || a.model === b.model)
   );
 }
+/**
+ * @param {any[]} rows tool records
+ * @param {AssociationRule[]} [rules]
+ */
 function associateRows(rows, rules = []) {
   return rows.map((row) => {
     const candidates = rules.filter((rule) => matches(rule, row)),
@@ -43,6 +68,7 @@ function associateRows(rows, rules = []) {
       : { ...row, accountId: null, association: { status: 'unlinked', basis: null, ruleIds: [] } };
   });
 }
+/** @param {any[]} rows associated tool records */
 function summarizeAssociations(rows) {
   const groups = new Map(),
     ruleIds = new Set();
@@ -73,7 +99,12 @@ function summarizeAssociations(rows) {
 }
 // A numeric difference is valid only for certified, comparable evidence. Current local
 // collectors cannot certify complete account coverage, so production reports explain gaps.
+/**
+ * @param {any} platform
+ * @param {any} tool
+ */
 function compareEvidence(platform, tool) {
+  /** @type {string[]} */
   const reasons = [];
   if (!platform || !tool)
     return { available: false, difference: null, errorRate: null, reasons: ['缺少可比较的数据。'] };

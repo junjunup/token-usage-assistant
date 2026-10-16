@@ -1,3 +1,19 @@
+// @ts-check
+// T5.5: JSDoc types only. Upstream JSON and app state are deliberately `any` (validated at runtime here);
+// derived numbers that may be missing are `number|null`, never coerced to 0.
+/** @typedef {number|null} MaybeNumber */
+/**
+ * @typedef {object} QuotaWindow
+ * @property {MaybeNumber} used
+ * @property {MaybeNumber} cap
+ * @property {MaybeNumber} usedPercent
+ * @property {MaybeNumber} remainingPercent
+ * @property {MaybeNumber} resetAt
+ * @property {string} resetState
+ * @property {boolean} unlimited
+ * @property {boolean} exceeded
+ */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean }} Settings */
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -14,26 +30,39 @@ const DEFAULT_SETTINGS = Object.freeze({
   launchAtLogin: false,
   widgetExpanded: false,
 });
+/** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>
   (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) && Number.isFinite(Number(v))
     ? Number(v)
     : null;
+/** @type {(v: any) => MaybeNumber} */
 const count = (v) => {
   const n = finite(v);
   return n !== null && n >= 0 ? n : null;
 };
+/** @type {(v: any, max?: number) => string} */
 // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
 const text = (v, max = 160) => (typeof v === 'string' ? v.replace(/[\x00-\x1f]/g, '').slice(0, max) : '');
+/**
+ * @param {any} v
+ * @returns {MaybeNumber}
+ */
 function timestamp(v) {
   if (v === null || v === undefined || v === '' || v === 0) return null;
   const n = finite(v);
   const ms = n === null ? Date.parse(v) : n < 100_000_000_000 ? n * 1000 : n;
   return Number.isFinite(ms) && ms > 0 && ms < 8.64e15 ? ms : null;
 }
+/** @param {any} v */
 function unwrap(v) {
   if (!v || typeof v !== 'object' || Array.isArray(v) || v.success === false) throw new Error('接口未返回可识别的数据');
   return Object.hasOwn(v, 'data') ? v.data : v;
 }
+/**
+ * @param {any} v
+ * @param {any} limited
+ * @returns {QuotaWindow}
+ */
 function normalizeWindow(v, limited) {
   if (!v || typeof v !== 'object')
     return {
@@ -54,13 +83,14 @@ function normalizeWindow(v, limited) {
     used,
     cap,
     usedPercent,
-    remainingPercent: available ? 100 - usedPercent : null,
+    remainingPercent: available ? 100 - /** @type {number} */ (usedPercent) : null,
     resetAt: timestamp(v.resetAt),
     resetState: timestamp(v.resetAt) ? 'scheduled' : v.resetAt === 0 || v.resetAt === '0' ? 'idle' : 'unknown',
     unlimited: limited === false && !available,
-    exceeded: v.exceeded === true || (available && used >= cap),
+    exceeded: v.exceeded === true || (available && /** @type {number} */ (used) >= /** @type {number} */ (cap)),
   };
 }
+/** @param {any} raw */
 function normalizeIdentity(raw) {
   const v = unwrap(raw);
   if (!v?.user?.id) throw new Error('账户身份字段缺失');
@@ -72,6 +102,7 @@ function normalizeIdentity(raw) {
     login: text(v.org?.login || v.user.userName, 80),
   };
 }
+/** @param {any} raw */
 function normalizeCredits(raw) {
   const v = unwrap(raw);
   if (!v || (!v.windowLimits && !v.credits)) throw new Error('额度字段缺失');
@@ -86,13 +117,16 @@ function normalizeCredits(raw) {
     monthly,
     purchased,
     free,
-    total: [monthly, purchased, free].every((n) => n !== null) ? monthly + purchased + free : null,
+    total: [monthly, purchased, free].every((n) => n !== null)
+      ? /** @type {number} */ (monthly) + /** @type {number} */ (purchased) + /** @type {number} */ (free)
+      : null,
   };
 }
+/** @param {any} raw */
 function normalizeSubscription(raw) {
   let v = unwrap(raw);
   if (v === null) return { active: false, status: 'none', planId: null, start: null, end: null };
-  if (Array.isArray(v)) v = v.find((s) => ['active', 'trialing'].includes(s.status)) || v[0];
+  if (Array.isArray(v)) v = v.find((/** @type {any} */ s) => ['active', 'trialing'].includes(s.status)) || v[0];
   if (!v || (!v.planId && !v.status && !v.currentPeriodStart)) throw new Error('套餐字段缺失');
   return {
     active: ['active', 'trialing'].includes(v.status),
@@ -102,6 +136,11 @@ function normalizeSubscription(raw) {
     end: timestamp(v.currentPeriodEnd),
   };
 }
+/**
+ * @param {any} raw
+ * @param {MaybeNumber} [periodStart]
+ * @param {MaybeNumber} [periodEnd]
+ */
 function normalizeSummary(raw, periodStart = null, periodEnd = null) {
   const v = unwrap(raw);
   if (
@@ -117,7 +156,11 @@ function normalizeSummary(raw, periodStart = null, periodEnd = null) {
     failed = count(v.failedCount);
   const total = count(v.totalTokens) ?? (input !== null && output !== null ? input + output : null);
   // Derive the rate from counts: the undocumented successRate field has ambiguous units.
-  const successRate = completed !== null && requests > 0 && completed <= requests ? (completed / requests) * 100 : null;
+  // `requests > 0` is false for null, so a missing count never becomes a rate or an average.
+  const successRate =
+    completed !== null && /** @type {number} */ (requests) > 0 && completed <= /** @type {number} */ (requests)
+      ? (completed / /** @type {number} */ (requests)) * 100
+      : null;
   return {
     input,
     output,
@@ -127,8 +170,12 @@ function normalizeSummary(raw, periodStart = null, periodEnd = null) {
     completed,
     failed,
     successRate,
-    averageCost: cost !== null && requests > 0 ? cost / requests : count(v.averageCost),
-    averageTokens: total !== null && requests > 0 ? total / requests : null,
+    averageCost:
+      cost !== null && /** @type {number} */ (requests) > 0
+        ? cost / /** @type {number} */ (requests)
+        : count(v.averageCost),
+    averageTokens:
+      total !== null && /** @type {number} */ (requests) > 0 ? total / /** @type {number} */ (requests) : null,
     funding: {
       monthly: count(v.totalMonthlyCredits),
       purchased: count(v.totalPurchasedCredits),
@@ -142,6 +189,7 @@ function normalizeSummary(raw, periodStart = null, periodEnd = null) {
   };
 }
 // A monthly pool can only be derived from matching, freshly synchronized billing data.
+/** @param {any} data app monitor state */
 function monthlyQuota(data) {
   const c = data?.parts?.credits,
     s = data?.parts?.summary,
@@ -155,12 +203,14 @@ function monthlyQuota(data) {
     remaining,
     spent,
     pool,
+    // @ts-expect-error -- `remaining` is never null when `pool` is not (pool is derived from it).
     remainingPercent: pool === null ? null : Math.min(100, Math.max(0, (remaining / pool) * 100)),
     resetAt: sub?.end || null,
     applicable: sub?.active === true,
     derived: pool !== null,
   };
 }
+/** @param {any} state app state */
 function quotaStatus(state) {
   const d = state.data,
     c = d.parts.credits;
@@ -177,12 +227,18 @@ function quotaStatus(state) {
   }
   if (!c) return ['额度数据暂缺', 'neutral'];
   if (Array.isArray(c.windows)) {
-    const windows = c.windows.filter((w) => w.applicable !== false);
+    const windows = c.windows.filter((/** @type {any} */ w) => w.applicable !== false);
     if (!windows.length) return ['当前套餐无可用额度池', 'neutral'];
-    if (windows.some((w) => w.exceeded)) return ['部分额度已达上限', 'red'];
-    if (windows.some((w) => typeof w.remainingPercent === 'number' && w.remainingPercent < state.settings.threshold))
+    if (windows.some((/** @type {any} */ w) => w.exceeded)) return ['部分额度已达上限', 'red'];
+    if (
+      windows.some(
+        (/** @type {any} */ w) =>
+          typeof w.remainingPercent === 'number' && w.remainingPercent < state.settings.threshold,
+      )
+    )
       return ['额度偏低', 'amber'];
-    if (windows.every((w) => w.unlimited || typeof w.remainingPercent === 'number')) return ['额度充足', 'green'];
+    if (windows.every((/** @type {any} */ w) => w.unlimited || typeof w.remainingPercent === 'number'))
+      return ['额度充足', 'green'];
     return ['部分额度暂不可获取', 'neutral'];
   }
   if (c.monthly !== null && c.monthly <= 0) {
@@ -205,6 +261,10 @@ function quotaStatus(state) {
     return ['额度充足', 'green'];
   return ['额度数据暂缺', 'neutral'];
 }
+/**
+ * @param {any} window
+ * @param {number} [now]
+ */
 function resetDescription(window, now = Date.now()) {
   if (window?.unlimited) return '当前不设窗口限制';
   if (window?.resetState === 'unconfirmed') return '已用不足 1% · 窗口起点待确认';
@@ -220,11 +280,21 @@ function resetDescription(window, now = Date.now()) {
         .map((v) => String(v).padStart(2, '0'))
         .join(':') + ' 后重置';
 }
+/**
+ * @param {any} value Retry-After header value
+ * @param {number} [now]
+ */
 function retryAfter(value, now = Date.now()) {
   if (!value) return 0;
   const n = finite(value);
   return n !== null ? Math.max(0, n * 1000) : Math.max(0, (timestamp(value) || now) - now);
 }
+/**
+ * @param {Array<{ status?: number, retryAfterMs?: number }>} errors
+ * @param {number} failures
+ * @param {number} intervalSeconds
+ * @returns {number|null}
+ */
 function nextDelay(errors, failures, intervalSeconds) {
   if (errors.some((e) => e.status === 401 || e.status === 403)) return null;
   if (!errors.length) return intervalSeconds * 1000;
@@ -234,24 +304,41 @@ function nextDelay(errors, failures, intervalSeconds) {
     ...errors.map((e) => e.retryAfterMs || 0),
   );
 }
+/**
+ * @param {Settings} current
+ * @param {any} patch
+ * @returns {Settings}
+ */
 function patchSettings(current, patch) {
-  const result = { ...current };
+  const result = /** @type {Record<string, any>} */ ({ ...current });
   if (!patch || typeof patch !== 'object') throw new Error('设置格式不正确');
   for (const [key, value] of Object.entries(patch)) {
     if (!Object.hasOwn(DEFAULT_SETTINGS, key)) throw new Error('不支持的设置');
     if (key === 'theme' && ['light', 'dark'].includes(value)) result[key] = value;
     else if (key === 'refreshSeconds' && [30, 60, 120, 300].includes(value)) result[key] = value;
     else if (key === 'threshold' && [10, 20, 30].includes(value)) result[key] = value;
-    else if (typeof DEFAULT_SETTINGS[key] === 'boolean' && typeof value === 'boolean') result[key] = value;
+    else if (
+      typeof (/** @type {Record<string, any>} */ (DEFAULT_SETTINGS)[key]) === 'boolean' &&
+      typeof value === 'boolean'
+    )
+      result[key] = value;
     else throw new Error('设置值不正确');
   }
-  return result;
+  return /** @type {Settings} */ (result);
 }
 class AlertTracker {
+  /** @param {Record<string, number>} [saved] */
   constructor(saved = {}) {
+    /** @type {Record<string, number>} */
     this.levels = { ...saved };
   }
+  /**
+   * @param {any} credits
+   * @param {Settings} settings
+   * @param {any} [monthly] monthlyQuota() result
+   */
   check(credits, settings, monthly = null) {
+    /** @type {any[]} */
     const alerts = [];
     if (Array.isArray(credits?.windows)) {
       for (const w of credits.windows) {

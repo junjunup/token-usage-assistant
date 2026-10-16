@@ -1,4 +1,9 @@
+// @ts-check
 // Keep monetary values as decimal strings. No currency conversion or balance-delta billing.
+/**
+ * @param {any} value upstream amount (a decimal string, or missing)
+ * @returns {string|null}
+ */
 function decimal(value) {
   if (value === undefined || value === null) return null;
   if (typeof value !== 'string' || value.length > 64 || !/^[-]?\d{1,30}(?:\.\d{1,18})?$/.test(value))
@@ -8,6 +13,7 @@ function decimal(value) {
   const sign = negative && /[1-9]/.test(whole + fraction) ? '-' : '';
   return sign + whole.replace(/^0+(?=\d)/, '') + (fraction ? '.' + fraction : '');
 }
+/** @param {any} raw upstream /user/balance JSON */
 function normalizeDeepSeek(raw) {
   if (
     !raw ||
@@ -17,7 +23,7 @@ function normalizeDeepSeek(raw) {
   )
     throw new Error('Unsupported balance response');
   const seen = new Set();
-  const balances = raw.balance_infos.map((row) => {
+  const balances = raw.balance_infos.map((/** @type {any} */ row) => {
     if (!row || !['CNY', 'USD'].includes(row.currency) || seen.has(row.currency))
       throw new Error('Unsupported currency');
     seen.add(row.currency);
@@ -32,6 +38,10 @@ function normalizeDeepSeek(raw) {
   });
   return { isAvailable: raw.is_available, balances, source: 'deepseek-official-balance' };
 }
+/**
+ * @param {any} value
+ * @returns {string}
+ */
 function formatAmount(value) {
   if (value === null || value === undefined) return '—';
   let amount;
@@ -40,7 +50,8 @@ function formatAmount(value) {
   } catch {
     return '—';
   }
-  const [whole, fraction = ''] = amount.split('.');
+  // decimal() returns null only for a missing value, which was handled above.
+  const [whole, fraction = ''] = /** @type {string} */ (amount).split('.');
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + fraction.padEnd(2, '0');
 }
 module.exports = { normalizeDeepSeek, formatAmount };

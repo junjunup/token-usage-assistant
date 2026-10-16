@@ -1,0 +1,22 @@
+{
+  // T5.5: type-check the pure domain modules only (JSDoc in plain .cjs; nothing is emitted).
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "lib": ["es2023"],
+    "types": []
+  },
+  "files": [
+    "desktop/domain.cjs",
+    "desktop/provider-domain.cjs",
+    "desktop/balance-domain.cjs",
+    "desktop/analytics-core.cjs",
+    "desktop/tool-analytics.cjs",
+    "desktop/association-rules.cjs"
+  ]
+}

@@ -1,7 +1,22 @@
+// @ts-check
 const { count } = require('./domain.cjs');
+// T5.5: JSDoc types only. Records, summaries and samples are `any` (shapes validated at runtime); time bins are
+// open records because callers add fields; possibly missing numbers stay `number|null`.
+/** @typedef {{ id: string, label?: string, start: number|null, end: number, timezone?: string, reason?: string }} Range */
+/** @typedef {Record<string, any>} Prices price per model key */
+// Aggregation only runs on ranges with a start: every caller returns "unavailable" first when start is null.
+/** @typedef {Range & { start: number }} ActiveRange */
 const DAY = 86400000;
+/** @type {(v: any) => boolean} */
 const numeric = (v) => typeof v === 'number' && Number.isFinite(v);
+/** @type {(rows: any[], key: string) => number} */
 const sum = (rows, key) => rows.reduce((n, r) => n + (numeric(r[key]) ? r[key] : 0), 0);
+/**
+ * @param {string} id
+ * @param {number} [now]
+ * @param {number|null} [billingStart]
+ * @returns {Range}
+ */
 function rangeFor(id, now = Date.now(), billingStart = null) {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
@@ -16,14 +31,19 @@ function rangeFor(id, now = Date.now(), billingStart = null) {
   } else if (id !== 'today') throw new Error('不支持的时间范围');
   return {
     id,
-    label: { today: '今日', '7d': '近 7 天', billing: '本账期' }[id],
+    label: /** @type {Record<string, string>} */ ({ today: '今日', '7d': '近 7 天', billing: '本账期' })[id],
     start,
     end: now,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 }
+/**
+ * @param {Range} range
+ * @returns {Array<Record<string, any>>}
+ */
 function makeBins(range) {
   if (!range.start) return [];
+  /** @type {Array<Record<string, any>>} */
   const bins = [],
     d = new Date(range.start);
   const hourly = range.id === 'today';
@@ -50,9 +70,14 @@ function makeBins(range) {
   }
   return bins;
 }
+/**
+ * @param {any} provider
+ * @param {any} model
+ */
 function priceKey(provider, model) {
   return JSON.stringify([provider || 'unknown', model || 'unknown']);
 }
+/** @param {any} value */
 function validatePrice(value) {
   if (
     !value ||
@@ -61,6 +86,7 @@ function validatePrice(value) {
     (value.currency !== undefined && !['USD', 'CNY'].includes(value.currency))
   )
     throw new Error('单价格式不正确');
+  /** @type {Record<string, any>} */
   const p = {};
   for (const key of ['input', 'output', 'read', 'write']) {
     if (!numeric(value[key]) || value[key] < 0 || value[key] > 1000000) throw new Error('单价应为非负数');
@@ -69,14 +95,18 @@ function validatePrice(value) {
   if (value.currency !== undefined) p.currency = value.currency;
   return p;
 }
+/** @param {any} r raw Zcode row (whitelisted columns) */
 function normalizeRecord(r) {
   const input = count(r.input_tokens),
     output = count(r.output_tokens);
   const rawRead = count(r.cache_read_input_tokens),
     rawWrite = count(r.cache_creation_input_tokens);
   const cacheKnown = input !== null && rawRead !== null && rawWrite !== null && rawRead + rawWrite <= input;
-  const read = cacheKnown ? Math.min(input, rawRead) : null,
-    write = cacheKnown ? Math.min(input - read, rawWrite) : null;
+  // cacheKnown guarantees input, rawRead and rawWrite are numbers.
+  const read = cacheKnown ? Math.min(/** @type {number} */ (input), /** @type {number} */ (rawRead)) : null,
+    write = cacheKnown
+      ? Math.min(/** @type {number} */ (input) - /** @type {number} */ (read), /** @type {number} */ (rawWrite))
+      : null;
   const base = input !== null && output !== null ? input + output : null,
     total = base === null ? null : Math.max(base, count(r.computed_total_tokens) || 0);
   const provider = String(r.provider_id || 'unknown'),
@@ -95,16 +125,26 @@ function normalizeRecord(r) {
     total,
     read,
     write,
-    fresh: cacheKnown ? input - read - write : null,
+    fresh: cacheKnown
+      ? /** @type {number} */ (input) - /** @type {number} */ (read) - /** @type {number} */ (write)
+      : null,
     cacheKnown,
-    extra: base !== null ? total - base : null,
+    extra: base !== null ? /** @type {number} */ (total) - base : null,
   };
 }
+/**
+ * @param {any} r normalized record
+ * @param {Prices} prices
+ */
 function costFor(r, prices) {
   const p = prices[r.modelKey];
   if (!p || !r.cacheKnown || r.output === null || r.extra > 0) return null;
   return (r.fresh * p.input + r.output * p.output + r.read * p.read + r.write * p.write) / 1e6;
 }
+/**
+ * @param {any[]} rows normalized records
+ * @param {Prices} [prices]
+ */
 function summarizeRecords(rows, prices = {}) {
   const done = rows.filter((r) => r.status === 'completed'),
     failed = rows.filter((r) => ['error', 'failed'].includes(r.status)).length,
@@ -157,12 +197,18 @@ function summarizeRecords(rows, prices = {}) {
     scope: 'local',
   };
 }
+/**
+ * @param {any[]} rows
+ * @param {string} key
+ * @param {Prices} prices
+ */
 function grouped(rows, key, prices) {
+  /** @type {Map<any, any[]>} */
   const map = new Map();
   for (const r of rows) {
     const id = r[key];
     if (!map.has(id)) map.set(id, []);
-    map.get(id).push(r);
+    /** @type {any[]} */ (map.get(id)).push(r);
   }
   return [...map]
     .map(([id, records]) => ({
@@ -176,6 +222,12 @@ function grouped(rows, key, prices) {
     }))
     .sort((a, b) => b.knownTokens - a.knownTokens);
 }
+/**
+ * @param {any[]} raw
+ * @param {ActiveRange} range
+ * @param {{ model?: string, project?: string, session?: string }} [filters]
+ * @param {Prices} [prices]
+ */
 function aggregateLocal(raw, range, filters = {}, prices = {}) {
   const rows = raw
     .map(normalizeRecord)
@@ -186,6 +238,7 @@ function aggregateLocal(raw, range, filters = {}, prices = {}) {
     models: grouped(inRange, 'modelKey', prices).map((r) => ({ id: r.id, name: r.model, provider: r.provider })),
     projects: [...new Set(inRange.map((r) => r.project))].sort(),
   };
+  /** @param {any} r */
   const match = (r) =>
     (!filters.model || r.modelKey === filters.model) &&
     (!filters.project || r.project === filters.project) &&
@@ -228,6 +281,11 @@ function aggregateLocal(raw, range, filters = {}, prices = {}) {
     prices,
   };
 }
+/**
+ * @param {any[]} records account history samples
+ * @param {ActiveRange} range
+ * @param {number} [maxGap]
+ */
 function accountBins(records, range, maxGap = 5 * 60000) {
   const bins = makeBins(range),
     samples = records.filter((r) => r.summary && numeric(r.summary.total));
@@ -259,8 +317,15 @@ function accountBins(records, range, maxGap = 5 * 60000) {
   }
   return bins;
 }
+/**
+ * @param {any[]} records account history samples
+ * @param {number} now
+ * @param {number} [intervalMs]
+ * @returns {any[]}
+ */
 function continuousTail(records, now, intervalMs = 60000) {
   const points = records.filter((r) => r.t >= now - 30 * 60000 && r.t <= now),
+    /** @type {any[]} */
     tail = [];
   for (let i = points.length - 1; i >= 0; i--) {
     if (tail.length && tail[0].t - points[i].t > Math.max(3 * intervalMs, 180000)) break;
@@ -274,6 +339,11 @@ function continuousTail(records, now, intervalMs = 60000) {
     return [];
   return tail;
 }
+/**
+ * @param {any[]} records account history samples
+ * @param {number} [now]
+ * @param {number} [interval] refresh interval in seconds
+ */
 function forecast(records, now = Date.now(), interval = 60) {
   const tail = continuousTail(records, now, interval * 1000);
   if (!tail.length) return { available: false, reason: '需要至少 10 分钟连续且新鲜的账户采样', windows: [] };
@@ -281,6 +351,7 @@ function forecast(records, now = Date.now(), interval = 60) {
     b = tail.at(-1),
     minutes = (b.t - a.t) / 60000,
     valid = a.summary && b.summary && a.summary.periodStart === b.summary.periodStart;
+  /** @param {string} key */
   const rate = (key) =>
     valid && numeric(a.summary[key]) && numeric(b.summary[key]) && b.summary[key] >= a.summary[key]
       ? (b.summary[key] - a.summary[key]) / minutes
@@ -320,7 +391,8 @@ function forecast(records, now = Date.now(), interval = 60) {
           ? 'at-limit'
           : perMinute === 0
             ? 'idle'
-            : now + minutesToCap * 60000 < last.resetAt
+            : // Reached only when perMinute > 0, so minutesToCap is a number here.
+              now + /** @type {number} */ (minutesToCap) * 60000 < last.resetAt
               ? 'before-reset'
               : 'after-reset',
     };
@@ -329,7 +401,7 @@ function forecast(records, now = Date.now(), interval = 60) {
     available: true,
     minutes,
     tokensPerMinute: rate('total'),
-    costPerHour: rate('cost') === null ? null : rate('cost') * 60,
+    costPerHour: rate('cost') === null ? null : /** @type {number} */ (rate('cost')) * 60,
     windows,
     purchasedAvailable: (b.credits?.purchased || 0) > 0,
     asOf: b.t,

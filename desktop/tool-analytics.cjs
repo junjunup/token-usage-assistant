@@ -1,11 +1,38 @@
+// @ts-check
 // Pure tool metadata analytics. Platform balances, quotas and credentials never enter this module.
 const { makeBins, priceKey } = require('./analytics-core.cjs');
 const { summarizeAssociations } = require('./association-rules.cjs');
+// T5.5: JSDoc types only. Wire/raw records and reports are `any` (validated at runtime here); normalized tool
+// records are open objects; possibly missing token counts stay `number|null`.
+/** @typedef {import('./analytics-core.cjs').ActiveRange} ActiveRange */
+/** @typedef {Record<string, any>} ToolRecord */
+/** @typedef {Record<string, { input: number, output: number, read: number, write: number, currency: string }>} ToolPrices */
+/** @typedef {{ sourceIds?: string[], billingGroupId?: string, model?: string, project?: string, session?: string }} ToolFilters */
+/**
+ * Identity fields as received (validated by stableId/text below).
+ * @typedef {object} IdentityInput
+ * @property {any} sourceId
+ * @property {string} tool
+ * @property {any} [requestId]
+ * @property {any} [attemptId]
+ * @property {any} [sessionId]
+ * @property {any} [at]
+ * @property {any} [updatedAt]
+ * @property {any} [revision]
+ * @property {any} [provider]
+ * @property {any} [model]
+ * @property {any} [project]
+ * @property {any} [status]
+ */
+/** @type {(v: any) => boolean} */
 const number = (v) => typeof v === 'number' && Number.isFinite(v);
+/** @type {(v: any) => number|null} */
 const count = (v) => (typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : null);
+/** @type {(v: any, fallback?: string, limit?: number) => string} */
 const text = (v, fallback = 'unknown', limit = 2048) =>
   // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   typeof v === 'string' && v.length ? v.replace(/[\x00-\x1f]/g, '').slice(0, limit) : fallback;
+/** @type {(value: any, fallback?: string) => string} */
 const stableId = (value, fallback = 'unknown') => {
   if (value === undefined || value === null || value === '') return fallback;
   // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
@@ -13,6 +40,7 @@ const stableId = (value, fallback = 'unknown') => {
     throw Object.assign(new Error('工具用量身份字段无效。'), { code: 'INVALID_TOOL_METADATA' });
   return value;
 };
+/** @type {(v: any) => string} */
 const status = (v) =>
   v === 'completed'
     ? 'completed'
@@ -23,7 +51,9 @@ const status = (v) =>
         : ['pending', 'running', 'streaming'].includes(v)
           ? 'pending'
           : 'unknown';
+/** @type {(rows: any[], key: string) => number} */
 const sum = (rows, key) => rows.reduce((n, r) => n + (number(r[key]) ? r[key] : 0), 0);
+/** @type {(rows: any[], key: string) => number|null} */
 const sumKnown = (rows, key) => (rows.length && rows.every((r) => number(r[key])) ? sum(rows, key) : null);
 const TOKENS = [
   'input',
@@ -37,6 +67,7 @@ const TOKENS = [
   'extra',
   'invalidUsage',
 ];
+/** @param {IdentityInput} input */
 function identity({
   sourceId,
   tool,
@@ -77,6 +108,10 @@ function identity({
     currency: null,
   };
 }
+/**
+ * @param {any} raw whitelisted Zcode row
+ * @param {string} sourceId
+ */
 function normalizeZcodeRecord(raw, sourceId) {
   if (
     !raw ||
@@ -114,7 +149,10 @@ function normalizeZcodeRecord(raw, sourceId) {
     total,
     read: cacheKnown ? rawRead : null,
     write: cacheKnown ? rawWrite : null,
-    fresh: cacheKnown ? input - rawRead - rawWrite : null,
+    // cacheKnown guarantees input, rawRead and rawWrite are numbers.
+    fresh: cacheKnown
+      ? /** @type {number} */ (input) - /** @type {number} */ (rawRead) - /** @type {number} */ (rawWrite)
+      : null,
     reasoning: null,
     cacheKnown,
     extra: base !== null && total !== null ? total - base : null,
@@ -126,6 +164,10 @@ function normalizeZcodeRecord(raw, sourceId) {
 function unsupported() {
   return Object.assign(new Error('不支持这份 Harness 用量格式或版本。'), { code: 'UNSUPPORTED_HARNESS_FORMAT' });
 }
+/**
+ * @param {any} wire Harness export line
+ * @param {string} [sourceId]
+ */
 function normalizeHarnessRecord(wire, sourceId) {
   if (
     !wire ||
@@ -179,7 +221,9 @@ function normalizeHarnessRecord(wire, sourceId) {
     output = count(u.outputTokens),
     reportedTotal = count(u.totalTokens),
     rawReasoning = count(u.reasoningTokens);
-  const input = [fresh, read, write].every((v) => v !== null) ? fresh + read + write : null,
+  const input = [fresh, read, write].every((v) => v !== null)
+      ? /** @type {number} */ (fresh) + /** @type {number} */ (read) + /** @type {number} */ (write)
+      : null,
     base = input !== null && output !== null ? input + output : null;
   const invalidUsage =
     (reportedTotal !== null && base !== null && reportedTotal < base) ||
@@ -214,9 +258,15 @@ function normalizeHarnessRecord(wire, sourceId) {
     provenance: 'harness-plugin/provider-reported',
   };
 }
+/**
+ * @param {any} prices
+ * @returns {ToolPrices}
+ */
 function normalizedPrices(prices) {
+  /** @type {ToolPrices} */
   const result = {};
-  for (const [key, p] of Object.entries(prices || {})) {
+  // `prices` is untrusted settings data: every field is checked below.
+  for (const [key, p] of Object.entries(/** @type {Record<string, any>} */ (prices || {}))) {
     if (!p || !['input', 'output', 'read', 'write'].every((k) => number(p[k]) && p[k] >= 0 && p[k] <= 1000000))
       continue;
     const currency = p.currency === undefined ? 'USD' : p.currency;
@@ -225,6 +275,10 @@ function normalizedPrices(prices) {
   }
   return result;
 }
+/**
+ * @param {any} wire Codex / Claude usage record
+ * @param {string} sourceId
+ */
 function normalizeSubscriptionRecord(wire, sourceId) {
   if (
     !wire ||
@@ -279,6 +333,10 @@ function normalizeSubscriptionRecord(wire, sourceId) {
     recordUnit: wire.tool === 'codex' ? 'usage-observation' : 'request',
   };
 }
+/**
+ * @param {any} raw whitelisted OpenCode row
+ * @param {string} sourceId
+ */
 function normalizeOpenCodeRecord(raw, sourceId) {
   if (!raw || !number(raw.at) || raw.at <= 0 || !['v1-step', 'v1-message', 'v2-message'].includes(raw.format))
     throw new Error('OpenCode metadata schema');
@@ -289,7 +347,9 @@ function normalizeOpenCodeRecord(raw, sourceId) {
     visible = count(raw.output),
     reasoning = count(raw.reasoning),
     reported = count(raw.total);
-  const input = [fresh, read, write].every((v) => v !== null) ? fresh + read + write : null,
+  const input = [fresh, read, write].every((v) => v !== null)
+      ? /** @type {number} */ (fresh) + /** @type {number} */ (read) + /** @type {number} */ (write)
+      : null,
     output = visible !== null && reasoning !== null ? visible + reasoning : null;
   const base = input !== null && output !== null ? input + output : null;
   const invalidUsage =
@@ -326,6 +386,11 @@ function normalizeOpenCodeRecord(raw, sourceId) {
     recordUnit: 'usage-observation',
   };
 }
+/**
+ * @param {ToolRecord} r
+ * @param {ToolPrices} prices
+ * @returns {ToolRecord}
+ */
 function priceRecord(r, prices) {
   const p = prices[r.modelKey],
     canPrice = r.usageReported && p && r.cacheKnown && number(r.output) && r.extra === 0 && !r.invalidUsage;
@@ -335,8 +400,10 @@ function priceRecord(r, prices) {
     currency: p?.currency || null,
   };
 }
+/** @param {ToolRecord[]} rows */
 function costs(rows) {
   const priced = rows.filter((r) => number(r.cost)),
+    /** @type {Record<string, { knownCost: number, cost: number|null, pricedRequests: number, partial?: boolean }>} */
     map = {};
   for (const r of priced) {
     const entry = map[r.currency] || (map[r.currency] = { knownCost: 0, cost: 0, pricedRequests: 0 });
@@ -358,6 +425,10 @@ function costs(rows) {
     unpricedRequests: rows.length - priced.length,
   };
 }
+/**
+ * @param {ToolRecord[]} rows
+ * @param {ToolPrices} prices
+ */
 function summarize(rows, prices) {
   const completedRows = rows.filter((r) => r.status === 'completed'),
     reported = rows.filter((r) => r.usageReported),
@@ -372,6 +443,7 @@ function summarize(rows, prices) {
     write = sum(cacheRows, 'write'),
     fresh = sum(cacheRows, 'fresh'),
     cacheInput = sum(cacheRows, 'input'),
+    /** @type {Record<string, number>} */
     savingsByCurrency = {};
   const savingsRows = cacheRows.filter((r) => prices[r.modelKey] && !r.invalidUsage);
   for (const r of savingsRows) {
@@ -420,12 +492,18 @@ function summarize(rows, prices) {
     invalidUsageRequests: rows.filter((r) => r.invalidUsage).length,
   };
 }
+/**
+ * @param {ToolRecord[]} rows
+ * @param {string} key
+ * @param {ToolPrices} prices
+ */
 function grouped(rows, key, prices) {
+  /** @type {Map<any, ToolRecord[]>} */
   const map = new Map();
   for (const r of rows) {
     const id = r[key];
     if (!map.has(id)) map.set(id, []);
-    map.get(id).push(r);
+    /** @type {ToolRecord[]} */ (map.get(id)).push(r);
   }
   return [...map]
     .map(([id, list]) => ({
@@ -441,8 +519,11 @@ function grouped(rows, key, prices) {
     }))
     .sort((a, b) => b.knownTokens - a.knownTokens || String(a.id).localeCompare(String(b.id)));
 }
+/** @param {ToolRecord[]} records */
 function deduplicate(records) {
+  /** @type {Map<string, { latest: ToolRecord, usage: ToolRecord|null }>} */
   const map = new Map();
+  /** @type {(a: ToolRecord, b: ToolRecord) => boolean} */
   const newer = (a, b) => {
     const ar = number(a.revision) ? a.revision : -1,
       br = number(b.revision) ? b.revision : -1;
@@ -468,6 +549,10 @@ function deduplicate(records) {
     return r;
   });
 }
+/**
+ * @param {any[]} reports source reports
+ * @param {{ start: number, end: number }} range
+ */
 function coverageFor(reports, range) {
   const start = reports.reduce((n, r) => (number(r.coverage?.start) ? Math.min(n, r.coverage.start) : n), Infinity),
     end = reports.reduce((n, r) => (number(r.coverage?.end) ? Math.max(n, r.coverage.end) : n), -Infinity);
@@ -494,6 +579,13 @@ function coverageFor(reports, range) {
     reason: complete ? null : '记录只代表已采集的用量，不能确认完整覆盖所选时段。',
   };
 }
+/**
+ * @param {ToolRecord[]} records
+ * @param {ActiveRange} range
+ * @param {ToolFilters} [filters]
+ * @param {any} [prices]
+ * @param {any[]} [sourceReports]
+ */
 function aggregateTools(records, range, filters = {}, prices = {}, sourceReports = []) {
   const p = normalizedPrices(prices),
     ids = Array.isArray(filters.sourceIds) && filters.sourceIds.length ? new Set(filters.sourceIds) : null;
@@ -501,11 +593,12 @@ function aggregateTools(records, range, filters = {}, prices = {}, sourceReports
   const rows = deduplicate(records)
     .filter((r) => (!ids || ids.has(r.sourceId)) && r.at <= range.end)
     .map((r) => priceRecord(r, p));
+  /** @param {ToolRecord} r */
   const belongs = (r) =>
     !filters.billingGroupId ||
     (filters.billingGroupId === 'unlinked' ? !r.accountId : r.accountId === filters.billingGroupId);
   const inRange = rows.filter((r) => r.at >= range.start && belongs(r)),
-    match = (r) =>
+    match = (/** @type {ToolRecord} */ r) =>
       belongs(r) &&
       (!filters.model || r.modelKey === filters.model) &&
       (!filters.project || r.project === filters.project) &&
@@ -517,7 +610,7 @@ function aggregateTools(records, range, filters = {}, prices = {}, sourceReports
     previousCoverage = coverageFor(reports, previousRange),
     comparisonAvailable = coverage.complete && previousCoverage.complete;
   const bins = makeBins(range),
-    bucketRows = bins.map(() => []);
+    bucketRows = bins.map(() => /** @type {ToolRecord[]} */ ([]));
   for (const r of current) {
     let lo = 0,
       hi = bins.length - 1;
