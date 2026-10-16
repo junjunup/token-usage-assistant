@@ -4,6 +4,27 @@ const crypto = require('node:crypto');
 const { projectJSON } = require('./metadata-json.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const count = (v) => Number.isSafeInteger(v) && v >= 0;
+// Locally verified rollout contracts (T5.1). Other versions are read only when their structure matches exactly
+// and are reported as unverified; a renamed or missing field fails closed (no guessing at field meanings).
+const VERIFIED_VERSIONS = [/^0\.155\./];
+const VERSION = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+const verified = (v) => VERIFIED_VERSIONS.some((re) => re.test(v));
+const usageShape = (u) =>
+  !!u &&
+  typeof u === 'object' &&
+  Object.values(u).every(count) &&
+  count(u.input_tokens) &&
+  count(u.output_tokens) &&
+  count(u.total_tokens);
+// Highest version by numeric major.minor.patch.
+const newest = (versions) =>
+  [...versions].sort((a, b) => {
+    const x = a.split(/[.+-]/).map(Number),
+      y = b.split(/[.+-]/).map(Number);
+    for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i];
+    return 0;
+  })[0] || null;
+const unverifiedNote = (version) => `${version.split('.').slice(0, 2).join('.')} 版本未经验证，按已知结构读取。`;
 const tokenFields = Object.fromEntries(
   [
     'input_tokens',
@@ -49,8 +70,9 @@ function* lines(file) {
     fs.closeSync(fd);
   }
 }
-function readFile(file, sourceId) {
-  let session = null,
+function readRollout(file, sourceId) {
+  let strict = false,
+    session = null,
     born = 0,
     version,
     project = null,
@@ -71,11 +93,12 @@ function readFile(file, sourceId) {
       born = at;
       version = p.cli_version || '';
       project = p.cwd || null;
-      // 0.155.x is the locally verified rollout contract. New major/minor formats fail closed.
-      if (!/^0\.155\./.test(version) || typeof session !== 'string' || !Number.isFinite(born)) {
+      if (!VERSION.test(version) || typeof session !== 'string' || !Number.isFinite(born)) {
         unsupported = true;
         break;
       }
+      // Unverified versions must match the full known structure (checked per token_count below).
+      strict = !verified(version);
       continue;
     }
     if (event.type === 'turn_context') {
@@ -87,6 +110,8 @@ function readFile(file, sourceId) {
     if (!session || !Number.isFinite(at)) throw new Error('metadata');
     const cumulative = p.info.total_token_usage,
       u = p.info.last_token_usage;
+    if (strict && (!usageShape(cumulative) || !usageShape(u)))
+      throw Object.assign(new Error('structure'), { code: 'unsupported' });
     if (!cumulative || !count(cumulative.total_tokens)) throw new Error('usage');
     const signature = JSON.stringify(cumulative);
     // Forks retain old event timestamps. These establish context, never new consumption.
@@ -140,7 +165,10 @@ function readFile(file, sourceId) {
     );
   }
   if (unsupported) throw Object.assign(new Error('version'), { code: 'unsupported' });
-  return rows;
+  return { rows, version };
+}
+function readFile(file, sourceId) {
+  return readRollout(file, sourceId).rows;
 }
 function scanCodex(db, source, range) {
   if (!fs.existsSync(source.file))
@@ -161,11 +189,18 @@ function scanCodex(db, source, range) {
   visit(path.join(source.file, 'sessions'));
   visit(path.join(source.file, 'archived_sessions'));
   db.exec(
-    'CREATE TABLE IF NOT EXISTS codex_files(source_id TEXT,file TEXT,size INTEGER,modified REAL,rows TEXT,PRIMARY KEY(source_id,file));',
+    'CREATE TABLE IF NOT EXISTS codex_files(source_id TEXT,file TEXT,size INTEGER,modified REAL,rows TEXT,PRIMARY KEY(source_id,file));' +
+      // T5.1: each cached file's rollout version. Rows of unverified versions are cached only here (never in
+      // codex_files), so an older build that rejects those versions cannot read them from its cache after a rollback.
+      'CREATE TABLE IF NOT EXISTS codex_file_versions(source_id TEXT,file TEXT,size INTEGER,modified REAL,version TEXT,rows TEXT,PRIMARY KEY(source_id,file));',
   );
   const get = db.prepare('SELECT * FROM codex_files WHERE source_id=? AND file=?'),
-    save = db.prepare('INSERT OR REPLACE INTO codex_files VALUES (?,?,?,?,?)');
+    save = db.prepare('INSERT OR REPLACE INTO codex_files VALUES (?,?,?,?,?)'),
+    getVersion = db.prepare('SELECT * FROM codex_file_versions WHERE source_id=? AND file=?'),
+    saveVersion = db.prepare('INSERT OR REPLACE INTO codex_file_versions VALUES (?,?,?,?,?,?)'),
+    dropCached = db.prepare('DELETE FROM codex_files WHERE source_id=? AND file=?');
   const records = new Map();
+  const unverified = new Set();
   let rejected = 0,
     unsupported = 0,
     truncated = false;
@@ -176,12 +211,26 @@ function scanCodex(db, source, range) {
       if (stat.mtimeMs < range.start - (range.end - range.start)) continue;
       try {
         const cached = get.get(source.id, file),
-          rows =
-            cached && cached.size === stat.size && cached.modified === stat.mtimeMs
-              ? JSON.parse(cached.rows)
-              : readFile(file, source.id);
-        if (!cached || cached.size !== stat.size || cached.modified !== stat.mtimeMs)
-          save.run(source.id, file, stat.size, stat.mtimeMs, JSON.stringify(rows));
+          cachedVersion = getVersion.get(source.id, file),
+          fresh = (c) => c && c.size === stat.size && c.modified === stat.mtimeMs;
+        let rows, version;
+        if (fresh(cachedVersion) && !verified(cachedVersion.version) && cachedVersion.rows) {
+          rows = JSON.parse(cachedVersion.rows);
+          version = cachedVersion.version;
+        } else if (fresh(cachedVersion) && verified(cachedVersion.version) && fresh(cached)) {
+          rows = JSON.parse(cached.rows);
+          version = cachedVersion.version;
+        } else {
+          ({ rows, version } = readRollout(file, source.id));
+          if (verified(version)) {
+            save.run(source.id, file, stat.size, stat.mtimeMs, JSON.stringify(rows));
+            saveVersion.run(source.id, file, stat.size, stat.mtimeMs, version, null);
+          } else {
+            dropCached.run(source.id, file);
+            saveVersion.run(source.id, file, stat.size, stat.mtimeMs, version, JSON.stringify(rows));
+          }
+        }
+        if (!verified(version)) unverified.add(version);
         for (const row of rows)
           if (row.at >= range.start - (range.end - range.start) && row.at <= range.end) {
             records.set(row.attemptId, row);
@@ -201,13 +250,16 @@ function scanCodex(db, source, range) {
     db.exec('ROLLBACK');
     throw e;
   }
+  const observedVersion = newest(unverified);
   return {
     rows: [...records.values()].slice(0, 100000),
     status: rejected ? 'stale' : 'ready',
     truncated,
+    ...(observedVersion ? { contract: 'unverified-version', observedVersion } : {}),
     message:
       (rejected ? `${rejected} 个日志的版本或用量格式不受支持，已排除。` : '') +
+      (observedVersion ? unverifiedNote(observedVersion) : '') +
       'Codex 0.155.x 本机已报告用量快照；不等同请求次数，缺少终态的记录不参与成功率。历史继承与重复快照不累计。',
   };
 }
-module.exports = { readFile, scanCodex, selection, lines };
+module.exports = { readFile, readRollout, scanCodex, selection, lines, VERIFIED_VERSIONS, newest, unverifiedNote };

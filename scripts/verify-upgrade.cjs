@@ -340,16 +340,22 @@ app
       'oldPricesHaveImplicitUSD',
       equal(oldAnalytics.prices[modelKey], price) && !Object.hasOwn(oldAnalytics.prices[modelKey], 'currency'),
     );
+    // Old builds up to 1.8.0-beta.6 keep history in history.json; from beta.7 (T4.1) it lives in history.sqlite,
+    // which is not compared byte for byte (WAL) and is covered by cachedSnapshotsAndHistoryLoaded instead.
+    const jsonHistory = profile.oldHistory !== 'sqlite';
     const preservedFiles = [
       'accounts.encrypted.json',
       'settings.json',
       'local-source.json',
       'local-pricing.json',
       'snapshot.json',
-      'history.json',
+      ...(jsonHistory ? ['history.json'] : []),
       ...accounts
         .slice(1)
-        .flatMap((entry) => [`accounts/${entry.id}/snapshot.json`, `accounts/${entry.id}/history.json`]),
+        .flatMap((entry) => [
+          `accounts/${entry.id}/snapshot.json`,
+          ...(jsonHistory ? [`accounts/${entry.id}/history.json`] : []),
+        ]),
     ];
     const before = Object.fromEntries(preservedFiles.map((name) => [name, hash(oldStore.file(name))]));
     const encrypted = fs.readFileSync(oldStore.file('accounts.encrypted.json'), 'utf8');

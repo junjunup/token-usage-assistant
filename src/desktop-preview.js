@@ -235,6 +235,25 @@ if (credentialIssuePreview)
     activeAccountId: '',
     data: { ...state.data, parts: {}, updatedAt: {}, errors: [], status: 'unconfigured', nextRefreshAt: null },
   };
+// Preview of an unverified upstream version (?desktop-preview=unverified-version, T5.1): the Codex source reads a
+// newer rollout version by its known structure and says so in its existing status message.
+if (new URLSearchParams(location.search).get('desktop-preview') === 'unverified-version')
+  state.toolSources = [
+    ...state.toolSources,
+    {
+      id: 'preview-codex',
+      kind: 'codex',
+      label: 'Codex · 示例',
+      file: '/Users/demo/.codex',
+      enabled: true,
+      status: 'ready',
+      lastSuccessAt: now,
+      contract: 'unverified-version',
+      observedVersion: '0.160.0',
+      message:
+        '0.160 版本未经验证，按已知结构读取。Codex 0.155.x 本机已报告用量快照；不等同请求次数，缺少终态的记录不参与成功率。历史继承与重复快照不累计。',
+    },
+  ];
 export const previewBridge = {
   retryCredentials: async () => {
     await new Promise((r) => setTimeout(r, 400));

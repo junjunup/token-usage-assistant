@@ -263,10 +263,13 @@ test('Codex compaction counter reduction establishes a new baseline without rech
   fs.writeFileSync(file, rollout({ events: [event(-500, 100), event(-400, 50), event(0, 80)] }));
   assert.equal(readFile(file, 'source').length, 2);
 });
-test('unknown Codex version and malformed token fields fail closed; incomplete last line deferred', (t) => {
+test('unparseable Codex versions and malformed token fields fail closed; incomplete last line deferred', (t) => {
   const home = setup(t),
     file = path.join(home, 'rollout-x.jsonl');
-  fs.writeFileSync(file, rollout({ version: '9.0.0' }));
+  // T5.1: an unverified but well-formed version is read when its structure matches (see structural tests).
+  fs.writeFileSync(file, rollout({ version: '9.0' }));
+  assert.throws(() => readFile(file, 'source'), /version/);
+  fs.writeFileSync(file, rollout({ version: '' }));
   assert.throws(() => readFile(file, 'source'), /version/);
   fs.writeFileSync(file, rollout() + '{"type":');
   assert.equal(readFile(file, 'source').length, 1);
@@ -342,8 +345,10 @@ test('Claude error with usage is counted, error without usage stays unknown; ign
   assert.equal(p.rows[0].total, null);
   assert.equal(parseOtel(otel({ 'event.name': 'user_prompt' }), 'source', {}, now).rows.length, 0);
 });
-test('Claude unknown versions and missing session identities produce explicit unsupported counts', () => {
-  assert.equal(parseOtel(otel({}, { 'service.version': '3.0.0' }), 's', {}, now).unsupported, 1);
+test('Claude malformed versions and missing session identities produce explicit unsupported counts', () => {
+  // T5.1: a well-formed unverified version is accepted when its structure matches (see structural tests).
+  assert.equal(parseOtel(otel({}, { 'service.version': '3.0' }), 's', {}, now).unsupported, 1);
+  assert.equal(parseOtel(otel({}, { 'service.version': '' }), 's', {}, now).unsupported, 1);
   assert.equal(parseOtel(otel({ 'session.id': '' }), 's', {}, now).unsupported, 1);
 });
 test('Claude retries have separate request identities, OTLP replay and stream final values merge', () => {
@@ -426,4 +431,129 @@ test('subscription sources query and restart independently, isolate versions, an
   const db = new DatabaseSync(store.file('tool-usage.sqlite'));
   assert.doesNotMatch(JSON.stringify(db.prepare('SELECT rows FROM codex_files').all()), /PRIVATE/);
   db.close();
+});
+
+// T5.1: structural validation instead of an exact version allow-list.
+test('Codex 0.160.0 with the known structure is read and reported as an unverified version', (t) => {
+  const { readRollout } = require('../desktop/codex-reader.cjs');
+  const home = setup(t),
+    dir = path.join(home, 'sessions', '2026', '10', '16');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'rollout-new.jsonl'), rollout({ id: 'n1', version: '0.160.0' }));
+  fs.writeFileSync(path.join(dir, 'rollout-old.jsonl'), rollout({ id: 'o1' }));
+  assert.equal(readRollout(path.join(dir, 'rollout-new.jsonl'), 's').rows.length, 1);
+  const db = new DatabaseSync(':memory:');
+  t.after(() => db.close());
+  const source = { id: 'codex-source', file: home },
+    wide = { start: now - 86400000, end: now + 1000 };
+  for (const pass of ['fresh', 'cached']) {
+    const r = scanCodex(db, source, wide);
+    assert.equal(r.status, 'ready', pass);
+    assert.equal(r.rows.length, 2, pass);
+    assert.equal(r.contract, 'unverified-version', pass);
+    assert.equal(r.observedVersion, '0.160.0', pass);
+    assert.match(r.message, /0\.160 版本未经验证，按已知结构读取。/, pass);
+  }
+  // Rollback safety: unverified rows never land in codex_files, which older builds read as their cache.
+  const cachedFiles = db
+    .prepare('SELECT file FROM codex_files')
+    .all()
+    .map((r) => path.basename(r.file));
+  assert.deepEqual(cachedFiles, ['rollout-old.jsonl']);
+  fs.rmSync(path.join(dir, 'rollout-new.jsonl'));
+  const verifiedOnly = scanCodex(db, source, wide);
+  assert.equal(verifiedOnly.contract, undefined, 'only verified versions: no marker');
+  assert.doesNotMatch(verifiedOnly.message, /未经验证/);
+});
+
+test('Codex unverified versions with a renamed or missing usage field are rejected, never guessed', (t) => {
+  const { readRollout } = require('../desktop/codex-reader.cjs');
+  const renamed = { input: 20, output_tokens: 10, total_tokens: 30 },
+    missing = { input_tokens: 20, output_tokens: 10 };
+  const home = setup(t),
+    file = path.join(home, 'rollout-bad.jsonl');
+  for (const info of [
+    { total_token_usage: renamed, last_token_usage: tokens(20) },
+    { total_token_usage: tokens(20), last_token_usage: missing },
+    { total_token_usage: { ...tokens(20), output_tokens: -1 }, last_token_usage: tokens(20) },
+  ]) {
+    fs.writeFileSync(
+      file,
+      rollout({
+        version: '0.160.0',
+        events: [{ timestamp: new Date(now).toISOString(), type: 'event_msg', payload: { type: 'token_count', info } }],
+      }),
+    );
+    assert.throws(
+      () => readRollout(file, 's'),
+      (e) => e.code === 'unsupported',
+    );
+  }
+  const dir = path.join(home, 'sessions');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.renameSync(file, path.join(dir, 'rollout-bad.jsonl'));
+  const db = new DatabaseSync(':memory:');
+  t.after(() => db.close());
+  const r = scanCodex(db, { id: 'c', file: home }, { start: now - 86400000, end: now + 1000 });
+  assert.equal(r.status, 'stale');
+  assert.equal(r.rows.length, 0);
+  assert.equal(r.contract, undefined);
+  assert.match(r.message, /1 个日志的版本或用量格式不受支持，已排除。/);
+});
+
+test('Claude 2.2.0 OTLP with every known attribute is accepted as unverified; a missing attribute is rejected', () => {
+  const ok = parseOtel(otel({}, { 'service.version': '2.2.0' }), 's', {}, now);
+  assert.equal(ok.rows.length, 1);
+  assert.equal(ok.unsupported, 0);
+  assert.deepEqual(ok.unverified, ['2.2.0']);
+  assert.equal(ok.rows[0].total, 38);
+  const verifiedOne = parseOtel(otel(), 's', {}, now);
+  assert.deepEqual(verifiedOne.unverified, []);
+  for (const drop of ['cache_read_tokens', 'cache_creation_tokens', 'input_tokens', 'output_tokens']) {
+    const data = otel({}, { 'service.version': '2.2.0' });
+    const attrs = data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes;
+    attrs.splice(
+      attrs.findIndex((a) => a.key === drop),
+      1,
+    );
+    const p = parseOtel(data, 's', {}, now);
+    assert.equal(p.rows.length, 0, drop);
+    assert.equal(p.unsupported, 1, drop);
+  }
+  // An unverified error event may still lack usage, exactly like a verified one.
+  const error = parseOtel(
+    otel(
+      {
+        'event.name': 'api_error',
+        input_tokens: undefined,
+        output_tokens: undefined,
+        cache_read_tokens: undefined,
+        cache_creation_tokens: undefined,
+      },
+      { 'service.version': '2.2.0' },
+    ),
+    's',
+    {},
+    now,
+  );
+  assert.equal(error.rows.length, 1);
+  assert.equal(error.rows[0].usageReported, false);
+});
+
+test('the Claude collector records the unverified version and the source report carries it', (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  c.health('ready', '2.2.0');
+  c.health('ready', '2.1.300'); // older than the recorded one: the newest is kept
+  c.health('ready');
+  const status = JSON.parse(fs.readFileSync(path.join(home, 'status.json'), 'utf8'));
+  assert.equal(status.observedVersion, '2.2.0');
+  assert.equal(status.state, 'ready');
+  const usage = path.join(home, 'usage.jsonl');
+  fs.writeFileSync(usage, '');
+  const r = scanClaude(null, { id: 'claude', file: usage }, { start: now - 1000, end: now + 1000 });
+  assert.equal(r.contract, 'unverified-version');
+  assert.equal(r.observedVersion, '2.2.0');
+  assert.match(r.message, /2\.2 版本未经验证，按已知结构读取。/);
 });
