@@ -1,0 +1,51 @@
+{
+  "kind": "native-packaged-module-upgrade",
+  "syntheticOnly": true,
+  "profile": "1.8.0-beta.6-to-1.8.0-beta.7",
+  "fromVersion": "1.8.0-beta.6",
+  "toVersion": "1.8.0-beta.7",
+  "platform": "win32",
+  "electron": "44.4.4",
+  "startedAt": "2026-10-16T09:15:26.667Z",
+  "checks": {
+    "oldPackageRecognized": true,
+    "newPackageIs180Beta7": true,
+    "nativeSafeStorageAvailable": true,
+    "oldVaultDecryptsFiveAccounts": true,
+    "oldPricesHaveImplicitUSD": true,
+    "vaultContainsNoPlaintextSyntheticCredentials": true,
+    "preferencesAndWindowBoundsPreserved": true,
+    "nativeVaultStillDecrypts": true,
+    "allFiveAccountsAndSelectionPreserved": true,
+    "cachedSnapshotsAndHistoryLoaded": true,
+    "legacySourceMigratedIndependently": true,
+    "storedLegacyPriceRatesPreserved": true,
+    "packagedWorkerAnalyzesMigratedSource": true,
+    "reportPricesGainExplicitUSD": true,
+    "estimateUsesOriginalUSDRates": true,
+    "toolDataNotAttributedToSelectedAccount": true,
+    "legacyZcodeQueryStillWorks": true,
+    "eightPlatformCapabilitiesPresent": true,
+    "existingFilesRemainByteIdentical": true,
+    "180Beta6RollbackCanReadVaultAndSettings": true,
+    "180Beta6RollbackCanReadLegacySourceAndPrice": true,
+    "upgradeDoesNotAutoAssociate": true,
+    "manualAssociationWorksAfterUpgrade": true,
+    "associationConfigurationSurvivesRestart": true,
+    "newMetadataDoesNotAffectOldVault": true,
+    "noNetworkRequests": true,
+    "isolatedUserDataOnly": true
+  },
+  "limitations": [
+    "Does not install or execute the NSIS installer.",
+    "Does not validate system login startup or a physical reboot.",
+    "Does not read or modify real user accounts, app data, billing records, or tool logs."
+  ],
+  "packages": {
+    "oldAsarSha256": "086dbe0b9620c94d8d181dbcf87dee538b1963340729392d7680f88c5e1dae03",
+    "newAsarSha256": "aa159197fb1dcfca33acee069edf5c72958e408d28df930c3964890d36719aa1"
+  },
+  "status": "passed",
+  "finishedAt": "2026-10-16T09:15:27.267Z",
+  "oldPackageSource": "source rebuild of tag v1.8.0-beta.6 (not a downloaded release binary)"
+}
