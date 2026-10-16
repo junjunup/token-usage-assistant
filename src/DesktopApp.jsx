@@ -132,25 +132,20 @@ export function DesktopApp() {
   const balanceOnly = !!state?.capabilities?.balance && !state?.capabilities?.quota;
   const generic =
     state?.capabilities?.usageSummary === false || (!!state?.provider && state.provider !== 'commandcode');
-  useEffect(() => {
+  // Switching accounts resets the range and filters unless tool analytics is open.
+  const [rangeAccount, setRangeAccount] = useState(state?.activeAccountId);
+  if (rangeAccount !== state?.activeAccountId) {
+    setRangeAccount(state?.activeAccountId);
     if (view !== 'analytics' || analysisSource === 'account') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
       setRange('today');
       setFilters({ model: '', project: '', session: '' });
     }
-  }, [state?.activeAccountId]);
+  }
   const billingGroups = state?.associations?.groups || [],
     selectedBillingGroup = billingGroups.find((g) => g.id === billingGroupId && g.valid),
     toolBillingAvailable = !!selectedBillingGroup?.period;
-  useEffect(() => {
-    if (
-      billingGroupId &&
-      billingGroupId !== 'unlinked' &&
-      !billingGroups.some((g) => g.id === billingGroupId && g.valid)
-    )
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-      setBillingGroupId('');
-  }, [billingGroupId, JSON.stringify(billingGroups)]);
+  if (billingGroupId && billingGroupId !== 'unlinked' && !billingGroups.some((g) => g.id === billingGroupId && g.valid))
+    setBillingGroupId('');
   const analysis = useAnalytics(
     bridge,
     {
@@ -165,11 +160,9 @@ export function DesktopApp() {
     if (analysisSource !== 'account' && range === 'billing' && !toolBillingAvailable) setRange('today');
     setView('analytics');
   };
-  useEffect(() => {
-    if (state?.toolSources)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-      setSourceIds((ids) => ids.filter((id) => state.toolSources.some((s) => s.id === id && s.enabled)));
-  }, [JSON.stringify(state?.toolSources?.map((s) => [s.id, s.enabled]))]);
+  // Drop selected sources that were removed or disabled.
+  if (state?.toolSources && sourceIds.some((id) => !state.toolSources.some((s) => s.id === id && s.enabled)))
+    setSourceIds(sourceIds.filter((id) => state.toolSources.some((s) => s.id === id && s.enabled)));
   useEffect(() => {
     document.querySelector('.native-app .main-content')?.scrollTo({ top: 0 });
   }, [view]);

@@ -332,19 +332,13 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
   const groups = state.associations?.groups || [],
     [groupId, setGroupId] = useState(''),
     [range, setRange] = useState('today');
-  useEffect(() => {
-    if (!groups.some((g) => g.id === groupId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-      setGroupId(groups[0]?.id || '');
-      setRange('today');
-    }
-  }, [JSON.stringify(groups.map((g) => g.id)), groupId]);
+  if (!groups.some((g) => g.id === groupId) && groupId !== (groups[0]?.id || '')) {
+    setGroupId(groups[0]?.id || '');
+    setRange('today');
+  }
   const group = groups.find((g) => g.id === groupId),
     canBill = !!group?.valid && !!group.period;
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-    if (range === 'billing' && !canBill) setRange('today');
-  }, [canBill, range]);
+  if (range === 'billing' && !canBill) setRange('today');
   const analysis = useAnalytics(bridge, { source: 'reconciliation', groupId, range }, state, !!groupId),
     r = analysis.report,
     p = r?.platform,

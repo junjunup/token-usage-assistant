@@ -330,14 +330,15 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove }
       setOrg('');
     }
   }
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
+  const [formAccount, setFormAccount] = useState(state.activeAccountId);
+  if (formAccount !== state.activeAccountId) {
+    setFormAccount(state.activeAccountId);
     setMode('add');
     setLabel('');
     setOrg('');
     clear();
     clearProfiles();
-  }, [state.activeAccountId]);
+  }
   async function submit(e, manual = false) {
     e.preventDefault();
     if (busy) return;
