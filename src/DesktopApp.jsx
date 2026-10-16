@@ -37,6 +37,7 @@ import { previewBridge } from './desktop-preview.js';
 import { BrandMark } from './BrandMark.jsx';
 import './desktop.css';
 import { Select } from './Select.jsx';
+import { Live } from './Live.jsx';
 import { BalanceDashboard, BalanceWidget } from './BalanceViews.jsx';
 import { AccountSwitcher, ProviderDashboard, ProviderWidget, ConnectionForm } from './ProviderViews.jsx';
 import { monthlyQuota, quotaStatus, resetDescription } from './generated/domain.js';
@@ -119,7 +120,6 @@ export function DesktopApp() {
     [view, setView] = useState('overview'),
     [used, setUsed] = useState(false),
     [details, setDetails] = useState(false),
-    [now, setNow] = useState(() => Date.now()),
     [toast, setToast] = useState(null),
     [dialog, setDialog] = useState(null);
   const dialogRef = useRef();
@@ -181,11 +181,9 @@ export function DesktopApp() {
     bridge.getState().then((r) => {
       if (alive && r.ok) setState(r.value);
     });
-    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       alive = false;
       off();
-      clearInterval(timer);
     };
   }, []);
   useEffect(() => {
@@ -236,7 +234,7 @@ export function DesktopApp() {
     data.errors.some((e) => e.endpoint === kind || e.endpoint === 'identity');
   const summaryLabel =
     s?.scope === 'history' ? '累计汇总' : { today: '今日', '7d': '近 7 天', billing: '本账期' }[range];
-  const reset = (w) => resetDescription(w, now);
+  const reset = (w) => <Live>{(now) => resetDescription(w, now)}</Live>;
   const monthly = monthlyQuota(data),
     monthTone =
       num(c?.monthly) && c.monthly <= 0
@@ -307,7 +305,7 @@ export function DesktopApp() {
             {balanceOnly ? (
               <BalanceWidget state={state} />
             ) : generic ? (
-              <ProviderWidget state={state} now={now} />
+              <ProviderWidget state={state} />
             ) : (
               <>
                 <div className={`widget-month ${monthTone}-text`}>
@@ -542,7 +540,7 @@ export function DesktopApp() {
                   }}
                 />
               ) : generic ? (
-                <ProviderDashboard state={state} now={now} onSettings={() => setView('settings')} />
+                <ProviderDashboard state={state} onSettings={() => setView('settings')} />
               ) : (
                 <>
                   {!state.hasCredential && (
@@ -580,7 +578,11 @@ export function DesktopApp() {
                         : '尚未连接账户'}
                     </span>
                     <span>
-                      {new Date(now).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
+                      <Live>
+                        {(now) =>
+                          new Date(now).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })
+                        }
+                      </Live>
                     </span>
                   </div>
                   {(data.errors.length > 0 || state.credentialIssue) && (
@@ -1044,9 +1046,11 @@ export function DesktopApp() {
                 </span>
                 <span className="footer-separator">·</span>
                 <span>
-                  {data.nextRefreshAt
-                    ? `${Math.max(0, Math.ceil((data.nextRefreshAt - now) / 1000))} 秒后刷新`
-                    : `每 ${settings.refreshSeconds} 秒刷新`}
+                  {data.nextRefreshAt ? (
+                    <Live>{(now) => `${Math.max(0, Math.ceil((data.nextRefreshAt - now) / 1000))} 秒后刷新`}</Live>
+                  ) : (
+                    `每 ${settings.refreshSeconds} 秒刷新`
+                  )}
                 </span>
               </div>
               <button onClick={() => action(() => bridge.openOfficial('usage'))}>
