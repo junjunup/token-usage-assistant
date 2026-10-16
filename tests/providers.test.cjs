@@ -350,11 +350,11 @@ test('multiple encrypted connections persist active choice and keep all accounts
   assert.ok(!saved.includes(syntheticKey));
   assert.ok(!saved.includes('synthetic-secret-key'));
   const restored = new AccountManager({ store, settings, clientFactory: (p, r) => createClient(p, r, fixtureFetch) });
-  t.after(() => restored.dispose());
   restored.load();
   assert.equal(restored.activeId, a);
   assert.equal(restored.runtimes.get(b).monitor.state.parts.credits.windows[0].remainingPercent, 72);
   assert.notEqual(restored.runtimes.get(a).scoped.root, restored.runtimes.get(b).scoped.root);
+  restored.dispose(); // before harness cleanup removes the directory (Windows keeps history.sqlite locked)
 });
 test('duplicate credential updates same connection while region and different keys remain isolated', async (t) => {
   const { manager } = harness(t);
