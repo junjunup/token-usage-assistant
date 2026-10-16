@@ -947,6 +947,24 @@ export function DesktopApp() {
                       key: 'launchAtLogin',
                       label: '开启开机启动',
                     },
+                    {
+                      // T5.2: only tells the user; never downloads or installs anything.
+                      title: '检查更新',
+                      note:
+                        settings.updateCheck && state.update?.status === 'available' ? (
+                          <>
+                            发现新版本 {state.update.version} · 当前 {state.version}{' '}
+                            <button className="text-button" onClick={() => action(() => bridge.openUpdate())}>
+                              查看新版本
+                              <ArrowSquareOut size={13} />
+                            </button>
+                          </>
+                        ) : (
+                          '启动时和每 24 小时向 GitHub 请求一次公开版本列表，不发送账户或设备信息；只提示，不自动下载或安装。'
+                        ),
+                      key: 'updateCheck',
+                      label: '开启检查更新',
+                    },
                   ].map((item) => (
                     <div className="setting-row" key={item.key}>
                       <div>
