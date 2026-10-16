@@ -16,7 +16,7 @@ const {
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const { LocalStore, atomicWrite } = require('./store.cjs');
+const { LocalStore } = require('./store.cjs');
 const { patchSettings } = require('./domain.cjs');
 const { ApiError } = require('./api.cjs');
 const { AnalyticsService } = require('./analytics-service.cjs');
@@ -45,6 +45,8 @@ const APP_ORIGIN = 'companion://app';
 const APP_ID = 'local.commandcode.tokenusageassistant';
 const smoke = process.argv.includes('--smoke-test');
 const smokeDirArg = process.argv.find((a) => a.startsWith('--test-directory='));
+// Everything that only runs in smoke mode lives in desktop/smoke/ (T5.4).
+const smokeMode = smoke ? require('./smoke/index.cjs') : null;
 if (isMac) {
   // Packaged: ~/Library/Application Support/TokenUsageAssistant (unchanged). Development: TokenUsageAssistant-Dev.
   const macName = macDataName(app.isPackaged);
@@ -78,7 +80,7 @@ let accounts,
   toolSources,
   associations,
   claudeCollector,
-  smokeHandshakeTimer,
+  smokeRun,
   diagnosticsText = '',
   connectionBusy = false;
 const notifications = new Set(),
@@ -528,7 +530,7 @@ function installIpc() {
   });
   handle('assistant:renderer-ready', (event) => {
     readySurfaces.add(event.sender === mainWindow?.webContents ? 'main' : 'widget');
-    if (smoke && readySurfaces.size === 2) finishSmoke();
+    if (smokeRun && readySurfaces.size === 2) smokeRun.finish();
     return true;
   });
   handle('assistant:connect', async (event, value) => {
@@ -737,148 +739,43 @@ function installIpc() {
     return true;
   });
 }
-async function finishSmoke() {
-  if (finishSmoke.started) return;
-  finishSmoke.started = true;
-  // The handshake succeeded: its timeout must not exit the app while the smoke checks are still running.
-  clearTimeout(smokeHandshakeTimer);
-  try {
-    await monitor.refresh();
-    const analyticsResult = await analytics.get({ source: 'local', range: '7d' });
-    const accountResult = await analytics.get({ source: 'account', range: 'today' });
-    const compactHeight = widgetWindow.getBounds().height,
-      compactContentHeight = widgetWindow.getContentBounds().height;
-    applySettings({ ...settings, widgetExpanded: true });
-    const expandedHeight = widgetWindow.getBounds().height,
-      expandedContentHeight = widgetWindow.getContentBounds().height;
-    applySettings({ ...settings, widgetExpanded: false });
-    const restoredHeight = widgetWindow.getBounds().height;
-    const testSecret = 'local-smoke-secret-only';
-    const encrypted = safeStorage.encryptString(testSecret);
-    const report = {
-      ok:
-        Math.abs(compactHeight - 366) <= 8 &&
-        Math.abs(expandedHeight - 552) <= 8 &&
-        Math.abs(restoredHeight - compactHeight) <= 8 &&
-        expandedContentHeight - compactContentHeight > 160 &&
-        analyticsResult.status === 'ready' &&
-        analyticsResult.models?.length > 0 &&
-        analyticsResult.summary?.cache?.hitRate > 0 &&
-        accountResult.status === 'ready' &&
-        monitor.state.status === 'connected' &&
-        safeStorage.decryptString(encrypted) === testSecret &&
-        (!isMac || app.getName() === macSmokeName),
-      version: app.getVersion(),
-      platform: process.platform,
-      arch: process.arch,
-      compactHeight,
-      expandedHeight,
-      restoredHeight,
-      compactContentHeight,
-      expandedContentHeight,
-      analyticsLocal: analyticsResult.status,
-      analyticsAccount: accountResult.status,
-      modelGroups: analyticsResult.models?.length,
-      cacheHitRate: analyticsResult.summary?.cache?.hitRate,
-      readySurfaces: [...readySurfaces],
-      trayCreated: !!tray,
-      notificationSupported: Notification.isSupported(),
-      encryptionRoundTrip: safeStorage.decryptString(encrypted) === testSecret,
-      keychainName: app.getName(),
-      mainSandbox: mainWindow.webContents.getLastWebPreferences().sandbox,
-      mainIsolation: mainWindow.webContents.getLastWebPreferences().contextIsolation,
-      widgetAlwaysOnTop: widgetWindow.isAlwaysOnTop(),
-      widgetMovable: widgetWindow.isMovable(),
-      status: monitor.state.status,
-      hasCredits: !!monitor.state.parts.credits,
-      hasSummary: !!monitor.state.parts.summary,
-    };
-    report.providers = await require('./provider-native-smoke.cjs').runProviderSmoke({
-      accounts,
-      store,
-      mainWindow,
-      widgetWindow,
-      settings,
-      applySettings,
-    });
-    report.tools = await require('./tool-native-smoke.cjs').runToolSmoke({
-      toolSources,
-      analytics,
-      store,
-      accounts,
-      mainWindow,
-      settings,
-      applySettings,
-    });
-    report.subscriptions = await require('./subscription-native-smoke.cjs').runSubscriptionSmoke({
-      accounts,
-      toolSources,
-      analytics,
-      store,
-      mainWindow,
-      widgetWindow,
-      settings,
-      applySettings,
-    });
-    report.balance = await require('./balance-native-smoke.cjs').runBalanceSmoke({
-      accounts,
-      analytics,
-      store,
-      mainWindow,
-      widgetWindow,
-      settings,
-      applySettings,
-    });
-    report.associations = await require('./association-native-smoke.cjs').runAssociationSmoke({
-      accounts,
-      toolSources,
-      associations,
-      analytics,
-      store,
-      mainWindow,
-      settings,
-      applySettings,
-    });
-    report.opencode = await require('./opencode-native-smoke.cjs').runOpenCodeSmoke({
-      accounts,
-      toolSources,
-      analytics,
-      store,
-      mainWindow,
-      widgetWindow,
-      settings,
-      applySettings,
-    });
-    report.branding = await require('./branding-native-smoke.cjs').runBrandingSmoke({
-      mainWindow,
-      store,
-      settings,
-      applySettings,
-    });
-    report.ok =
-      report.opencode.ok &&
-      report.ok &&
-      report.branding.ok &&
-      report.associations.ok &&
-      report.providers.ok &&
-      report.tools.ok &&
-      report.subscriptions.ok &&
-      report.balance.ok;
-    atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), report);
-    quitting = true;
-    log.info('main', 'smoke-finished', { status: report.ok ? 1 : 0 });
-    log.flushSync();
-    app.exit(report.ok ? 0 : 1);
-  } catch (error) {
-    atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), {
-      ok: false,
-      error: 'native smoke failed',
-      detail: String(error.stack || error).slice(0, 1500),
-    });
-    log.error('main', 'smoke-failed');
-    log.flushSync();
-    app.exit(1);
-  }
+// Live view of the main-process state for the smoke module (T5.4); getters so it always sees current values.
+function smokeContext() {
+  return {
+    get monitor() {
+      return monitor;
+    },
+    get analytics() {
+      return analytics;
+    },
+    get mainWindow() {
+      return mainWindow;
+    },
+    get widgetWindow() {
+      return widgetWindow;
+    },
+    get settings() {
+      return settings;
+    },
+    get tray() {
+      return tray;
+    },
+    get accounts() {
+      return accounts;
+    },
+    get store() {
+      return store;
+    },
+    get toolSources() {
+      return toolSources;
+    },
+    get associations() {
+      return associations;
+    },
+    readySurfaces,
+    applySettings,
+    setQuitting: () => (quitting = true),
+  };
 }
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
@@ -919,17 +816,14 @@ else {
           return new Response('', { status: 404 });
         }
       });
-      const factory = smoke
-        ? (provider, region) =>
-            provider === 'commandcode'
-              ? require('./smoke-fixture.cjs').client
-              : createClient(provider, region, require('./provider-fixture.cjs').fixtureFetch)
+      const factory = smokeMode
+        ? smokeMode.clientFactory(createClient)
         : (provider, region) => createClient(provider, region, (...args) => net.fetch(...args));
       accounts = new AccountManager({ store, settings, clientFactory: factory, notify: quotaAlert });
       accounts.load();
       syncActive();
       analytics = new AnalyticsService({ store, monitor, history, client: accounts.active.client });
-      if (smoke) analytics.file = require('./smoke-fixture.cjs').createDatabase(store.root || app.getPath('userData'));
+      if (smokeMode) analytics.file = smokeMode.createDatabase(store.root || app.getPath('userData'));
       toolSources = new ToolSources({ store, legacyFile: analytics.file });
       analytics.tools = toolSources;
       if (!smoke && fs.existsSync(store.file('claude-collector/collector.json'))) {
@@ -1009,21 +903,8 @@ else {
       mainWindow = secureWindow('main');
       widgetWindow = secureWindow('widget');
       installIpc();
-      if (smoke) {
-        monitor.configure('local-smoke-key');
-        smokeHandshakeTimer = setTimeout(() => {
-          atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), {
-            ok: false,
-            error: 'renderer handshake timeout',
-            readySurfaces: [...readySurfaces],
-          });
-          log.error('main', 'smoke-handshake-timeout', { count: readySurfaces.size });
-          log.flushSync();
-          app.exit(1);
-        }, 45000);
-      } else {
-        accounts.refreshAll();
-      }
+      if (smokeMode) smokeRun = smokeMode.attach(smokeContext());
+      else accounts.refreshAll();
       powerMonitor.on('resume', () => {
         accounts.refreshAll();
       });
@@ -1035,8 +916,7 @@ else {
     .catch((e) => {
       log.error('main', 'startup-failed', { errno: typeof e?.code === 'string' ? e.code : undefined });
       log.flushSync();
-      if (smoke)
-        atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), { ok: false, error: 'startup failed' });
+      smokeMode?.startupFailed();
       app.exit(1);
     });
   app.on('activate', () => {

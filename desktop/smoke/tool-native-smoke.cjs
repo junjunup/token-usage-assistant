@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
 const { createHarness, harnessWire } = require('./tool-fixture.cjs');
-const { ToolSources } = require('./tool-sources.cjs');
+const { ToolSources } = require('../tool-sources.cjs');
 async function until(win, expression) {
   const until = Date.now() + 8000;
   while (Date.now() < until) {

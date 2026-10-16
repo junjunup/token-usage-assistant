@@ -53,8 +53,8 @@ const { AnalyticsService } = require(path.join(snapshot, 'desktop/analytics-serv
 const { DEFAULT_SETTINGS } = require(path.join(snapshot, 'desktop/domain.cjs'));
 const { createClient } = require(path.join(snapshot, 'desktop/providers.cjs'));
 const { fixtureFetch } = require(path.join(snapshot, 'desktop/provider-fixture.cjs'));
-const { client: commandFixture } = require(path.join(snapshot, 'desktop/smoke-fixture.cjs'));
-const { createZcode } = require(path.join(snapshot, 'desktop/tool-fixture.cjs'));
+const { client: commandFixture } = require(path.join(snapshot, 'desktop/smoke/smoke-fixture.cjs'));
+const { createZcode } = require(path.join(snapshot, 'desktop/smoke/tool-fixture.cjs'));
 
 const vaultKey = crypto.randomBytes(32);
 // A synthetic AES fixture exercises persistence/reload. Windows DPAPI belongs to the native smoke test.

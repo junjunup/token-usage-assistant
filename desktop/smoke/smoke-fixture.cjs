@@ -1,6 +1,6 @@
-const { normalizeIdentity, normalizeCredits, normalizeSubscription, normalizeSummary } = require('./domain.cjs');
+const { normalizeIdentity, normalizeCredits, normalizeSubscription, normalizeSummary } = require('../domain.cjs');
 const { DatabaseSync } = require('node:sqlite');
-const { sampleRows } = require('./analytics-fixture.cjs');
+const { sampleRows } = require('../analytics-fixture.cjs');
 const path = require('node:path');
 const periodStart = () => new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
 const periodEnd = () => new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getTime();

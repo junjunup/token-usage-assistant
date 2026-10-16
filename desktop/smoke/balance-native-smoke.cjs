@@ -2,8 +2,8 @@
 const fs = require('node:fs'),
   assert = require('node:assert/strict');
 const { ipcMain } = require('electron');
-const { createClient } = require('./providers.cjs');
-const { AccountManager } = require('./accounts.cjs');
+const { createClient } = require('../providers.cjs');
+const { AccountManager } = require('../accounts.cjs');
 async function until(win, expression) {
   const end = Date.now() + 5000;
   while (Date.now() < end) {

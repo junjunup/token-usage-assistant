@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const { DatabaseSync } = require('node:sqlite');
 const { LocalStore } = require('../desktop/store.cjs');
 const { ToolSources } = require('../desktop/tool-sources.cjs');
-const { createHarness, harnessWire } = require('../desktop/tool-fixture.cjs');
+const { createHarness, harnessWire } = require('../desktop/smoke/tool-fixture.cjs');
 async function main() {
   const project = path.resolve(__dirname, '..'),
     work = path.join(project, 'work');
