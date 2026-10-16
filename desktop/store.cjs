@@ -3,13 +3,42 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { DEFAULT_SETTINGS, patchSettings } = require('./domain.cjs');
 const { log } = require('./logger.cjs');
+// Windows can briefly lock the target (antivirus, indexer, another reader): these rename errors are retried.
+const RENAME_RETRY = new Set(['EPERM', 'EBUSY', 'EACCES']),
+  RENAME_RETRIES = 5,
+  RENAME_BACKOFF_MS = 50;
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+// Write JSON to a unique temp file next to the target, fsync it, then rename it over the target (T4.6).
+// On final failure the temp file is removed and the original error is rethrown; the target is left untouched.
 function atomicWrite(file, value) {
+  let temp = null;
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    const temp = file + '.tmp';
-    fs.writeFileSync(temp, JSON.stringify(value), { encoding: 'utf8', mode: 0o600 });
-    fs.renameSync(temp, file);
+    temp = `${file}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
+    const fd = fs.openSync(temp, 'w', 0o600);
+    try {
+      fs.writeFileSync(fd, JSON.stringify(value), 'utf8');
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    for (let attempt = 0; ; attempt++) {
+      try {
+        fs.renameSync(temp, file);
+        temp = null;
+        return;
+      } catch (e) {
+        if (attempt >= RENAME_RETRIES || !RENAME_RETRY.has(e?.code)) throw e;
+        pause(RENAME_BACKOFF_MS);
+      }
+    }
   } catch (e) {
+    if (temp)
+      try {
+        fs.rmSync(temp, { force: true });
+      } catch {
+        // Best effort: the original error below matters more than a leftover temp file.
+      }
     log.warn('store', 'write-failed', { errno: e?.code });
     throw e;
   }
