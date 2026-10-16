@@ -2,8 +2,14 @@ const { EventEmitter } = require('node:events');
 const { nextDelay, AlertTracker, monthlyQuota } = require('./domain.cjs');
 const { log } = require('./logger.cjs');
 class UsageMonitor extends EventEmitter {
-  constructor(client, { settings, persist = () => {}, notify = () => {}, now = Date.now } = {}) {
+  // minIntervalSeconds: a floor for the refresh interval (Codex uses 120 s, T4.4).
+  constructor(
+    client,
+    { settings, persist = () => {}, notify = () => {}, now = Date.now, minIntervalSeconds = 0 } = {},
+  ) {
     super();
+    this.minIntervalSeconds = minIntervalSeconds;
+    this.paused = false;
     this.client = client;
     this.settings = settings;
     this.persist = persist;
@@ -17,6 +23,21 @@ class UsageMonitor extends EventEmitter {
     this.alerts = new AlertTracker();
     this.rateLimitUntil = 0;
     this.state = { parts: {}, updatedAt: {}, errors: [], fetching: false, status: 'unconfigured', nextRefreshAt: null };
+  }
+  // The interval actually used: the user's setting, raised to this monitor's floor.
+  get intervalSeconds() {
+    return Math.max(this.settings?.refreshSeconds || 60, this.minIntervalSeconds);
+  }
+  // Screen locked (T4.4): stop scheduling and querying; data and status are kept. resume() only clears the
+  // flag; the account manager then refreshes all accounts with a stagger.
+  pause() {
+    this.paused = true;
+    clearTimeout(this.timer);
+    this.state.nextRefreshAt = null;
+    this.emitState();
+  }
+  resume() {
+    this.paused = false;
   }
   snapshot() {
     return structuredClone(this.state);
@@ -49,7 +70,7 @@ class UsageMonitor extends EventEmitter {
       this.schedule(
         this.state.status === 'auth-error'
           ? null
-          : Math.max(settings.refreshSeconds * 1000, this.rateLimitUntil - this.now()),
+          : Math.max(this.intervalSeconds * 1000, this.rateLimitUntil - this.now()),
       );
   }
   receive(result) {
@@ -104,14 +125,16 @@ class UsageMonitor extends EventEmitter {
     } catch (e) {
       log.warn('monitor', 'persist-failed', { errno: e?.code });
     }
-    this.schedule(nextDelay(result.errors, this.failures, this.settings.refreshSeconds));
+    this.schedule(nextDelay(result.errors, this.failures, this.intervalSeconds));
   }
   schedule(delay) {
     clearTimeout(this.timer);
+    if (this.paused) delay = null;
     this.state.nextRefreshAt = delay === null || !this.key ? null : this.now() + delay;
     if (delay !== null && this.key) this.timer = setTimeout(() => this.refresh(), Math.min(delay, 2147483647));
   }
   refresh() {
+    if (this.paused) return Promise.resolve(this.snapshot());
     if (!this.key || this.pending) return this.pending || Promise.resolve(this.snapshot());
     if (this.now() < this.rateLimitUntil) {
       this.schedule(this.rateLimitUntil - this.now());
@@ -139,7 +162,7 @@ class UsageMonitor extends EventEmitter {
             { endpoint: 'connection', status: 0, code: 'network', message: '网络暂时不可用，显示上次成功数据。' },
           ];
           this.failures++;
-          this.schedule(nextDelay(this.state.errors, this.failures, this.settings.refreshSeconds));
+          this.schedule(nextDelay(this.state.errors, this.failures, this.intervalSeconds));
         }
       } finally {
         if (generation === this.generation) {

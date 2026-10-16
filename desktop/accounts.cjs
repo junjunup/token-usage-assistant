@@ -67,9 +67,17 @@ function accountFingerprint(entry) {
   );
 }
 class AccountManager extends EventEmitter {
-  constructor({ store, settings, clientFactory = createClient, notify = () => {} }) {
+  // stagger (T4.4): refreshAll() starts account i after i*stepMs + random 0–jitterMs, so polls do not burst.
+  constructor({
+    store,
+    settings,
+    clientFactory = createClient,
+    notify = () => {},
+    stagger = { stepMs: 400, jitterMs: 800, random: Math.random },
+  }) {
     super();
-    Object.assign(this, { store, settings, clientFactory, notify });
+    Object.assign(this, { store, settings, clientFactory, notify, stagger });
+    this.paused = false;
     this.entries = [];
     this.runtimes = new Map();
     this.activeId = '';
@@ -131,6 +139,7 @@ class AccountManager extends EventEmitter {
     const client = this.clientFactory(entry.provider, entry.region);
     const monitor = new UsageMonitor(client, {
       settings: this.settings,
+      minIntervalSeconds: entry.provider === 'codex' ? 120 : 0,
       persist: (data) => {
         scoped.saveCache(hash, data);
         if (entry.provider === 'commandcode') history.append(data);
@@ -145,6 +154,7 @@ class AccountManager extends EventEmitter {
       initial ? null : scoped.cache(hash),
     );
     monitor.on('change', () => this.emitState());
+    if (this.paused) monitor.pause();
     const runtime = { entry, monitor, history, client, scoped, hash };
     if (initial) monitor.receive(initial);
     return runtime;
@@ -270,7 +280,28 @@ class AccountManager extends EventEmitter {
     for (const r of this.runtimes.values()) r.monitor.updateSettings(settings);
   }
   async refreshAll() {
-    await Promise.all([...this.runtimes.values()].map((r) => r.monitor.refresh()));
+    const { stepMs, jitterMs, random } = this.stagger;
+    await Promise.all(
+      [...this.runtimes.values()].map(async (runtime, i) => {
+        const delay = i * stepMs + Math.floor(random() * jitterMs);
+        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+        // Skip accounts removed or replaced while waiting.
+        if (!this.disposed && this.runtimes.get(runtime.entry.id) === runtime) await runtime.monitor.refresh();
+      }),
+    );
+  }
+  // Screen lock (T4.4): pause every account monitor without clearing data; unlock resumes with a stagger.
+  pauseAll() {
+    this.paused = true;
+    for (const r of this.runtimes.values()) r.monitor.pause();
+    log.info('accounts', 'paused', { count: this.runtimes.size });
+  }
+  resumeAll() {
+    if (!this.paused) return Promise.resolve();
+    this.paused = false;
+    for (const r of this.runtimes.values()) r.monitor.resume();
+    log.info('accounts', 'resumed', { count: this.runtimes.size });
+    return this.refreshAll();
   }
   dispose() {
     this.disposed = true;

@@ -1042,7 +1042,7 @@ export function DesktopApp() {
                   {data.nextRefreshAt ? (
                     <Live>{(now) => `${Math.max(0, Math.ceil((data.nextRefreshAt - now) / 1000))} 秒后刷新`}</Live>
                   ) : (
-                    `每 ${settings.refreshSeconds} 秒刷新`
+                    `每 ${state.refreshInterval || settings.refreshSeconds} 秒刷新`
                   )}
                 </span>
               </div>
