@@ -28,7 +28,15 @@ const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
-const { windowChrome, loginOptions, readLogin, launcherName, sameFile, macDataName } = require('./platform.cjs');
+const {
+  windowChrome,
+  loginOptions,
+  readLogin,
+  launcherName,
+  sameFile,
+  macDataName,
+  macSmokeName,
+} = require('./platform.cjs');
 const { windowIcon, taskbarDetails } = require('./branding.cjs');
 const { log } = require('./logger.cjs');
 const isMac = process.platform === 'darwin';
@@ -39,7 +47,8 @@ const smokeDirArg = process.argv.find((a) => a.startsWith('--test-directory='));
 if (isMac) {
   // Packaged: ~/Library/Application Support/TokenUsageAssistant (unchanged). Development: TokenUsageAssistant-Dev.
   const macName = macDataName(app.isPackaged);
-  app.setName(macName);
+  // Smoke runs get their own name and therefore their own Keychain Safe Storage item.
+  app.setName(smoke ? macSmokeName : macName);
   app.setPath('userData', path.join(app.getPath('appData'), macName));
 }
 if (smoke) {
@@ -68,6 +77,7 @@ let accounts,
   toolSources,
   associations,
   claudeCollector,
+  smokeHandshakeTimer,
   connectionBusy = false;
 const notifications = new Set(),
   readySurfaces = new Set();
@@ -676,6 +686,8 @@ function installIpc() {
 async function finishSmoke() {
   if (finishSmoke.started) return;
   finishSmoke.started = true;
+  // The handshake succeeded: its timeout must not exit the app while the smoke checks are still running.
+  clearTimeout(smokeHandshakeTimer);
   try {
     await monitor.refresh();
     const analyticsResult = await analytics.get({ source: 'local', range: '7d' });
@@ -700,7 +712,8 @@ async function finishSmoke() {
         analyticsResult.summary?.cache?.hitRate > 0 &&
         accountResult.status === 'ready' &&
         monitor.state.status === 'connected' &&
-        safeStorage.decryptString(encrypted) === testSecret,
+        safeStorage.decryptString(encrypted) === testSecret &&
+        (!isMac || app.getName() === macSmokeName),
       version: app.getVersion(),
       platform: process.platform,
       arch: process.arch,
@@ -717,6 +730,7 @@ async function finishSmoke() {
       trayCreated: !!tray,
       notificationSupported: Notification.isSupported(),
       encryptionRoundTrip: safeStorage.decryptString(encrypted) === testSecret,
+      keychainName: app.getName(),
       mainSandbox: mainWindow.webContents.getLastWebPreferences().sandbox,
       mainIsolation: mainWindow.webContents.getLastWebPreferences().contextIsolation,
       widgetAlwaysOnTop: widgetWindow.isAlwaysOnTop(),
@@ -943,7 +957,7 @@ else {
       installIpc();
       if (smoke) {
         monitor.configure('local-smoke-key');
-        setTimeout(() => {
+        smokeHandshakeTimer = setTimeout(() => {
           atomicWrite(path.join(app.getPath('userData'), 'smoke-result.json'), {
             ok: false,
             error: 'renderer handshake timeout',

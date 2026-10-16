@@ -49,7 +49,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 
 ## 5. 平台与存储不变量
 
-- `appId`（`local.commandcode.tokenusageassistant`）、`executableName`、已打包应用的 userData 路径一律不变。Mac 打包版：`~/Library/Application Support/TokenUsageAssistant`；Windows：原 Electron userData。Mac 开发版（未打包）用 `TokenUsageAssistant-Dev` 作为应用名和数据目录，Keychain 条目也随之独立（`platform.cjs` 的 `macDataName`）。
+- `appId`（`local.commandcode.tokenusageassistant`）、`executableName`、已打包应用的 userData 路径一律不变。Mac 打包版：`~/Library/Application Support/TokenUsageAssistant`；Windows：原 Electron userData。Mac 开发版（未打包）用 `TokenUsageAssistant-Dev` 作为应用名和数据目录，Keychain 条目也随之独立（`platform.cjs` 的 `macDataName`）。Mac 上的 `--smoke-test`（打包版和开发版都是）用 `TokenUsageAssistant-Smoke` 作为应用名，Keychain 条目为 `TokenUsageAssistant-Smoke Safe Storage`（`macSmokeName`），不触碰打包版或开发版的条目。
 - 凭据加密：Windows 用 DPAPI，Mac 用 Keychain（Electron safeStorage）。DPAPI 文件绑定当前 Windows 用户，不能作为跨电脑备份。
 - 升级时保留账户凭据、设置和窗口位置；配置损坏时不自动覆盖；旧迁移文件（例如 `local-source.json`）保留。
 - 不引入新的原生依赖。不覆盖、不删除旧发布产物（统一存放在 `~/Documents/TokenUsageAssistant-releases/`）。
@@ -96,6 +96,6 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 证据三级：①合成契约测试；②打包原生 smoke（隔离样例）；③真实账户或真机验收。没做过 ③ 的，不得写成「已验证」。某个平台的真实观察不能证明其他平台（例如 Codex 的只读观察不证明 Claude 核账）。
 - 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
 - `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
-- Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。
-- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：253 通过 / 0 失败 / 3 跳过（共 256）。
+- Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。smoke 使用独立的 Keychain 条目（见第 5 节）；每次新构建签名都会变，打包版 smoke 首次运行可能弹出一次针对 smoke 条目的授权窗，处理这个窗口不会影响真实条目。
+- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：254 通过 / 0 失败 / 3 跳过（共 257）。
 - 本地服务和预览由执行模型自己启动，并在可用的浏览器中查看，不让用户手动启动。
