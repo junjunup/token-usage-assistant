@@ -7,7 +7,10 @@ const { atomicWrite, readJson } = require('./store.cjs');
 const { log } = require('./logger.cjs');
 const { rangeFor } = require('./analytics-core.cjs');
 const { pathKey } = require('./platform.cjs');
-const KINDS = new Set(['zcode', 'harness', 'codex', 'claude-code', 'opencode']);
+// Kinds, default labels, inspection and directory/file choice come from desktop/tool-kinds/ (T5.3b).
+const { TOOL_KINDS, toolKind } = require('./tool-kinds/index.cjs');
+const KINDS = new Set(TOOL_KINDS.map((k) => k.kind));
+const isDirectory = (kind) => toolKind(kind)?.picker.type === 'directory';
 function publicError(message) {
   return Object.assign(new Error(message), { publicMessage: message });
 }
@@ -131,29 +134,16 @@ class ToolSources extends EventEmitter {
     if (!KINDS.has(kind)) throw publicError('暂不支持此工具。');
     let item;
     try {
-      item = canonical(file, kind === 'codex');
+      item = canonical(file, isDirectory(kind));
     } catch (e) {
       throw e.publicMessage ? e : publicError('用量文件无法打开，请重新选择。');
     }
-    let installationId = null;
-    if (kind === 'harness') {
-      const { readManifest } = require('./harness-reader.cjs');
-      const manifest = readManifest(item.file);
-      installationId = manifest.sourceId;
-    }
-    if (
-      kind === 'codex' &&
-      !fs.existsSync(path.join(item.file, 'sessions')) &&
-      !fs.existsSync(path.join(item.file, 'archived_sessions'))
-    )
-      throw publicError('此目录没有 Codex sessions 或 archived_sessions，请选择使用中的 Codex 配置目录。');
-    if (kind === 'claude-code')
-      installationId = require('./claude-collector.cjs').readClaudeManifest(item.file).sourceId;
+    const { installationId } = toolKind(kind).inspect(item);
     for (const s of this.entries) {
       if (s.id === exceptId) continue;
       let sameFile = pathKey(s.file) === pathKey(item.file) || s.identity === item.identity;
       try {
-        sameFile ||= canonical(s.file, s.kind === 'codex').identity === item.identity;
+        sameFile ||= canonical(s.file, isDirectory(s.kind)).identity === item.identity;
       } catch {
         // Probe: an existing source file may be gone; it then simply cannot be the same file.
       }
@@ -185,14 +175,7 @@ class ToolSources extends EventEmitter {
     return value;
   }
   label(value, kind) {
-    if (value === undefined || value === '')
-      return {
-        opencode: 'OpenCode',
-        harness: 'DeepSeek Harness',
-        zcode: 'Zcode',
-        codex: 'Codex',
-        'claude-code': 'Claude Code',
-      }[kind];
+    if (value === undefined || value === '') return toolKind(kind)?.defaultLabel;
     if (typeof value !== 'string' || value.trim().length < 1 || value.length > 120)
       throw publicError('来源名称应为 1–120 个字符。');
     return value.trim();

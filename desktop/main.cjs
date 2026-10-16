@@ -27,6 +27,7 @@ const { createClient } = require('./providers.cjs');
 const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { providerDefinition } = require('./providers/index.cjs');
+const { toolKind } = require('./tool-kinds/index.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
 const {
@@ -448,30 +449,20 @@ function installIpc() {
     if (typeof id !== 'string' || id.length > 100) return false;
     return toolSources.cancel(id);
   });
+  // The native picker for each tool kind comes from desktop/tool-kinds/ (T5.3b).
   const chooseToolFile = async (kind) => {
-    if (!['zcode', 'harness', 'codex', 'claude-code', 'opencode'].includes(kind)) throw inputError('不支持的工具来源');
-    if (kind === 'codex') {
-      const choice = await dialog.showOpenDialog(mainWindow, {
-        title: '选择 Codex 配置目录（包含 sessions）',
-        defaultPath: path.join(app.getPath('home'), '.codex'),
-        properties: ['openDirectory'],
-      });
-      return choice.canceled ? null : choice.filePaths[0];
-    }
-    const jsonl = !['zcode', 'opencode'].includes(kind);
-    const choice = await dialog.showOpenDialog(mainWindow, {
-      title: jsonl
-        ? '选择统计组件导出的 usage.jsonl'
-        : kind === 'opencode'
-          ? '选择 OpenCode 的 opencode.db'
-          : '选择 Zcode 用量数据库',
-      properties: ['openFile'],
-      filters: [
-        jsonl
-          ? { name: '专用用量导出', extensions: ['jsonl'] }
-          : { name: 'SQLite 数据库', extensions: ['sqlite', 'db', 'sqlite3'] },
-      ],
-    });
+    const picker = toolKind(kind)?.picker;
+    if (!picker) throw inputError('不支持的工具来源');
+    const choice = await dialog.showOpenDialog(
+      mainWindow,
+      picker.type === 'directory'
+        ? {
+            title: picker.title,
+            defaultPath: path.join(app.getPath('home'), picker.defaultHomePath),
+            properties: ['openDirectory'],
+          }
+        : { title: picker.title, properties: ['openFile'], filters: picker.filters },
+    );
     return choice.canceled ? null : choice.filePaths[0];
   };
   handle('assistant:add-tool-source', async (event, value) => {

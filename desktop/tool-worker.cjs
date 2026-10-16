@@ -2,12 +2,10 @@ const { parentPort, workerData } = require('node:worker_threads');
 const { DatabaseSync } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
-const { readZcodeRows } = require('./zcode-reader.cjs');
-const { readOpenCodeRows } = require('./opencode-reader.cjs');
-const { initIndex, scanHarness } = require('./harness-reader.cjs');
-const { scanCodex } = require('./codex-reader.cjs');
-const { scanClaude } = require('./claude-collector.cjs');
-const { normalizeZcodeRecord, normalizeHarnessRecord, aggregateTools } = require('./tool-analytics.cjs');
+const { initIndex } = require('./harness-reader.cjs');
+const { aggregateTools } = require('./tool-analytics.cjs');
+// Per-kind scanning and overlap rules come from desktop/tool-kinds/ (T5.3b).
+const { toolKind } = require('./tool-kinds/index.cjs');
 const { associateRows } = require('./association-rules.cjs');
 // timings (optional): per-source diagnostics collected for the main-thread log; never part of the result.
 function execute(
@@ -33,17 +31,8 @@ function execute(
       let result, rows;
       const sourceStarted = Date.now();
       try {
-        result =
-          source.kind === 'opencode'
-            ? readOpenCodeRows(source.file, range, source.id)
-            : source.kind === 'zcode'
-              ? readZcodeRows(source.file, range)
-              : source.kind === 'codex'
-                ? scanCodex(db, source, range)
-                : source.kind === 'claude-code'
-                  ? scanClaude(db, source, range)
-                  : scanHarness(db, source, range, normalizeHarnessRecord);
-        rows = (result.rows || []).map((r) => (source.kind === 'zcode' ? normalizeZcodeRecord(r, source.id) : r));
+        result = toolKind(source.kind).scan(db, source, range);
+        rows = result.rows || [];
       } catch {
         result = {
           status: 'schema',
@@ -51,7 +40,7 @@ function execute(
         };
         rows = [];
       }
-      if (['zcode', 'codex', 'claude-code', 'opencode'].includes(source.kind)) {
+      if (toolKind(source.kind).overlapCheck) {
         const identities = rows.map((r) =>
           JSON.stringify([source.kind, r.requestId, r.sessionId, r.at, r.provider, r.model]),
         );
