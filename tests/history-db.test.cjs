@@ -54,7 +54,7 @@ test('SQLite history matches the JSON implementation record for record (dupes, t
   steps.push(sample(clock + 20000, 9)); // equal to the last sample: ignored
   steps.push({ parts: { summary: null }, updatedAt: { summary: clock + MINUTE } }); // no summary: ignored
   steps.push(sample((clock += 40 * DAY), 3000)); // jump past 31 days: everything older is dropped
-  steps.push(sample((clock += MINUTE), 3001));
+  steps.push(sample(clock + MINUTE, 3001));
   for (const step of steps) {
     oldStore.append(step);
     newStore.append(step);
