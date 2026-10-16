@@ -115,6 +115,8 @@ function state() {
     platform: process.platform,
     loginItem: readLogin(app),
     packaged: app.isPackaged,
+    // The active account's real refresh interval (Codex never polls faster than every 120 s).
+    refreshInterval: accounts?.active?.monitor.intervalSeconds,
   };
 }
 function broadcast() {
@@ -1025,6 +1027,9 @@ else {
       powerMonitor.on('resume', () => {
         accounts.refreshAll();
       });
+      // T4.4: no account queries while the screen is locked; unlocking resumes with a staggered refresh.
+      powerMonitor.on('lock-screen', () => accounts.pauseAll());
+      powerMonitor.on('unlock-screen', () => accounts.resumeAll());
       broadcast();
     })
     .catch((e) => {
