@@ -20,7 +20,7 @@ function countFiles(source) {
   if (source.kind !== 'codex') return 1;
   let n = 0;
   const visit = (dir) => {
-    let entries = [];
+    let entries;
     try {
       entries = fs.readdirSync(dir, { withFileTypes: true });
     } catch {
