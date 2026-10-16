@@ -1,0 +1,712 @@
+{
+  "opencode-go:global": {
+    "resultSha256": "f6a6db9b458f1be65341627ec52bd02b6cd1a539ad238bab6c80ccc2f9adeeb6",
+    "errors": [
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "entitlement",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 此密钥对应的成员没有可查询的 Go 订阅，请在官方控制台核对成员与工作区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 未能提供套餐额度，请检查套餐、密钥类型及地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "entitlement",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 此密钥对应的成员没有可查询的 Go 订阅，请在官方控制台核对成员与工作区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "OpenCode · Go 服务暂时不可用。"
+        }
+      ]
+    ]
+  },
+  "deepseek:global": {
+    "resultSha256": "90233b421cb8bb4c158c54ed92fad6c284025eeef66aba15080943d96c3ba3dc",
+    "errors": [
+      [
+        {
+          "endpoint": "balance",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 403,
+          "code": "403",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "balance",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "DeepSeek · 官方按量 服务暂时不可用。"
+        }
+      ]
+    ]
+  },
+  "glm:cn": {
+    "resultSha256": "e35a979f4f69eea10890fd496a88f3144e8ef8fea13a531233247f690493fa78",
+    "errors": [
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 未能提供套餐额度，请检查套餐、密钥类型及地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "403",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 服务暂时不可用。"
+        }
+      ]
+    ]
+  },
+  "glm:global": {
+    "resultSha256": "e35a979f4f69eea10890fd496a88f3144e8ef8fea13a531233247f690493fa78",
+    "errors": [
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 未能提供套餐额度，请检查套餐、密钥类型及地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "403",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "GLM Coding Plan 服务暂时不可用。"
+        }
+      ]
+    ]
+  },
+  "minimax:cn": {
+    "resultSha256": "60cea7a33e3be4197fe07c08bceb02ebebfa1008fc9c30bd5363269188f089ed",
+    "errors": [
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 未能提供套餐额度，请检查套餐、密钥类型及地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "403",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 服务暂时不可用。"
+        }
+      ]
+    ]
+  },
+  "minimax:global": {
+    "resultSha256": "60cea7a33e3be4197fe07c08bceb02ebebfa1008fc9c30bd5363269188f089ed",
+    "errors": [
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 未能提供套餐额度，请检查套餐、密钥类型及地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "403",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "MiniMax Token Plan 服务暂时不可用。"
+        }
+      ]
+    ]
+  },
+  "volcengine:cn-beijing": {
+    "resultSha256": "89442d2b7f21f97265f3ccae156c64d538053d408e12269f9f367bc7c3774c56",
+    "errors": [
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "upstream",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 未能提供套餐额度，请检查套餐、密钥类型及地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 0,
+          "code": "schema",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 返回的数据字段暂无法识别，已保留上次数据。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 401,
+          "code": "401",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 密钥无效或已失效，请重新连接。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 402,
+          "code": "402",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 报告余额不足；本次未返回余额金额，请到官方平台核对。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 403,
+          "code": "403",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 查询权限不足，请检查密钥权限与所选地区。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 429,
+          "code": "429",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 查询过于频繁，已暂停自动刷新。"
+        }
+      ],
+      [
+        {
+          "endpoint": "credits",
+          "status": 500,
+          "code": "500",
+          "retryAfterMs": 0,
+          "message": "火山 Agent Plan 服务暂时不可用。"
+        }
+      ]
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 const output = path.resolve('src/generated');
 fs.mkdirSync(output, { recursive: true });
 for (const name of [
@@ -9,7 +10,6 @@ for (const name of [
   'analytics-core',
   'analytics-fixture',
   'tool-analytics',
-  'provider-catalog',
   'provider-domain',
   'provider-fixture',
 ]) {
@@ -36,6 +36,18 @@ for (const name of [
   fs.writeFileSync(
     path.join(output, name + '.js'),
     '// Generated from desktop/' + name + '.cjs for the browser preview.\n' + code,
+  );
+}
+// provider-catalog.cjs is derived from the platform registry (desktop/providers/, T5.3a), whose entries also hold
+// main-only request code. The preview receives only the derived, renderer-safe metadata, serialized as JSON.
+{
+  const { PROVIDERS, providerInfo } = createRequire(import.meta.url)('../desktop/provider-catalog.cjs');
+  fs.writeFileSync(
+    path.join(output, 'provider-catalog.js'),
+    '// Generated from desktop/provider-catalog.cjs (platform registry metadata) for the browser preview.\n' +
+      `const PROVIDERS = Object.freeze(${JSON.stringify(PROVIDERS, null, 2)});\n` +
+      providerInfo.toString() +
+      '\nexport { PROVIDERS, providerInfo };\n',
   );
 }
 console.log('Prepared shared analytics preview modules.');
