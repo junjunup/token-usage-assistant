@@ -43,6 +43,9 @@ jobs:
       # Warnings do not fail the build; errors do (eslint exits non-zero only on errors).
       - name: Lint
         run: pnpm run lint
+      # T5.5: strict JSDoc type check of the pure domain modules (tsconfig.json).
+      - name: Type check
+        run: pnpm run typecheck
 
       - name: Test
         run: |

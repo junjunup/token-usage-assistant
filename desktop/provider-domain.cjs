@@ -1,9 +1,31 @@
+// @ts-check
 const { count, finite, text, timestamp } = require('./domain.cjs');
+// T5.5: JSDoc types only. Upstream JSON is `any` (validated at runtime here); derived numbers are `number|null`.
+/**
+ * Quota window input: every value comes straight from upstream JSON and is validated by quota().
+ * @typedef {object} QuotaInput
+ * @property {string} id
+ * @property {string} label
+ * @property {string} [group]
+ * @property {string} [unit]
+ * @property {any} [used]
+ * @property {any} [cap]
+ * @property {any} [remainingPercent]
+ * @property {any} [resetAt]
+ * @property {any} [startAt]
+ * @property {boolean} [unlimited]
+ * @property {boolean} [applicable]
+ * @property {boolean} [exhausted]
+ * @property {number} [boost]
+ */
+/** @type {(value: any) => number|null} */
 const percent = (value) => {
   const n = count(value);
   return n !== null && n <= 100 ? n : null;
 };
+/** @type {(value: any) => boolean} */
 const object = (value) => value && typeof value === 'object' && !Array.isArray(value);
+/** @param {QuotaInput} input */
 function quota({
   id,
   label,
@@ -40,24 +62,28 @@ function quota({
     exceeded: applicable && !unlimited && (exhausted || ratio === 0 || (cap > 0 && used !== null && used >= cap)),
   };
 }
+/** @param {any} raw upstream quota JSON */
 function normalizeGlm(raw) {
   const body = object(raw?.data) ? raw.data : raw;
   if (!object(body) || !Array.isArray(body.limits) || !body.limits.length || body.limits.length > 100)
     throw new Error('schema');
-  const tokenCount = body.limits.filter((l) => l?.type === 'TOKENS_LIMIT').length;
+  const tokenCount = body.limits.filter((/** @type {any} */ l) => l?.type === 'TOKENS_LIMIT').length;
   const seen = new Map();
-  const windows = body.limits.map((l, i) => {
+  const windows = body.limits.map((/** @type {any} */ l, /** @type {number} */ i) => {
     if (!object(l) || typeof l.type !== 'string') throw new Error('schema');
     const unit = finite(l.unit),
       n = count(l.number),
       tool = l.type === 'TIME_LIMIT';
     const label =
       unit === 3
-        ? (n > 0 ? n : 5) + ' 小时窗口'
+        ? // @ts-expect-error -- a null `n` compares false and falls back to the default; intended.
+          (n > 0 ? n : 5) + ' 小时窗口'
         : unit === 6
-          ? (n > 1 ? n + ' ' : '') + '周窗口'
+          ? // @ts-expect-error -- a null `n` compares false (no count prefix); intended.
+            (n > 1 ? n + ' ' : '') + '周窗口'
           : unit === 5
-            ? (n > 1 ? n + ' ' : '') + '月窗口'
+            ? // @ts-expect-error -- a null `n` compares false (no count prefix); intended.
+              (n > 1 ? n + ' ' : '') + '月窗口'
             : tool
               ? '工具月额度'
               : tokenCount === 1 && l.type === 'TOKENS_LIMIT' && unit === null
@@ -74,19 +100,27 @@ function normalizeGlm(raw) {
       unit: tool ? '次' : '额度单位',
       used: l.currentValue,
       cap: l.usage,
-      remainingPercent: percent(l.percentage) === null ? null : 100 - percent(l.percentage),
+      remainingPercent: percent(l.percentage) === null ? null : 100 - /** @type {number} */ (percent(l.percentage)),
       resetAt: l.nextResetTime,
     });
   });
-  if (!windows.some((w) => w.remainingPercent !== null || w.used !== null || w.cap !== null)) throw new Error('schema');
+  if (!windows.some((/** @type {any} */ w) => w.remainingPercent !== null || w.used !== null || w.cap !== null))
+    throw new Error('schema');
   return {
     windows,
     planName: text(body.planName || body.level) || null,
     note: '额度单位以平台返回为准；套餐共享窗口与 MCP 工具额度分别统计。',
   };
 }
+/**
+ * @param {any} reported
+ * @param {any} cap
+ * @param {number|null} remainingPct
+ * @returns {{ used: number|null, cap: number|null }}
+ */
 function miniCounts(reported, cap, remainingPct) {
-  const c = count(cap),
+  // `c > 0` below also rules out null, so c is a number from there on.
+  const c = /** @type {number} */ (count(cap)),
     r = count(reported),
     p = percent(remainingPct);
   if (!(c > 0) || r === null || r > c) return { used: null, cap: null };
@@ -99,14 +133,24 @@ function miniCounts(reported, cap, remainingPct) {
   }
   return { used: c - remaining, cap: c };
 }
+/**
+ * @param {any} end
+ * @param {any} remains
+ * @param {number} now
+ */
 function miniReset(end, remains, now) {
   if (timestamp(end)) return timestamp(end);
   const duration = count(remains);
   return duration === null ? null : now + duration;
 }
+/**
+ * @param {any} raw upstream remains JSON
+ * @param {number} [now]
+ */
 function normalizeMiniMax(raw, now = Date.now()) {
   if (!object(raw) || !Array.isArray(raw.model_remains) || !raw.model_remains.length || raw.model_remains.length > 100)
     throw new Error('schema');
+  /** @type {any[]} */
   const windows = [];
   const names = new Set();
   for (const [i, model] of raw.model_remains.entries()) {
@@ -126,8 +170,11 @@ function normalizeMiniMax(raw, now = Date.now()) {
         counts = miniCounts(model[prefix + 'usage_count'], model[prefix + 'total_count'], p);
       const start = period === 'interval' ? model.start_time : model.weekly_start_time;
       const end = period === 'interval' ? model.end_time : model.weekly_end_time;
-      const span = timestamp(end) && timestamp(start) ? timestamp(end) - timestamp(start) : null;
-      const hours = span > 0 ? span / 3600000 : null;
+      const span =
+        timestamp(end) && timestamp(start)
+          ? /** @type {number} */ (timestamp(end)) - /** @type {number} */ (timestamp(start))
+          : null;
+      const hours = /** @type {number} */ (span) > 0 ? /** @type {number} */ (span) / 3600000 : null;
       const label =
         period === 'weekly'
           ? '每周窗口'
@@ -159,6 +206,7 @@ function normalizeMiniMax(raw, now = Date.now()) {
     throw new Error('schema');
   return { windows, planName: null, note: '各模型与通用额度池分别展示，不能相加；含加赠的百分比可能超过 100%。' };
 }
+/** @param {any} raw upstream GetAFPUsage JSON */
 function normalizeVolcengine(raw) {
   const data = raw?.Result;
   if (!object(data)) throw new Error('schema');
@@ -190,6 +238,7 @@ function normalizeVolcengine(raw) {
     note: 'AFP 为平台积分，各时间窗口约束同一套餐，不能相加或换算为精确 Token。',
   };
 }
+/** @param {any} raw upstream Go usage JSON */
 function normalizeOpenCodeGo(raw) {
   if (!object(raw?.usage)) throw new Error('schema');
   const windows = [
