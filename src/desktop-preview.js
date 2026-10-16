@@ -235,6 +235,10 @@ if (credentialIssuePreview)
     activeAccountId: '',
     data: { ...state.data, parts: {}, updatedAt: {}, errors: [], status: 'unconfigured', nextRefreshAt: null },
   };
+// Preview of an available update (?desktop-preview=update-available, T5.2).
+state.settings = { ...state.settings, updateCheck: true };
+if (new URLSearchParams(location.search).get('desktop-preview') === 'update-available')
+  state.update = { status: 'available', version: '1.8.0-beta.8', checkedAt: now };
 // Preview of an unverified upstream version (?desktop-preview=unverified-version, T5.1): the Codex source reads a
 // newer rollout version by its known structure and says so in its existing status message.
 if (new URLSearchParams(location.search).get('desktop-preview') === 'unverified-version')
@@ -343,6 +347,7 @@ export const previewBridge = {
   window: async () => ({ ok: false, error: '该功能在 Windows 桌面应用中可用。' }),
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
+  openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
   previewDiagnostics: async () => ({
     ok: true,
     value: JSON.stringify(

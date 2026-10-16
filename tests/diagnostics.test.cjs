@@ -61,6 +61,7 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
     pinned: null,
     launchAtLogin: null,
     widgetExpanded: null,
+    updateCheck: null,
   });
   assert.deepEqual(report.accounts, [
     {

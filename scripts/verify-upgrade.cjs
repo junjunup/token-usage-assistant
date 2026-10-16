@@ -374,9 +374,15 @@ app
       { PROVIDERS } = load(newAsar, 'desktop/provider-catalog.cjs');
     const newStore = new newStoreModule.LocalStore(dataRoot, safeStorage),
       settings = newStore.settings();
+    // Every preference the old build stored is kept exactly; preferences the new build added (e.g. updateCheck,
+    // 1.8.0-beta.8) start at the new build's defaults.
+    const { DEFAULT_SETTINGS: newDefaults } = load(newAsar, 'desktop/domain.cjs'),
+      added = Object.keys(settings.preferences).filter((key) => !Object.hasOwn(preferences, key));
     check(
       'preferencesAndWindowBoundsPreserved',
-      equal(settings.preferences, preferences) && equal(settings.bounds, bounds),
+      Object.keys(preferences).every((key) => equal(settings.preferences[key], preferences[key])) &&
+        added.every((key) => equal(settings.preferences[key], newDefaults[key])) &&
+        equal(settings.bounds, bounds),
     );
     check('nativeVaultStillDecrypts', equal(newStore.accounts(), vault));
     newAccounts = new AccountManager({

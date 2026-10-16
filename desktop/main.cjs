@@ -28,6 +28,7 @@ const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { providerDefinition } = require('./providers/index.cjs');
 const { toolKind } = require('./tool-kinds/index.cjs');
+const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
 const {
@@ -83,6 +84,7 @@ let accounts,
   associations,
   claudeCollector,
   smokeRun,
+  updates,
   diagnosticsText = '',
   connectionBusy = false;
 const notifications = new Set(),
@@ -119,6 +121,12 @@ function state() {
     platform: process.platform,
     loginItem: readLogin(app),
     packaged: app.isPackaged,
+    // T5.2: the newest public version when it is newer than this one (the page address stays in main).
+    update: {
+      status: updates?.state.status || 'idle',
+      version: updates?.state.latest?.version || null,
+      checkedAt: updates?.state.checkedAt || null,
+    },
     // The active account's real refresh interval (Codex never polls faster than every 120 s).
     refreshInterval: accounts?.active?.monitor.intervalSeconds,
   };
@@ -297,7 +305,19 @@ function applySettings(next) {
   if (settings.floating && !smoke) widgetWindow.showInactive();
   else widgetWindow?.hide();
   accounts.updateSettings(settings);
+  if (previous.updateCheck !== settings.updateCheck) setUpdateCheck();
   broadcast();
+}
+// T5.2: the update check runs only while enabled, and never in smoke mode (no network there).
+function setUpdateCheck() {
+  if (!updates) return;
+  if (settings.updateCheck && !smoke) updates.start();
+  else updates.stop();
+}
+function openUpdate() {
+  const url = updates?.state.latest?.url;
+  if (updates?.state.status === 'available' && url?.startsWith(PAGE_PREFIX)) return shell.openExternal(url);
+  throw inputError('暂无可查看的新版本。');
 }
 function showNotification(title, body) {
   if (smoke || !Notification.isSupported()) return false;
@@ -352,6 +372,12 @@ function updateTray() {
   tray.setToolTip(['Token 用量助手', accounts?.active.entry.label || '未连接', ...lines].join('\n'));
   tray.setContextMenu(
     Menu.buildFromTemplate([
+      ...(updates?.state.status === 'available'
+        ? [
+            { label: `发现新版本 ${updates.state.latest.version}，查看…`, click: () => openUpdate() },
+            { type: 'separator' },
+          ]
+        : []),
       { label: '打开用量总览', click: showMain },
       {
         label: '显示悬浮窗',
@@ -706,6 +732,10 @@ function installIpc() {
     log.info('main', 'diagnostics-saved', { count: text.length });
     return true;
   });
+  handle('assistant:open-update', (event) => {
+    mainOnly(event);
+    return openUpdate();
+  });
   handle('assistant:test-notification', (event) => {
     mainOnly(event);
     if (!settings.notifications) throw inputError('请先开启额度提醒');
@@ -880,6 +910,12 @@ else {
       installIpc();
       if (smokeMode) smokeRun = smokeMode.attach(smokeContext());
       else accounts.refreshAll();
+      updates = new UpdateChecker({
+        currentVersion: app.getVersion(),
+        fetch: (...args) => net.fetch(...args),
+        onChange: () => broadcast(),
+      });
+      setUpdateCheck();
       powerMonitor.on('resume', () => {
         accounts.refreshAll();
       });
