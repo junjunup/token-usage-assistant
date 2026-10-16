@@ -7,6 +7,7 @@ const { log } = require('./logger.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const { normalizeClaude } = require('./subscriptions.cjs');
 const { launcherName, shellQuote } = require('./platform.cjs');
+const { newest, unverifiedNote } = require('./codex-reader.cjs');
 const clean = (v, max = 2048) =>
   // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   typeof v === 'string' && v.length && v.length <= max && !/[\x00-\x1f]/.test(v) ? v : null;
@@ -14,7 +15,10 @@ const count = (v) => {
   const n = typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : v;
   return Number.isSafeInteger(n) && n >= 0 ? n : null;
 };
+// Locally verified Claude Code versions (2.1.251+ within 2.1.x). OTLP events from other versions are accepted only
+// when their structure matches (T5.1) and are reported as unverified. The status-line quota path stays strict.
 const supported = (v) => typeof v === 'string' && /^2\.1\.\d+$/.test(v) && Number(v.split('.')[2]) >= 251;
+const VERSION = /^\d+\.\d+\.\d+$/;
 const ATTRIBUTES = new Set([
   'event.name',
   'event.timestamp',
@@ -40,7 +44,8 @@ function attrs(list) {
 }
 function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
   if (!Array.isArray(body?.resourceLogs)) throw new Error('otlp schema');
-  const rows = [];
+  const rows = [],
+    unverified = new Set();
   let unsupported = 0;
   for (const resource of body.resourceLogs) {
     const r = attrs(resource.resource?.attributes);
@@ -52,10 +57,11 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
         const session = clean(a['session.id'], 200),
           meta = sessions[session],
           version = a['app.version'] || a['service.version'] || meta?.version;
-        if (!supported(version)) {
+        if (typeof version !== 'string' || !VERSION.test(version)) {
           unsupported++;
           continue;
         }
+        const strict = !supported(version);
         const timestamp = Date.parse(a['event.timestamp']),
           requestId = clean(a.request_id, 300) || clean(a.client_request_id, 300);
         if (!session || !Number.isFinite(timestamp) || timestamp > now + 60000 || timestamp <= 0) {
@@ -75,6 +81,12 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
           write = count(a.cache_creation_tokens),
           output = count(a.output_tokens),
           input = [fresh, read, write].every((v) => v !== null) ? fresh + read + write : null;
+        // An unverified version must report every known usage attribute on a request (renamed = unsupported).
+        if (strict && !error && [fresh, read, write, output].some((v) => v === null)) {
+          unsupported++;
+          continue;
+        }
+        if (strict) unverified.add(version);
         const row = normalizeSubscriptionRecord(
           {
             tool: 'claude-code',
@@ -92,7 +104,7 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
         rows.push(row);
       }
   }
-  return { rows, unsupported };
+  return { rows, unsupported, unverified: [...unverified] };
 }
 class ClaudeCollector {
   constructor(home) {
@@ -191,7 +203,7 @@ class ClaudeCollector {
                   )
                   .join('\n') + '\n',
               );
-            this.health(parsed.unsupported ? 'unsupported-events' : 'ready');
+            this.health(parsed.unsupported ? 'unsupported-events' : 'ready', newest(parsed.unverified));
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end('{}');
@@ -219,15 +231,22 @@ class ClaudeCollector {
     this.server = server;
     this.health('ready');
   }
-  health(state) {
+  health(state, unverifiedVersion = null) {
     try {
       const file = path.join(this.home, 'status.json'),
         prior = readJson(file),
+        observedVersion = newest([prior?.observedVersion, unverifiedVersion].filter((v) => VERSION.test(v || ''))),
         gaps = Array.isArray(prior?.gaps)
           ? prior.gaps.filter((x) => ['unsupported-events', 'invalid-events'].includes(x))
           : [];
       if (['unsupported-events', 'invalid-events'].includes(state) && !gaps.includes(state)) gaps.push(state);
-      atomicWrite(file, { schemaVersion: 1, state, gaps, at: Date.now() });
+      atomicWrite(file, {
+        schemaVersion: 1,
+        state,
+        gaps,
+        at: Date.now(),
+        ...(observedVersion ? { observedVersion } : {}),
+      });
     } catch {
       log.warn('claude-collector', 'status-write-failed');
     }
@@ -379,13 +398,16 @@ function scanClaude(db, source, range) {
       break;
     }
   }
-  const health = readJson(path.join(path.dirname(source.file), 'status.json'));
+  const health = readJson(path.join(path.dirname(source.file), 'status.json')),
+    observedVersion = VERSION.test(health?.observedVersion || '') ? health.observedVersion : null;
   return {
     rows: [...map.values()].slice(0, 100000),
     status: health?.state === 'ready' && !health.gaps?.length ? 'ready' : 'stale',
     truncated,
+    ...(observedVersion ? { contract: 'unverified-version', observedVersion } : {}),
     message:
       (health?.gaps?.length ? '存在未识别事件，采集有缺口。' : '') +
+      (observedVersion ? unverifiedNote(observedVersion) : '') +
       '仅覆盖本机组件启用且助手运行时收到的官方用量事件；未报告的中间重试、离线及网页聊天不在完整覆盖范围。',
   };
 }

@@ -79,6 +79,7 @@ function execute(
         partialLine: !!result.partialLine,
         scannedRows: rows.length,
         missingUsage: current.filter((r) => !r.usageReported).length,
+        ...(result.contract ? { contract: result.contract, observedVersion: result.observedVersion } : {}),
       });
       timings.push({
         kind: source.kind,
