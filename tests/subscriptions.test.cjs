@@ -305,13 +305,11 @@ test('local Codex login binding and Claude source location survive encrypted acc
           ? new SubscriptionClient('claude')
           : { usage: async () => ({ parts: { identity: { accountId: 'cc' }, credits: { windows: [] } }, errors: [] }) };
   const manager = new AccountManager({ store, settings: DEFAULT_SETTINGS, clientFactory });
-  t.after(() => manager.dispose());
   await manager.connect({ provider: 'commandcode', apiKey: 'fixture-key-only' });
   await manager.connect({ provider: 'codex', home: root, executable: path.join(root, 'codex.exe') });
   assert.equal(manager.entries[1].credential.binding.length, 64);
   await manager.connect({ provider: 'claude', home: path.join(root, 'claude') });
   const restored = new AccountManager({ store, settings: DEFAULT_SETTINGS, clientFactory });
-  t.after(() => restored.dispose());
   restored.load();
   assert.equal(restored.issue, '');
   assert.equal(restored.entries.length, 3);
@@ -320,6 +318,9 @@ test('local Codex login binding and Claude source location survive encrypted acc
     fs.readFileSync(store.file('accounts.encrypted.json'), 'utf8'),
     /fixture-key-only|fixture@example/,
   );
+  // Dispose before setup's cleanup removes the directory (Windows keeps the open history.sqlite locked).
+  manager.dispose();
+  restored.dispose();
 });
 test('Claude error with usage is counted, error without usage stays unknown; ignored events produce no rows', () => {
   let p = parseOtel(otel({ 'event.name': 'api_error' }), 'source', {}, now);

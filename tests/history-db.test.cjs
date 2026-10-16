@@ -8,9 +8,13 @@ const { HistoryDatabase, SqliteHistoryStore, createHistory, MAX_RECORDS } = requ
 
 const MINUTE = 60000,
   DAY = 86400000;
-const temp = (t) => {
+// Databases opened in a test are closed before its directory is removed (Windows locks open files).
+const temp = (t, databases = []) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tua-history-db-'));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => {
+    for (const database of databases) database.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
   return dir;
 };
 const sample = (t, total, credits = true) => ({
@@ -31,7 +35,8 @@ const seedRecords = (count, end) =>
   }));
 
 test('SQLite history matches the JSON implementation record for record (dupes, time travel, 31 days, 16000 cap)', (t) => {
-  const dir = temp(t),
+  const databases = [],
+    dir = temp(t, databases),
     now = Date.UTC(2026, 9, 16, 12, 0, 30),
     seeded = seedRecords(MAX_RECORDS - 10, now);
   legacy(path.join(dir, 'old.json'), 'fp', seeded);
@@ -39,7 +44,7 @@ test('SQLite history matches the JSON implementation record for record (dupes, t
   const before = fs.readFileSync(path.join(dir, 'new.json'));
   const oldStore = new HistoryStore(path.join(dir, 'old.json')),
     database = new HistoryDatabase(path.join(dir, 'history.sqlite'));
-  t.after(() => database.close());
+  databases.push(database);
   const newStore = createHistory(database, path.join(dir, 'new.json'));
   assert.ok(newStore instanceof SqliteHistoryStore);
   oldStore.configure('fp');
@@ -68,10 +73,11 @@ test('SQLite history matches the JSON implementation record for record (dupes, t
 });
 
 test('the cap keeps exactly 16000 records in memory and in the database', (t) => {
-  const dir = temp(t),
+  const databases = [],
+    dir = temp(t, databases),
     now = Date.UTC(2026, 9, 16),
     database = new HistoryDatabase(path.join(dir, 'history.sqlite'));
-  t.after(() => database.close());
+  databases.push(database);
   legacy(path.join(dir, 'history.json'), 'fp', seedRecords(MAX_RECORDS, now));
   const store = createHistory(database, path.join(dir, 'history.json'));
   store.configure('fp');
@@ -84,11 +90,12 @@ test('the cap keeps exactly 16000 records in memory and in the database', (t) =>
 });
 
 test('migration happens once per fingerprint; mismatched files are not imported', (t) => {
-  const dir = temp(t),
+  const databases = [],
+    dir = temp(t, databases),
     now = Date.UTC(2026, 9, 16),
     file = path.join(dir, 'history.json'),
     database = new HistoryDatabase(path.join(dir, 'history.sqlite'));
-  t.after(() => database.close());
+  databases.push(database);
   legacy(file, 'other', seedRecords(3, now));
   const store = createHistory(database, file);
   store.configure('fp');
@@ -105,10 +112,11 @@ test('migration happens once per fingerprint; mismatched files are not imported'
 });
 
 test('purge removes only that fingerprint; an unopenable database falls back to the JSON store', (t) => {
-  const dir = temp(t),
+  const databases = [],
+    dir = temp(t, databases),
     now = Date.UTC(2026, 9, 16),
     database = new HistoryDatabase(path.join(dir, 'history.sqlite'));
-  t.after(() => database.close());
+  databases.push(database);
   const a = createHistory(database, path.join(dir, 'a.json')),
     b = createHistory(database, path.join(dir, 'b.json'));
   a.configure('a');
@@ -126,6 +134,7 @@ test('purge removes only that fingerprint; an unopenable database falls back to 
   const blocked = path.join(dir, 'blocked');
   fs.mkdirSync(blocked);
   const broken = new HistoryDatabase(blocked);
+  databases.push(broken);
   assert.equal(broken.open(), null);
   assert.ok(createHistory(broken, path.join(dir, 'c.json')) instanceof HistoryStore);
 });

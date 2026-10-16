@@ -206,13 +206,13 @@ test('balance-only zero response successfully connects, saves and reloads indepe
     settings: DEFAULT_SETTINGS,
     clientFactory: (p, r) => createClient(p, r, fixtureFetch),
   });
-  t.after(() => restored.dispose());
   restored.load();
   assert.equal(restored.activeId, id);
   assert.equal(restored.entries.length, 2);
   assert.equal(restored.active.monitor.state.parts.balance.balances[0].total, '0');
   restored.select(old);
   assert.ok(restored.active.monitor.state.parts.credits.windows.length);
+  restored.dispose(); // before setup's cleanup removes the directory (Windows keeps open files locked)
 });
 test('429 preserves the last balance and respects Retry-After; recovery replaces rather than sums snapshots', async (t) => {
   let mode = 'sample',

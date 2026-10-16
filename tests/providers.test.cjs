@@ -486,7 +486,6 @@ test('credential retry recovers after a failed decrypt without rewriting the enc
   const root = path.resolve(__dirname, '../work/provider-tests');
   fs.mkdirSync(root, { recursive: true });
   const dir = fs.mkdtempSync(path.join(root, 'retry-'));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const safe = vault(),
     decrypt = safe.decryptString;
   let failures = 0;
@@ -505,7 +504,11 @@ test('credential retry recovers after a failed decrypt without rewriting the enc
     bytes = fs.readFileSync(file);
   failures = 2;
   const manager = new AccountManager({ store, settings, clientFactory: (p, r) => createClient(p, r, fixtureFetch) });
-  t.after(() => manager.dispose());
+  // Dispose first: on Windows an open history.sqlite blocks removing the directory.
+  t.after(() => {
+    manager.dispose();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
   manager.load();
   assert.match(manager.issue, /已有加密文件未被覆盖/);
   assert.equal(manager.entries.length, 0);

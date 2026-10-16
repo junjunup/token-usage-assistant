@@ -9,11 +9,17 @@ const { AccountManager } = require('../desktop/accounts.cjs');
 const { SubscriptionClient } = require('../desktop/subscriptions.cjs');
 const { ToolSources } = require('../desktop/tool-sources.cjs');
 const { DEFAULT_SETTINGS } = require('../desktop/domain.cjs');
+// Managers created for a case are disposed before its directory is removed: on Windows an open
+// history.sqlite blocks the removal.
+const disposers = new Map();
 function setup(t) {
   const parent = path.resolve(__dirname, '../work/connect-tests');
   fs.mkdirSync(parent, { recursive: true });
   const root = fs.mkdtempSync(path.join(parent, 'case-'));
+  disposers.set(root, []);
   t.after(() => {
+    for (const dispose of disposers.get(root)) dispose();
+    disposers.delete(root);
     assert.ok(path.resolve(root).startsWith(parent + path.sep));
     fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
@@ -69,10 +75,12 @@ function manager(t, root, read) {
         }),
     }),
     tools = new ToolSources({ store });
-  t.after(() => {
+  const dispose = () => {
     accounts.dispose();
     tools.dispose();
-  });
+  };
+  if (disposers.has(root)) disposers.get(root).push(dispose);
+  else t.after(dispose);
   return { accounts, tools };
 }
 test('one default profile connects without opening either native picker', async (t) => {
