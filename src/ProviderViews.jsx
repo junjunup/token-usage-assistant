@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, Clock, Info, Key, Plug, SignOut, ArrowUpRight, WarningCircle } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
+import { Live } from './Live.jsx';
 import { PROVIDERS, providerInfo } from './generated/provider-catalog.js';
 import { quotaStatus, resetDescription } from './generated/domain.js';
 import './providers.css';
@@ -81,7 +82,7 @@ export function AccountSwitcher({ state, onSelect, onManage }) {
     </div>
   );
 }
-export function ProviderDashboard({ state, now, onSettings }) {
+export function ProviderDashboard({ state, onSettings }) {
   const [used, setUsed] = useState(false),
     c = state.data.parts.credits,
     info = providerInfo(state.provider),
@@ -164,7 +165,9 @@ export function ProviderDashboard({ state, now, onSettings }) {
                 <span>{usage(w)}</span>
                 <span title={w.resetAt ? new Date(w.resetAt).toLocaleString('zh-CN') : undefined}>
                   <Clock size={13} />
-                  <b className="mono">{reset(w, now)}</b>
+                  <b className="mono">
+                    <Live>{(now) => reset(w, now)}</Live>
+                  </b>
                 </span>
               </div>
               {w.boost !== 1 && (
@@ -202,7 +205,7 @@ export function ProviderDashboard({ state, now, onSettings }) {
     </div>
   );
 }
-export function ProviderWidget({ state, now }) {
+export function ProviderWidget({ state }) {
   const c = state.data.parts.credits,
     windows = c?.windows || [],
     account = state.accounts?.find((a) => a.id === state.activeAccountId);
@@ -243,7 +246,7 @@ export function ProviderWidget({ state, now }) {
           />
           <div className="widget-reset">
             <Clock size={12} />
-            {reset(w, now)}
+            <Live>{(now) => reset(w, now)}</Live>
           </div>
           {state.settings.widgetExpanded && <small className="widget-synced">{usage(w)}</small>}
         </section>
