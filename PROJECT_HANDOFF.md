@@ -35,7 +35,7 @@
 
 | 模块 | 职责 |
 |---|---|
-| `desktop/main.cjs`、`preload.cjs` | Electron 主进程：窗口、托盘、受限 IPC、原生文件选择器、smoke 模式；preload 暴露受限桥接 |
+| `desktop/main.cjs`、`preload.cjs` | Electron 主进程：窗口、托盘、受限 IPC、原生文件选择器；smoke 模式只通过 `desktop/smoke/index.cjs` 接入（T5.4）；preload 暴露受限桥接 |
 | `desktop/platform.cjs` | Windows / Mac 平台差异（数据目录、启动器、窗口行为） |
 | `desktop/branding.cjs` | 窗口图标、任务栏信息 |
 | `desktop/widget-bounds.cjs` | 悬浮窗展开/收起时的位置计算 |
@@ -54,7 +54,7 @@
 | `desktop/zcode-reader.cjs`、`zcode-worker.cjs`、`opencode-reader.cjs`、`harness-reader.cjs` | 各工具来源的只读读取 |
 | `desktop/tool-analytics.cjs`、`analytics-core.cjs`、`analytics-service.cjs` | 统一工具记录、聚合、账户分析与工具分析分路 |
 | `desktop/association-rules.cjs`、`associations.cjs` | 关联规则与比较（纯函数）；关联持久化与身份校验 |
-| `desktop/*-fixture.cjs`、`*-native-smoke.cjs`、`smoke-fixture.cjs` | smoke 模式用的合成数据和原生自检（会打进包；T5.4 计划拆出） |
+| `desktop/smoke/`（`index.cjs`、`*-native-smoke.cjs`、`smoke-fixture.cjs`、`tool-fixture.cjs`、`opencode-fixture.cjs`）；`desktop/analytics-fixture.cjs`、`provider-fixture.cjs` | smoke 模式的流程、原生自检和合成数据（都会打进包，因为原生 smoke 测的就是真实的包）；后两个 fixture 同时用于浏览器预览的生成，所以留在 `desktop/` |
 | `src/DesktopApp.jsx` 等 | 渲染进程界面；`desktop-preview.js` / `preview-analytics.js` / `tools-preview.js` 提供浏览器预览数据 |
 | `src/generated/` | 由 `scripts/prepare-analytics-preview.mjs` 从 `desktop/` 纯模块生成（不入库） |
 | `integrations/deepseek-harness/` | 可选 Harness 统计插件，独立交付 |
