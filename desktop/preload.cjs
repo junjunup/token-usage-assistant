@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld(
     window: (action) => call('assistant:window', action),
     openOfficial: (target) => call('assistant:official', target),
     testNotification: () => call('assistant:test-notification'),
+    openUpdate: () => call('assistant:open-update'),
     previewDiagnostics: () => call('assistant:diagnostics-preview'),
     saveDiagnostics: () => call('assistant:diagnostics-save'),
     ready: () => call('assistant:renderer-ready'),

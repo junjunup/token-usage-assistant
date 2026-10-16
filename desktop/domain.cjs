@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean }} Settings */
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   pinned: true,
   launchAtLogin: false,
   widgetExpanded: false,
+  // T5.2: ask the public installer repository for newer versions (one GitHub request at start and every 24 h).
+  updateCheck: true,
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>
