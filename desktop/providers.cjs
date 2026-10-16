@@ -1,10 +1,9 @@
-const crypto = require('node:crypto');
 const { retryAfter } = require('./domain.cjs');
 const { log } = require('./logger.cjs');
 const { ApiError, CommandCodeClient } = require('./api.cjs');
 const { providerInfo } = require('./provider-catalog.cjs');
-const { normalizeGlm, normalizeMiniMax, normalizeVolcengine, normalizeOpenCodeGo } = require('./provider-domain.cjs');
-const { normalizeDeepSeek } = require('./balance-domain.cjs');
+// Per-platform requests, body errors and normalization come from the registry (desktop/providers/, T5.3a).
+const { REGISTRY, providerDefinition } = require('./providers/index.cjs');
 class ProviderError extends ApiError {
   constructor(provider, status = 0, code = '', delay = 0) {
     super(status, delay, code);
@@ -32,106 +31,12 @@ class ProviderError extends ApiError {
                       : name + ' 连接失败，请检查网络或代理。';
   }
 }
-const ORIGINS = Object.freeze({
-  'opencode-go': { global: 'https://opencode.ai' },
-  deepseek: { global: 'https://api.deepseek.com' },
-  glm: { cn: 'https://open.bigmodel.cn', global: 'https://api.z.ai' },
-  minimax: { cn: 'https://api.minimaxi.com', global: 'https://api.minimax.io' },
-  volcengine: { 'cn-beijing': 'https://ark.cn-beijing.volcengineapi.com' },
-});
-const hash = (s) => crypto.createHash('sha256').update(s).digest('hex');
-const hmac = (key, value) => crypto.createHmac('sha256', key).update(value).digest();
-function signVolcengine(credential, now = Date.now()) {
-  const host = 'ark.cn-beijing.volcengineapi.com',
-    query = 'Action=GetAFPUsage&Version=2024-01-01',
-    body = '{}';
-  const date = new Date(now).toISOString().replace(/[:-]|\.\d{3}/g, ''),
-    day = date.slice(0, 8);
-  const payload = hash(body),
-    signed = 'content-type;host;x-content-sha256;x-date';
-  const canonical =
-    'POST\n/\n' +
-    query +
-    '\ncontent-type:application/json\nhost:' +
-    host +
-    '\nx-content-sha256:' +
-    payload +
-    '\nx-date:' +
-    date +
-    '\n\n' +
-    signed +
-    '\n' +
-    payload;
-  const scope = day + '/cn-beijing/ark/request';
-  const signingKey = hmac(hmac(hmac(hmac(credential.secretKey, day), 'cn-beijing'), 'ark'), 'request');
-  const signature = hmac(signingKey, 'HMAC-SHA256\n' + date + '\n' + scope + '\n' + hash(canonical)).toString('hex');
-  return {
-    url: 'https://' + host + '/?' + query,
-    method: 'POST',
-    body,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Date': date,
-      'X-Content-Sha256': payload,
-      Authorization:
-        'HMAC-SHA256 Credential=' +
-        credential.accessKeyId +
-        '/' +
-        scope +
-        ', SignedHeaders=' +
-        signed +
-        ', Signature=' +
-        signature,
-    },
-  };
-}
+const ORIGINS = Object.freeze(Object.fromEntries(REGISTRY.filter((p) => p.origins).map((p) => [p.id, p.origins])));
+const { signVolcengine } = providerDefinition('volcengine');
 // HTTP 200 may still contain a vendor-specific failure. Never expose server bodies.
 function bodyError(provider, body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return ['schema', 0];
-  if (provider === 'opencode-go' && (body.error || body.type === 'error'))
-    return body.error?.type === 'EntitlementError'
-      ? ['entitlement', 403]
-      : body.error?.type === 'AuthError'
-        ? ['upstream', 401]
-        : ['upstream', 0];
-  if (provider === 'glm') {
-    if (
-      body.success === false ||
-      (body.code !== undefined && ![0, 200, '0', '200'].includes(body.code)) ||
-      body.error
-    ) {
-      const code = String(body.error?.code || body.code || '');
-      return [
-        'upstream',
-        ['401', '1000', '1001', '1002', '1003', '1004'].includes(code) ? 401 : ['429', '1302'].includes(code) ? 429 : 0,
-      ];
-    }
-  }
-  if (provider === 'minimax') {
-    if (
-      body.base_resp?.status_code === undefined ||
-      body.base_resp.status_code === null ||
-      body.base_resp.status_code === '' ||
-      typeof body.base_resp.status_code === 'boolean'
-    )
-      return ['schema', 0];
-    const code = Number(body.base_resp.status_code);
-    if (code !== 0) return ['upstream', [1004, 2049].includes(code) ? 401 : code === 1002 ? 429 : 0];
-  }
-  if (provider === 'volcengine' && body.ResponseMetadata?.Error) {
-    const code = String(body.ResponseMetadata.Error.Code || '');
-    return [
-      'upstream',
-      /InvalidAccessKey|SignatureDoesNotMatch|InvalidToken|ExpiredToken/.test(code)
-        ? 401
-        : /AccessDenied|Forbidden|Unauthorized/.test(code)
-          ? 403
-          : /Throttl|LimitExceeded/.test(code)
-            ? 429
-            : 0,
-    ];
-  }
-  return null;
+  return providerDefinition(provider)?.classifyBodyError?.(body) || null;
 }
 class QuotaClient {
   constructor(provider, region, fetchImpl = globalThis.fetch, { timeout = 15000, now = Date.now } = {}) {
@@ -139,33 +44,16 @@ class QuotaClient {
     Object.assign(this, { provider, region, fetch: fetchImpl, timeout, now });
   }
   async request(credential) {
-    const p = this.provider;
-    const req =
-      p === 'volcengine'
-        ? signVolcengine(credential, this.now())
-        : {
-            url:
-              ORIGINS[p][this.region] +
-              (p === 'opencode-go'
-                ? '/zen/go/v1/usage'
-                : p === 'deepseek'
-                  ? '/user/balance'
-                  : p === 'glm'
-                    ? '/api/monitor/usage/quota/limit'
-                    : '/v1/token_plan/remains'),
-            method: 'GET',
-            headers: {
-              Authorization: p === 'glm' ? credential.apiKey : 'Bearer ' + credential.apiKey,
-              Accept: 'application/json',
-            },
-          };
+    const p = this.provider,
+      definition = providerDefinition(p);
+    const req = definition.buildRequest(credential, this.region, this.now());
     const controller = new AbortController(),
       timer = setTimeout(() => controller.abort(), this.timeout),
       started = Date.now();
     try {
       const { url, ...options } = req;
       const response = await this.fetch(url, { ...options, redirect: 'error', signal: controller.signal });
-      const goForbidden = p === 'opencode-go' && response.status === 403;
+      const goForbidden = !!definition.forbiddenBody && response.status === 403;
       if (!response.ok && !goForbidden)
         throw new ProviderError(p, response.status, '', retryAfter(response.headers.get('retry-after')));
       if (Number(response.headers.get('content-length')) > 2_000_000) throw new ProviderError(p, 0, 'schema');
@@ -216,14 +104,7 @@ class QuotaClient {
       const raw = await this.request(credential);
       let credits;
       try {
-        credits =
-          this.provider === 'opencode-go'
-            ? normalizeOpenCodeGo(raw)
-            : this.provider === 'glm'
-              ? normalizeGlm(raw)
-              : this.provider === 'minimax'
-                ? normalizeMiniMax(raw, this.now())
-                : normalizeVolcengine(raw);
+        credits = providerDefinition(this.provider).normalize(raw, this.now());
       } catch {
         throw new ProviderError(this.provider, 0, 'schema');
       }
@@ -245,15 +126,16 @@ class QuotaClient {
   }
 }
 function createClient(provider, region, fetchImpl) {
-  if (['codex', 'claude'].includes(provider)) {
+  const kind = providerDefinition(provider)?.clientKind;
+  if (kind === 'subscription') {
     const client = new (require('./subscriptions.cjs').SubscriptionClient)(provider);
     client.capabilities = providerInfo(provider)?.capabilities;
     return client;
   }
   const client =
-    provider === 'commandcode'
+    kind === 'commandcode'
       ? new CommandCodeClient(fetchImpl)
-      : provider === 'deepseek'
+      : kind === 'balance'
         ? new BalanceClient(provider, region, fetchImpl)
         : new QuotaClient(provider, region, fetchImpl);
   client.capabilities = providerInfo(provider)?.capabilities;
@@ -265,7 +147,7 @@ class BalanceClient extends QuotaClient {
       const raw = await this.request(credential);
       let balance;
       try {
-        balance = normalizeDeepSeek(raw);
+        balance = providerDefinition(this.provider).normalize(raw, this.now());
       } catch {
         throw new ProviderError(this.provider, 0, 'schema');
       }

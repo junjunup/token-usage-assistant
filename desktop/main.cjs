@@ -26,6 +26,7 @@ const { AccountManager } = require('./accounts.cjs');
 const { createClient } = require('./providers.cjs');
 const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
+const { providerDefinition } = require('./providers/index.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
 const {
@@ -659,25 +660,8 @@ function installIpc() {
   handle('assistant:official', (_event, target) => {
     if (!['usage', 'studio'].includes(target)) throw inputError('不支持的地址');
     const { provider, region } = accounts.active.entry;
-    if (provider === 'deepseek') return shell.openExternal('https://platform.deepseek.com/usage');
-    if (provider === 'codex') return shell.openExternal('https://chatgpt.com/codex/settings/usage');
-    if (provider === 'claude') return shell.openExternal('https://claude.ai/settings/usage');
-    if (provider === 'opencode-go') return shell.openExternal('https://opencode.ai/auth');
-    const urls = {
-      glm: { cn: 'https://bigmodel.cn', global: 'https://z.ai' },
-      minimax: {
-        cn: 'https://platform.minimax.cn/subscribe/token-plan',
-        global: 'https://platform.minimax.io/subscribe/token-plan',
-      },
-      volcengine: { 'cn-beijing': 'https://ark.volcengine.com/region:cn-beijing' },
-    };
-    const login = monitor.state.parts.identity?.login;
-    const url =
-      provider === 'commandcode'
-        ? target === 'usage' && /^[a-zA-Z0-9_-]+$/.test(login || '')
-          ? 'https://commandcode.ai/' + encodeURIComponent(login) + '/settings/usage'
-          : 'https://commandcode.ai'
-        : urls[provider]?.[region];
+    // Official pages come from the platform registry (desktop/providers/, T5.3a).
+    const url = providerDefinition(provider)?.officialUrl({ region, identity: monitor.state.parts.identity, target });
     if (!url) throw inputError('不支持的地址');
     return shell.openExternal(url);
   });
