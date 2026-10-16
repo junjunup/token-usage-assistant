@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，私有仓库 https://github.com/junjunup/commandcode-companion（`main`），最新标签 `v1.8.0-beta.7`（上一个 `v1.8.0-beta.6`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–4 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。beta.7 的四种安装包由 CI 产出（`release-v1.8.0-beta.7/`，报告在 `docs/verification-1.8.0-beta.7/`），私有仓库中的 Release 是草稿，等待用户审核；beta.6 已在私有仓库发布为 prerelease；用户决定暂不公开发布（公开仓库仍没有任何 Release）；beta.5 及更早的 Windows 双包在旧 Windows 机器上。T2.3 起，四种安装包可以由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库为 https://github.com/junjunup/TokenUsageAssistant（只放安装包），由手动触发的 Publish 工作流发布，尚未发布过任何版本。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/commandcode-companion` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 279 项，276 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、36 个警告（T4.5b 后；React hooks 的禁用已全部移除，其余 13 处逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 282 项，279 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、36 个警告（T4.5b 后；React hooks 的禁用已全部移除，其余 13 处逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -44,6 +44,7 @@
 | `desktop/accounts.cjs`、`monitor.cjs`、`history-db.cjs`、`history.cjs` | 多账户管理、单账户轮询、额度历史（T4.1 起存 `history.sqlite`；`history.cjs` 是数据库打不开时的 JSON 兜底，也用于迁移） |
 | `desktop/api.cjs` | Command Code 客户端 |
 | `desktop/providers.cjs`、`provider-catalog.cjs`、`provider-domain.cjs` | GLM / MiniMax / 火山 / DeepSeek / OpenCode Go 客户端、平台目录、额度归一化 |
+| `desktop/providers/`（`index.cjs` 与每个平台一个文件） | 平台注册表（T5.3a）：元数据、请求构造、响应体错误分类、归一化、官方页面；`provider-catalog.cjs`、`providers.cjs` 和 `main.cjs` 的官方页面都由它派生 |
 | `desktop/balance-domain.cjs` | DeepSeek 余额归一化与金额格式 |
 | `desktop/domain.cjs` | 通用额度状态与重置描述 |
 | `desktop/subscriptions.cjs`、`subscription-status.cjs` | Codex / Claude 订阅额度归一化与连接状态 |
