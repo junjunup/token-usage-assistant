@@ -2,15 +2,17 @@
 
 倒序排列。每个版本的详细说明、验证记录见对应的 `docs/` 专题文档和 `docs/verification-<版本>/`。证据等级：①合成契约测试 ②打包原生 smoke ③真实账户或真机验收。
 
-## 未发布（阶段 3，计划作为 1.8.0-beta.6）
+## 1.8.0-beta.6（2026-10-16，阶段 3）
 
 - Mac 开发版（未打包）改用独立的应用名、数据目录和 Keychain 条目（`TokenUsageAssistant-Dev`），不再读写打包版的真实数据；打包版和 Windows 不变（T3.1）。
 - 新增本机诊断日志 `logs/app.log`：只记录模块、错误分类和白名单字段（不含错误原文、路径、账户名称或密钥），1 MB 轮转保留 3 份；原来静默吞掉的 9 处失败改为记录警告（T3.2）。
 - 本机账户列表读取失败（例如拒绝了系统加密授权）后，可以在总览提示条上点「重新读取」恢复，不用重启；不会覆盖已有的加密文件。新增 Mac 真机验收清单 `docs/MAC-ACCEPTANCE-CHECKLIST.md`（T3.4）。
 - 修复原生 smoke 的偶发失败：45 秒「渲染进程握手超时」定时器在握手成功后没有清除，冷启动较慢时会在 smoke 检查进行中强制退出并销毁窗口（报 `Object has been destroyed`）。现在握手完成即清除定时器；smoke 断言不变，只影响 `--smoke-test`。
 - Mac 上的 smoke 改用独立的应用名 `TokenUsageAssistant-Smoke` 和独立的 Keychain 条目，不再访问真实的 `TokenUsageAssistant Safe Storage`（开发版的 `-Dev` 条目同样不再访问）。原先每次新构建首次跑 smoke 都会弹出访问真实条目的授权窗，没人点允许时主线程卡住，smoke 就会失败。smoke 报告新增 `keychainName` 字段，名称不对时判为失败。
+- 新增「导出诊断信息」（账户与设置页底部）：先在应用内预览全部内容，确认后另存为 JSON。内容只有版本、系统、设置、各账户与工具来源的状态码和时间，以及最近 500 行经过再次脱敏的本机日志；不含密钥、账户名称、组织 ID、文件路径、错误原文或对话内容（T3.3）。
+- 证据等级：①（合成契约测试）+ ②（CI 打包原生 smoke 与 Windows 真实 DPAPI 升级验证，见 `docs/verification-1.8.0-beta.6/`）；Mac 真机清单 `docs/MAC-ACCEPTANCE-CHECKLIST.md` 待用户执行（③ 未完成）。
 
-## 未发布（工程整理，不改变应用行为，2026-10）
+### 同版本包含的工程整理（阶段 1–2，不改变应用行为，2026-10）
 
 - 纳入 Git 版本控制，基线提交打标签 `v1.8.0-beta.5`（T1.1）。
 - 删除旧浏览器原型（`src/App.jsx`）和 Sites 兼容文件（`worker/`、`.openai/`、`test:sites`），这是用户决策 D5；发布产物移到仓库外的 `~/Documents/TokenUsageAssistant-releases/`（T1.2）。
