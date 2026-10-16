@@ -924,6 +924,22 @@ h1 > span {
   font-size: 10px;
   color: var(--muted);
 }
+.settings-actions {
+  display: flex;
+  gap: 8px;
+}
+.diagnostics-preview {
+  max-height: 300px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  font:
+    10px/1.6 'Geist Mono',
+    monospace;
+  color: var(--fg);
+  white-space: pre;
+}
 .settings-panel + .main-footer {
   margin-top: 30px;
 }
