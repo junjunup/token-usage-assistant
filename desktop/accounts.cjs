@@ -6,6 +6,7 @@ const { LocalStore, fingerprint } = require('./store.cjs');
 const { log } = require('./logger.cjs');
 const { UsageMonitor } = require('./monitor.cjs');
 const { HistoryStore } = require('./history.cjs');
+const { HistoryDatabase, createHistory } = require('./history-db.cjs');
 const { providerInfo } = require('./provider-catalog.cjs');
 const { createClient, ProviderError } = require('./providers.cjs');
 const { text } = require('./domain.cjs');
@@ -75,6 +76,8 @@ class AccountManager extends EventEmitter {
     this.connecting = false;
     this.issue = '';
     this.disposed = false;
+    // One history database for all accounts, keyed by fingerprint; opened on first use (T4.1).
+    this.historyDb = new HistoryDatabase(store.file('history.sqlite'));
     const monitor = new UsageMonitor(clientFactory('commandcode', 'global'), { settings });
     this.empty = {
       monitor,
@@ -123,7 +126,7 @@ class AccountManager extends EventEmitter {
       entry.id === 'legacy-commandcode' && entry.provider === 'commandcode'
         ? fingerprint(entry.credential.apiKey, entry.orgId)
         : accountFingerprint(entry);
-    const history = new HistoryStore(scoped.file('history.json'));
+    const history = createHistory(this.historyDb, scoped.file('history.json'));
     history.configure(hash);
     const client = this.clientFactory(entry.provider, entry.region);
     const monitor = new UsageMonitor(client, {
@@ -257,7 +260,8 @@ class AccountManager extends EventEmitter {
       } catch (e) {
         if (e?.code !== 'ENOENT') log.warn('accounts', 'cache-remove-failed', { errno: e?.code });
       }
-    runtime.history.clear();
+    if (runtime.history.purge) runtime.history.purge();
+    else runtime.history.clear();
     this.emitState();
   }
   updateSettings(settings) {
@@ -272,6 +276,7 @@ class AccountManager extends EventEmitter {
     this.disposed = true;
     this.empty.monitor.dispose();
     for (const r of this.runtimes.values()) r.monitor.dispose();
+    this.historyDb.close();
   }
 }
 module.exports = { AccountManager, validateConnection, accountFingerprint };
