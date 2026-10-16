@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown, Check } from '@phosphor-icons/react';
 import './Select.css';
@@ -11,7 +11,13 @@ export function Select({ label, value, options, onChange, disabled = false, clas
     typed = useRef({ text: '', at: 0 });
   const [open, setOpen] = useState(false),
     [active, setActive] = useState(0),
-    [position, setPosition] = useState({});
+    [position, setPosition] = useState({}),
+    [host, setHost] = useState(null);
+  // The menu portals into the surrounding .app element, found once the button mounts.
+  const buttonRef = useCallback((el) => {
+    button.current = el;
+    setHost(el?.closest('.app') || null);
+  }, []);
   const selected = options.findIndex((o) => String(o.value) === String(value)),
     current = options[selected];
   const close = () => setOpen(false);
@@ -104,14 +110,15 @@ export function Select({ label, value, options, onChange, disabled = false, clas
       document.removeEventListener('scroll', scroll, true);
     };
   }, [open]);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-    close();
-  }, [disabled, value]);
+  const [shown, setShown] = useState({ disabled, value });
+  if (shown.disabled !== disabled || shown.value !== value) {
+    setShown({ disabled, value });
+    setOpen(false);
+  }
   return (
     <div className={`ui-select ${className}`}>
       <button
-        ref={button}
+        ref={buttonRef}
         type="button"
         role="combobox"
         aria-label={label}
@@ -131,6 +138,7 @@ export function Select({ label, value, options, onChange, disabled = false, clas
         <CaretDown size={13} className={open ? 'expanded' : ''} />
       </button>
       {open &&
+        host &&
         createPortal(
           <div
             ref={menu}
@@ -160,8 +168,7 @@ export function Select({ label, value, options, onChange, disabled = false, clas
               </div>
             ))}
           </div>,
-          // eslint-disable-next-line react-hooks/refs -- portal target is read at render time; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-          button.current.closest('.app'),
+          host,
         )}
     </div>
   );

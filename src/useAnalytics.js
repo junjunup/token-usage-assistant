@@ -6,8 +6,23 @@ export function useAnalytics(bridge, query, state, enabled = true) {
     [reload, setReload] = useState(0),
     [tick, setTick] = useState(0);
   const queryKey = JSON.stringify(query),
-    previous = useRef(''),
     active = useRef(null);
+  // Each new request (same inputs as the fetch effect below) starts in the loading state; a new query or revision
+  // also clears the previous report. Done during render instead of inside the effect.
+  const live = enabled && !!state && !!bridge.analytics,
+    request = live
+      ? JSON.stringify([queryKey, state.data.updatedAt.summary, state.analyticsRevision, reload, tick])
+      : null,
+    [started, setStarted] = useState({ request: null, report: '' });
+  if (request !== started.request) {
+    const reportKey = live ? queryKey + '|' + state.analyticsRevision : started.report;
+    setStarted({ request, report: reportKey });
+    if (live) {
+      if (reportKey !== started.report) setReport(null);
+      setLoading(true);
+      setError('');
+    }
+  }
   useEffect(() => {
     if (!enabled) return;
     const id = setInterval(() => setTick((n) => n + 1), (state?.settings.refreshSeconds || 60) * 1000);
@@ -16,13 +31,6 @@ export function useAnalytics(bridge, query, state, enabled = true) {
   useEffect(() => {
     if (!enabled || !state || !bridge.analytics) return;
     let alive = true;
-    if (previous.current !== queryKey + '|' + state.analyticsRevision) {
-      setReport(null);
-      previous.current = queryKey + '|' + state.analyticsRevision;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-    setLoading(true);
-    setError('');
     const requestId = crypto.randomUUID();
     active.current = requestId;
     bridge

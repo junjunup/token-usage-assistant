@@ -607,10 +607,7 @@ export function AnalyticsPage({
   const enabledSources = toolSources.filter((item) => item.enabled !== false);
   const selectedIds = sourceIds.length ? sourceIds : enabledSources.map((item) => item.id);
   const costParts = Object.entries(s?.costsByCurrency || {});
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset/sync on dependency change; refactor tracked in IMPROVEMENT_PLAN.md section 5.
-    if (local && tab === 'funding') setTab('trend');
-  }, [local, tab]);
+  if (local && tab === 'funding') setTab('trend');
   useEffect(() => {
     if (local && range === 'billing' && !billingAvailable) onRange('today');
   }, [local, range, onRange, billingAvailable]);
