@@ -64,7 +64,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - **OpenCode Go**：固定 HTTPS `GET /zen/go/v1/usage`，Bearer 鉴权，不跟随重定向，不调用推理。只展示服务端给出的三个百分比和重置时间，不编造余额、金额额度或续费日；舍入为 0 不能说明滚动窗口的起点。Zen / Black / 企业版查询不可用，不得暗示支持全部套餐。见 [OPENCODE-1.8.0-beta.5](docs/OPENCODE-1.8.0-beta.5.md)。
 - **Codex 订阅**：只读 app-server 方法白名单：`initialize`、`initialized`、`account/read`、`account/rateLimits/read`。选定程序前只做初始化预检；保留用户所选配置；可直接选择 `Codex.app` 的 `Resources/codex`。区分进程、协议、登录、阶段超时四类失败，不暴露 stderr；不声称支持旧版 CLI 协议。
 - **Codex 连接发现**：已保存的位置、`CODEX_HOME`、默认 `~/.codex`。只有一个时直接连接，多个时在应用内选择，手动选择作为回退；更新一个已丢失的保存位置时，不得静默改绑到另一个账户。见 [CONNECTION-UX-1.5.1](docs/CONNECTION-UX-1.5.1.md)、[MAC-TRIAL-1.8.0-beta.2](docs/MAC-TRIAL-1.8.0-beta.2.md)。
-- **Codex rollout**：0.155.x 的元数据快照不是请求数，请求状态未知。
+- **Codex rollout**：0.155.x 的元数据快照不是请求数，请求状态未知。已验证版本以外的 rollout，只有结构完全一致时才读取，并标为 `unverified-version`（T5.1）；字段改名一律视为不支持。
 - **Claude**：额度来自 statusLine，`context_window` 不是总消耗。OTLP 本地组件只监听回环地址，只采集启用之后的数据，覆盖缺口要明示。组件就绪和首次额度同步是两个独立状态。见 [SUBSCRIPTIONS-1.5.0](docs/SUBSCRIPTIONS-1.5.0.md)。
 - 额度查询成功时，不因缺少工具日志或来源添加失败而显示失败；不重新启用用户已禁用的来源。
 - **Zcode**：只读白名单 SQLite 投影；多个副本身份重叠时只做保守的暂停合并，不猜测哪份最新。见 [TOOL-SOURCES-1.4.0](docs/TOOL-SOURCES-1.4.0.md)。
@@ -97,5 +97,5 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
 - `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
 - Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。smoke 使用独立的 Keychain 条目（见第 5 节）；每次新构建签名都会变，打包版 smoke 首次运行可能弹出一次针对 smoke 条目的授权窗，处理这个窗口不会影响真实条目。
-- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：272 通过 / 0 失败 / 3 跳过（共 275）。
+- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：276 通过 / 0 失败 / 3 跳过（共 279）。
 - 本地服务和预览由执行模型自己启动，并在可用的浏览器中查看，不让用户手动启动。
