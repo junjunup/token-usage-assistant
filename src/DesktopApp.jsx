@@ -26,6 +26,7 @@ import {
   SignOut,
   WarningCircle,
   ArrowsLeftRight,
+  FileArrowDown,
 } from '@phosphor-icons/react';
 import '@fontsource/geist/400.css';
 import '@fontsource/geist/500.css';
@@ -122,6 +123,7 @@ export function DesktopApp() {
     [toast, setToast] = useState(null),
     [dialog, setDialog] = useState(null);
   const dialogRef = useRef();
+  const [diagnostics, setDiagnostics] = useState('');
   const [range, setRange] = useState('today'),
     [analysisSource, setAnalysisSource] = useState('tools'),
     [sourceIds, setSourceIds] = useState([]),
@@ -250,6 +252,21 @@ export function DesktopApp() {
   ];
   const changeTheme = () => pref({ theme: dark ? 'light' : 'dark' });
   const refresh = () => action(() => bridge.refresh());
+  // Diagnostics export (T3.3): show everything that would be saved, then save exactly that.
+  const openDiagnostics = async () => {
+    const text = await action(() => bridge.previewDiagnostics());
+    if (typeof text === 'string') {
+      setDiagnostics(text);
+      setDialog('diagnostics');
+    }
+  };
+  const saveDiagnostics = async () => {
+    const saved = await action(() => bridge.saveDiagnostics());
+    if (saved) {
+      setToast({ title: '诊断信息已保存。' });
+      setDialog(null);
+    }
+  };
   // Re-read the encrypted account list after a failed load (e.g. Keychain access denied); never overwrites it.
   const retryCredentials = async () => {
     const value = await action(() => bridge.retryCredentials());
@@ -995,14 +1012,20 @@ export function DesktopApp() {
                       <Check size={14} />
                       设置自动保存在本机
                     </span>
-                    <button
-                      className="button"
-                      disabled={!settings.notifications}
-                      onClick={() => action(() => bridge.testNotification(), '已请求系统显示测试通知。')}
-                    >
-                      <Bell size={15} />
-                      测试通知
-                    </button>
+                    <div className="settings-actions">
+                      <button className="button" onClick={openDiagnostics}>
+                        <FileArrowDown size={15} />
+                        导出诊断信息
+                      </button>
+                      <button
+                        className="button"
+                        disabled={!settings.notifications}
+                        onClick={() => action(() => bridge.testNotification(), '已请求系统显示测试通知。')}
+                      >
+                        <Bell size={15} />
+                        测试通知
+                      </button>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -1048,7 +1071,13 @@ export function DesktopApp() {
       <dialog className="info-dialog" ref={dialogRef} onClose={() => setDialog(null)} aria-labelledby="dialog-title">
         <div className="dialog-title">
           <h2 id="dialog-title">
-            {dialog === 'disconnect' ? '移除本机连接' : dialog === 'billing' ? '额度与账期口径' : '关于用量助手'}
+            {dialog === 'disconnect'
+              ? '移除本机连接'
+              : dialog === 'billing'
+                ? '额度与账期口径'
+                : dialog === 'diagnostics'
+                  ? '导出诊断信息'
+                  : '关于用量助手'}
           </h2>
           <IconButton label="关闭说明" onClick={() => setDialog(null)}>
             <X size={18} />
@@ -1068,6 +1097,20 @@ export function DesktopApp() {
                 }}
               >
                 移除连接
+              </button>
+            </>
+          ) : dialog === 'diagnostics' ? (
+            <>
+              <p>
+                下面是将要保存的全部内容：版本、系统、设置、各账户与工具来源的状态，以及最近 500
+                行本机日志。不含密钥、账户名称、文件路径或对话内容。
+              </p>
+              <pre className="diagnostics-preview" tabIndex={0} aria-label="诊断信息预览">
+                {diagnostics}
+              </pre>
+              <button className="button primary" onClick={saveDiagnostics}>
+                <FileArrowDown size={15} />
+                保存为文件…
               </button>
             </>
           ) : dialog === 'billing' ? (

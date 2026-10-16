@@ -31,6 +31,20 @@ function entry(level, module, code, extra, now) {
     }
   return JSON.stringify(line);
 }
+// Re-check a stored line before it leaves the machine (diagnostics export): only well-formed entries survive,
+// rebuilt through the same whitelist and redaction as when they were written.
+const LEVELS = new Set(['error', 'warn', 'info']);
+function sanitizeLine(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || !LEVELS.has(parsed.level)) return null;
+  const at = Date.parse(parsed.t);
+  return Number.isFinite(at) ? entry(parsed.level, parsed.module, parsed.code, parsed, () => at) : null;
+}
 
 class Logger {
   constructor() {
@@ -118,6 +132,21 @@ class Logger {
       if (this.buffer.length) this.schedule();
     }
   }
+  // The newest `limit` sanitized lines across the rotated files (oldest first). Never throws.
+  tail(limit = 500) {
+    this.flushSync();
+    if (!this.dir) return [];
+    const lines = [];
+    for (let i = this.keep - 1; i >= 0; i--) {
+      try {
+        const text = this.fs.readFileSync(i ? this.file + '.' + i : this.file, 'utf8');
+        for (const raw of text.split('\n')) if (raw.trim()) lines.push(raw);
+      } catch {
+        // A missing rotated file is normal.
+      }
+    }
+    return lines.slice(-limit).map(sanitizeLine).filter(Boolean);
+  }
   flushSync() {
     try {
       clearTimeout(this.timer);
@@ -133,4 +162,4 @@ class Logger {
 }
 
 const log = new Logger();
-module.exports = { log, Logger, EXTRA_FIELDS };
+module.exports = { log, Logger, EXTRA_FIELDS, sanitizeLine };

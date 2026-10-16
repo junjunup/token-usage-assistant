@@ -316,4 +316,33 @@ export const previewBridge = {
   window: async () => ({ ok: false, error: '该功能在 Windows 桌面应用中可用。' }),
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
+  previewDiagnostics: async () => ({
+    ok: true,
+    value: JSON.stringify(
+      {
+        schema: 1,
+        generatedAt: new Date().toISOString(),
+        app: { version: state.version, packaged: false, electron: '44.4.4', chrome: '—', node: '24.12.0' },
+        system: { platform: 'darwin', arch: 'arm64', release: '15.6' },
+        settings: state.settings,
+        credentialIssue: false,
+        accounts: state.accounts.map((a) => ({
+          provider: a.provider,
+          region: a.region,
+          active: a.id === state.activeAccountId,
+          status: a.status,
+          lastSuccessAt: new Date().toISOString(),
+          lastError: null,
+        })),
+        toolSources: [],
+        log: {
+          lines: 1,
+          entries: [{ t: new Date().toISOString(), level: 'info', module: 'main', code: 'startup' }],
+        },
+      },
+      null,
+      2,
+    ),
+  }),
+  saveDiagnostics: async () => ({ ok: true, value: true }),
 };

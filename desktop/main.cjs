@@ -39,6 +39,7 @@ const {
 } = require('./platform.cjs');
 const { windowIcon, taskbarDetails } = require('./branding.cjs');
 const { log } = require('./logger.cjs');
+const { buildDiagnostics } = require('./diagnostics.cjs');
 const isMac = process.platform === 'darwin';
 const APP_ORIGIN = 'companion://app';
 const APP_ID = 'local.commandcode.tokenusageassistant';
@@ -78,6 +79,7 @@ let accounts,
   associations,
   claudeCollector,
   smokeHandshakeTimer,
+  diagnosticsText = '',
   connectionBusy = false;
 const notifications = new Set(),
   readySurfaces = new Set();
@@ -674,6 +676,56 @@ function installIpc() {
         : urls[provider]?.[region];
     if (!url) throw inputError('不支持的地址');
     return shell.openExternal(url);
+  });
+  // Diagnostics export (T3.3): preview first; saving writes exactly the previewed text, nothing else.
+  handle('assistant:diagnostics-preview', (event) => {
+    mainOnly(event);
+    diagnosticsText = JSON.stringify(
+      buildDiagnostics({
+        app: {
+          version: app.getVersion(),
+          packaged: app.isPackaged,
+          electron: process.versions.electron,
+          chrome: process.versions.chrome,
+          node: process.versions.node,
+        },
+        system: { platform: process.platform, arch: process.arch, release: process.getSystemVersion() },
+        settings,
+        credentialIssue: accounts.issue,
+        accounts: accounts.entries.map((e) => ({
+          provider: e.provider,
+          region: e.region,
+          active: e.id === accounts.activeId,
+          monitor: accounts.runtimes.get(e.id)?.monitor.state,
+        })),
+        sources: toolSources?.list() || [],
+        logLines: log.tail(500),
+        now: Date.now,
+      }),
+      null,
+      2,
+    );
+    return diagnosticsText;
+  });
+  handle('assistant:diagnostics-save', async (event) => {
+    mainOnly(event);
+    if (!diagnosticsText) throw inputError('请先生成诊断信息预览。');
+    const text = diagnosticsText,
+      stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
+    const choice = await dialog.showSaveDialog(mainWindow, {
+      title: '保存诊断信息',
+      defaultPath: `TokenUsageAssistant-diagnostics-${stamp}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+    });
+    if (choice.canceled || !choice.filePath) return false;
+    try {
+      fs.writeFileSync(choice.filePath, text + '\n', { encoding: 'utf8', mode: 0o600 });
+    } catch (e) {
+      log.warn('main', 'diagnostics-save-failed', { errno: e?.code });
+      throw inputError('诊断信息未能保存，请换一个位置重试。');
+    }
+    log.info('main', 'diagnostics-saved', { count: text.length });
+    return true;
   });
   handle('assistant:test-notification', (event) => {
     mainOnly(event);
