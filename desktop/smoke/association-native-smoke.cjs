@@ -152,7 +152,7 @@ async function runAssociationSmoke({
     true,
   );
   checks.noHorizontalOverflow = true;
-  const { Associations } = require('./associations.cjs'),
+  const { Associations } = require('../associations.cjs'),
     restored = new Associations({ store, accounts, tools: toolSources });
   assert.deepEqual(restored.publicState(), associations.publicState());
   checks.nativeRestartPreservesRules = true;

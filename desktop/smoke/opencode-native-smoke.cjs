@@ -2,9 +2,9 @@
 const assert = require('node:assert/strict'),
   fs = require('node:fs');
 const { createOpenCode } = require('./opencode-fixture.cjs');
-const { AccountManager } = require('./accounts.cjs');
-const { createClient } = require('./providers.cjs');
-const { fixtureFetch } = require('./provider-fixture.cjs');
+const { AccountManager } = require('../accounts.cjs');
+const { createClient } = require('../providers.cjs');
+const { fixtureFetch } = require('../provider-fixture.cjs');
 async function until(win, expression) {
   const end = Date.now() + 6000;
   while (Date.now() < end) {

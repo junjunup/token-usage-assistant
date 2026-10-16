@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs'),
   path = require('node:path');
 const { app, desktopCapturer, nativeImage } = require('electron');
-const { taskbarDetails } = require('./branding.cjs');
+const { taskbarDetails } = require('../branding.cjs');
 
 async function runBrandingSmoke({ mainWindow, store, settings, applySettings }) {
   const original = mainWindow.getBounds(),
@@ -49,7 +49,7 @@ async function runBrandingSmoke({ mainWindow, store, settings, applySettings }) 
       const size = icon.getSize();
       assert.ok(size.width <= 64 && size.height <= 64, 'Window must use a small HICON, not the 512 px PNG');
       const bitmap = icon.resize({ width: 32, height: 32 }).toBitmap();
-      const expected = nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png')).toBitmap();
+      const expected = nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'tray.png')).toBitmap();
       assert.equal(bitmap.length, expected.length);
       let delta = 0;
       for (let i = 0; i < bitmap.length; i++) delta += Math.abs(bitmap[i] - expected[i]);

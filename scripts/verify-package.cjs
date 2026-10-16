@@ -48,7 +48,11 @@ for (const p of names) {
 const packaged = JSON.parse(asar.extractFile(archive, 'package.json'));
 for (const key of ['name', 'version', 'main', 'description']) assert.equal(packaged[key], source[key]);
 assert.ok(!packaged.devDependencies);
-for (const name of fs.readdirSync(path.join(root, 'desktop')).filter((x) => x.endsWith('.cjs')))
+// Every desktop module must be packaged, including desktop/smoke/ (the native smoke runs inside the package).
+for (const name of fs
+  .readdirSync(path.join(root, 'desktop'), { recursive: true })
+  .map((x) => x.replaceAll('\\', '/'))
+  .filter((x) => x.endsWith('.cjs') && !x.endsWith('.test.cjs')))
   assert.ok(
     checks.some((x) => x.file === 'desktop/' + name),
     'missing desktop module ' + name,

@@ -221,5 +221,7 @@ test('Mac smoke runs use their own app name, so they never touch the real Keycha
   const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.cjs'), 'utf8');
   // The smoke flag is read before the Mac name is set, and the smoke report fails on any other name.
   assert.ok(main.indexOf("const smoke = process.argv.includes('--smoke-test')") < main.indexOf('app.setName('));
-  assert.match(main, /\(!isMac \|\| app\.getName\(\) === macSmokeName\)/);
+  // The smoke report check lives in desktop/smoke/index.cjs since T5.4.
+  const smokeModule = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'smoke', 'index.cjs'), 'utf8');
+  assert.match(smokeModule, /\(!isMac \|\| app\.getName\(\) === macSmokeName\)/);
 });

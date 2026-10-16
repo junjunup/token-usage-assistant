@@ -3,9 +3,9 @@ const fs = require('node:fs'),
   path = require('node:path'),
   assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
-const { SubscriptionClient } = require('./subscriptions.cjs');
-const { ClaudeCollector } = require('./claude-collector.cjs');
-const { connectCodex } = require('./codex-connect.cjs');
+const { SubscriptionClient } = require('../subscriptions.cjs');
+const { ClaudeCollector } = require('../claude-collector.cjs');
+const { connectCodex } = require('../codex-connect.cjs');
 async function until(win, expression) {
   const end = Date.now() + 6000;
   while (Date.now() < end) {

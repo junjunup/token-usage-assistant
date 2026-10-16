@@ -7,7 +7,7 @@ const { Associations } = require('../desktop/associations.cjs');
 const { associateRows, compareEvidence } = require('../desktop/association-rules.cjs');
 const { ToolSources } = require('../desktop/tool-sources.cjs');
 const { LocalStore } = require('../desktop/store.cjs');
-const { createZcode, createHarness, harnessWire } = require('../desktop/tool-fixture.cjs');
+const { createZcode, createHarness, harnessWire } = require('../desktop/smoke/tool-fixture.cjs');
 const now = new Date(2026, 8, 24, 12).getTime();
 function setup(t) {
   const root = path.resolve(__dirname, '../work/association-tests');

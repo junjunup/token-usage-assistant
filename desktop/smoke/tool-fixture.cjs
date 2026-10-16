@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
-const { VERSION, COMMIT } = require('./harness-reader.cjs');
+const { VERSION, COMMIT } = require('../harness-reader.cjs');
 function harnessWire(now = Date.now(), patch = {}) {
   return {
     schema: 'token-usage-assistant.harness',

@@ -7,7 +7,7 @@ const { DatabaseSync } = require('node:sqlite');
 const { ToolSources } = require('../desktop/tool-sources.cjs');
 const { LocalStore, atomicWrite } = require('../desktop/store.cjs');
 const { AnalyticsService } = require('../desktop/analytics-service.cjs');
-const { harnessWire, createHarness, createZcode } = require('../desktop/tool-fixture.cjs');
+const { harnessWire, createHarness, createZcode } = require('../desktop/smoke/tool-fixture.cjs');
 const now = Date.now();
 function setup(t) {
   const root = path.resolve(__dirname, '../work/tool-source-tests');
