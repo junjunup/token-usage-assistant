@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，私有仓库 https://github.com/junjunup/commandcode-companion（`main`），最新标签 `v1.8.0-beta.6`（上一个 `v1.8.0-beta.5`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–3（T1.1–T3.4）已完成；阶段 4 的 T4.0 性能基线已完成（[docs/perf-baseline.md](docs/perf-baseline.md)，真实数据下没有任何一项超过阈值）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。beta.6 的四种安装包由 CI 产出（`release-v1.8.0-beta.6/`，报告在 `docs/verification-1.8.0-beta.6/`）；私有仓库中的 Release 已发布为 prerelease；Publish 演练已通过，但用户决定暂不公开发布（公开仓库仍没有任何 Release）；beta.5 及更早的 Windows 双包在旧 Windows 机器上。T2.3 起，四种安装包可以由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库为 https://github.com/junjunup/TokenUsageAssistant（只放安装包），由手动触发的 Publish 工作流发布，尚未发布过任何版本。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/commandcode-companion` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 260 项，257 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
+- 测试基线：`pnpm run test:desktop` 共 265 项，262 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、68 个警告（T1.5 处理后；其中 22 处为注明原因的逐行禁用，12 处 React hooks 的真正重构待另开任务，见改进计划第 5 节）。
 
 ## 2. 各能力证据等级
 
@@ -41,7 +41,7 @@
 | `desktop/widget-bounds.cjs` | 悬浮窗展开/收起时的位置计算 |
 | `desktop/store.cjs` | 加密本地存储（DPAPI / Keychain）、`atomicWrite`、设置 |
 | `desktop/logger.cjs` | 本机诊断日志（`logs/app.log`，JSON Lines，白名单字段 + 脱敏，1 MB 轮转保留 3 份；T3.2） |
-| `desktop/accounts.cjs`、`monitor.cjs`、`history.cjs` | 多账户管理、单账户轮询、额度历史（`history.json`） |
+| `desktop/accounts.cjs`、`monitor.cjs`、`history-db.cjs`、`history.cjs` | 多账户管理、单账户轮询、额度历史（T4.1 起存 `history.sqlite`；`history.cjs` 是数据库打不开时的 JSON 兜底，也用于迁移） |
 | `desktop/api.cjs` | Command Code 客户端 |
 | `desktop/providers.cjs`、`provider-catalog.cjs`、`provider-domain.cjs` | GLM / MiniMax / 火山 / DeepSeek / OpenCode Go 客户端、平台目录、额度归一化 |
 | `desktop/balance-domain.cjs` | DeepSeek 余额归一化与金额格式 |
@@ -65,7 +65,8 @@
 |---|---|
 | `settings.json` | 偏好和窗口位置 |
 | `accounts.encrypted.json` | 账户列表（加密） |
-| `accounts/<id>/credentials.encrypted.json`、`snapshot.json`、`history.json` | 单个账户的凭据（加密）、最近快照、额度历史 |
+| `accounts/<id>/credentials.encrypted.json`、`snapshot.json`、`history.json` | 单个账户的凭据（加密）、最近快照；`history.json` 自 T4.1 起只读（迁移来源，保留用于回滚） |
+| `history.sqlite`（及 `-wal`/`-shm`） | 所有账户的额度历史，按账户指纹区分；删除账户时一并删除其记录 |
 | `tool-sources.json`、`tool-source-status.json` | 工具来源配置、最近成功时间 |
 | `tool-usage.sqlite` | 助手自己的工具元数据索引（不含正文） |
 | `local-source.json`、`local-pricing.json` | 1.3 旧 Zcode 来源（保留用于回退）、本机单价 |
