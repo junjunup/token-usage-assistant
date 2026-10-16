@@ -1,9 +1,13 @@
 // T4.0: time HistoryStore.append() (synchronous whole-file rewrite) on synthetic records in a temp directory.
-// Never reads real user data. Usage: node scripts/perf/history-write.cjs [count ...]
+// Never reads real user data. Usage: node scripts/perf/history-write.cjs [--sqlite] [count ...]
+// --sqlite measures the T4.1 SqliteHistoryStore instead (history.json is migrated once, then never written).
 const fs = require('node:fs'),
   os = require('node:os'),
   path = require('node:path');
 const { HistoryStore } = require('../../desktop/history.cjs');
+const { HistoryDatabase, createHistory } = require('../../desktop/history-db.cjs');
+
+const sqlite = process.argv.includes('--sqlite');
 
 const counts = process.argv
   .slice(2)
@@ -42,7 +46,8 @@ try {
         records: Array.from({ length: count }, (_, i) => record(start + i * 60000)),
       }),
     );
-    const store = new HistoryStore(file);
+    const database = sqlite ? new HistoryDatabase(path.join(root, `history-${count}.sqlite`)) : null;
+    const store = sqlite ? createHistory(database, file) : new HistoryStore(file);
     store.configure('perf');
     const times = [];
     for (let i = 0; i < 30; i++) {
@@ -52,10 +57,11 @@ try {
       store.append({ parts: { summary: r.summary, credits: r.credits }, updatedAt: { summary: t, credits: t } });
       times.push(Number(process.hrtime.bigint() - begin) / 1e6);
     }
+    database?.close();
     times.sort((a, b) => a - b);
     results.push({
       records: store.records.length,
-      bytes: fs.statSync(file).size,
+      bytes: fs.statSync(sqlite ? path.join(root, `history-${count}.sqlite`) : file).size,
       medianMs: +times[14].toFixed(2),
       p95Ms: +times[28].toFixed(2),
       maxMs: +times[29].toFixed(2),
@@ -65,5 +71,15 @@ try {
   fs.rmSync(root, { recursive: true, force: true });
 }
 console.log(
-  JSON.stringify({ node: process.version, platform: process.platform, arch: process.arch, results }, null, 2),
+  JSON.stringify(
+    {
+      store: sqlite ? 'sqlite' : 'json',
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      results,
+    },
+    null,
+    2,
+  ),
 );
