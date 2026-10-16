@@ -103,7 +103,8 @@ test('log tail returns the newest sanitized lines across rotated files and drops
   const text = tail.join('\n');
   for (const forbidden of [secret, home, 'not json', 'message']) assert.equal(text.includes(forbidden), false);
   const parsed = tail.map((line) => JSON.parse(line));
-  assert.equal(parsed.at(-1).module, '[path]');
+  // A home path is replaced either way: '[path]' (POSIX) or 'other' (backslashes fail the identifier check).
+  assert.ok(['[path]', 'other'].includes(parsed.at(-1).module));
   assert.equal(parsed.at(-2).count, 11, 'newest real entry kept, in order');
   assert.equal(sanitizeLine('{"level":"debug","t":"1970-01-01T00:00:00.000Z"}'), null);
   assert.deepEqual(new Logger().tail(), [], 'unconfigured logger returns nothing');
