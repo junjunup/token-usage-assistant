@@ -8,6 +8,7 @@ files:
   - dist/client/**/*
   - package.json
   - '!desktop/**/*.test.cjs'
+  - '!desktop/island-poc/**' # T7.1 POC: development only
 asar: true
 npmRebuild: false
 win:

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'none'; connect-src 'none'"
+    />
+    <title>Island POC</title>
+    <link rel="stylesheet" href="island.css" />
+  </head>
+  <body>
+    <div id="island" class="island">
+      <div id="left" class="ear"></div>
+      <div id="right" class="ear"></div>
+    </div>
+    <div id="panel" class="panel" aria-hidden="true">
+      <div class="row">
+        <span class="label">5 小时窗口</span><span class="bar" data-value="62"></span><span class="num">62%</span
+        ><span class="reset">2 小时 14 分后重置</span>
+      </div>
+      <div class="row">
+        <span class="label">每周额度</span><span class="bar" data-value="78"></span><span class="num">78%</span
+        ><span class="reset">周一 09:00 重置</span>
+      </div>
+      <div class="cells">
+        <div><small>Token</small><b class="token">1.24M</b></div>
+        <div><small>估算费用</small><b>$3.18</b></div>
+        <div><small>余额</small><b>¥ 86.40</b></div>
+      </div>
+      <div class="footer"><span class="sample">POC 示例数据，非真实账户</span><span>主窗口 ›</span></div>
+    </div>
+    <script src="island.js"></script>
+  </body>
+</html>
