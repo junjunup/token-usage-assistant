@@ -1,0 +1,173 @@
+/* Menu-bar POC (T7.3) panel. Tokens copied from src/styles.css (.app / .app.dark). */
+:root {
+  --bg: #fff;
+  --fg: #18181b;
+  --muted: #73737d;
+  --line: #e9e9ec;
+  --green: #10b981;
+  --green-pale: #e0f6ed;
+  --purple: #ae52e8;
+  --amber: #ba7917;
+}
+.dark {
+  --bg: #141416;
+  --fg: #ededee;
+  --muted: #aaaab0;
+  --line: #303034;
+  --green: #36c793;
+  --green-pale: #1e3b31;
+  --purple: #bb7ae8;
+  --amber: #e3ad57;
+}
+html,
+body {
+  margin: 0;
+  background: transparent;
+  font:
+    13px -apple-system,
+    'PingFang SC',
+    sans-serif;
+  color: var(--fg);
+  user-select: none;
+  cursor: default;
+}
+.pop {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.head,
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+}
+.head {
+  border-bottom: 1px solid var(--line);
+}
+.acct {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.acct small,
+.muted {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.sec {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.q + .q {
+  margin-top: 12px;
+}
+.meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.meta b,
+.cells b,
+.mono {
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.reset {
+  margin-top: 5px;
+}
+.segments {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+}
+.segments span {
+  flex: 1;
+  background: var(--green-pale);
+}
+.segments span.on {
+  background: var(--green);
+}
+.cells {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.cells div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.cells small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.cells b {
+  font-size: 15px;
+  font-weight: 500;
+}
+.cells b.token {
+  color: var(--purple);
+}
+.cells em {
+  display: block;
+  font-style: normal;
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 3px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 12px;
+}
+.chip.sel {
+  border-color: var(--fg);
+}
+.chip .mono {
+  color: var(--muted);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  display: inline-block;
+}
+.dot.amber {
+  background: var(--amber);
+}
+.foot {
+  font-size: 12px;
+}
+.tag {
+  color: var(--amber);
+  font-size: 11px;
+}
