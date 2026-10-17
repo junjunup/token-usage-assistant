@@ -9,6 +9,7 @@ files:
   - package.json
   - '!desktop/**/*.test.cjs'
   - '!desktop/island-poc/**' # T7.1 POC: development only
+  - '!desktop/menubar-poc/**' # T7.3 POC: development only
 asar: true
 npmRebuild: false
 win:

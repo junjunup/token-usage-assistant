@@ -52,6 +52,8 @@ const smokeDirArg = process.argv.find((a) => a.startsWith('--test-directory='));
 const smokeMode = smoke ? require('./smoke/index.cjs') : null;
 // Island POC (T7.1): development only, never in a package (the directory is excluded by electron-builder.yml).
 const islandPoc = !app.isPackaged && process.env.TUA_ISLAND_POC === '1' && isMac;
+// Menu-bar POC (T7.3): development only, excluded from packages like the island POC.
+const menubarPoc = !app.isPackaged && process.env.TUA_MENUBAR_POC === '1' && isMac;
 if (isMac) {
   // Packaged: ~/Library/Application Support/TokenUsageAssistant (unchanged). Development: TokenUsageAssistant-Dev.
   const macName = macDataName(app.isPackaged);
@@ -59,9 +61,9 @@ if (isMac) {
   app.setName(smoke ? macSmokeName : macName);
   app.setPath('userData', path.join(app.getPath('appData'), macName));
 }
-if (smoke || islandPoc) {
+if (smoke || islandPoc || menubarPoc) {
   if (!smokeDirArg)
-    throw new Error(smoke ? 'Smoke test requires an isolated directory' : 'Island POC requires an isolated directory');
+    throw new Error(smoke ? 'Smoke test requires an isolated directory' : 'POC requires an isolated directory');
   const testDir = path.resolve(smokeDirArg.slice('--test-directory='.length));
   app.setPath('userData', fs.existsSync(testDir) ? fs.realpathSync(testDir) : testDir);
 }
@@ -860,8 +862,9 @@ else {
           icon = icon.resize({ width: 18, height: 18 });
           icon.setTemplateImage(true);
         }
-        tray = new Tray(icon);
-        if (!isMac) {
+        // T7.3 POC only: let the POC status item stand in for this one to measure the real space.
+        tray = menubarPoc && process.env.TUA_MENUBAR_REPLACE === '1' ? null : new Tray(icon);
+        if (tray && !isMac) {
           tray.on('click', showMain);
           tray.on('double-click', showMain);
         }
@@ -912,6 +915,7 @@ else {
       widgetWindow = secureWindow('widget');
       installIpc();
       if (islandPoc) require(path.join(__dirname, 'island-poc', 'index.cjs')).start();
+      if (menubarPoc) require(path.join(__dirname, 'menubar-poc', 'index.cjs')).start();
       if (smokeMode) smokeRun = smokeMode.attach(smokeContext());
       else accounts.refreshAll();
       updates = new UpdateChecker({
