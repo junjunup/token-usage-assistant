@@ -192,6 +192,7 @@
 
 | 文件 | 内容 |
 |---|---|
+| `menubar-proposals.html`、`menubar/` | T7.1b 菜单栏图标三种形态与弹出面板的浅色 / 深色草图（待用户选定） |
 | `POC-REPORT.md`、`poc/` | T7.1 刘海 POC 的实测报告与截图（开发机 POC） |
 | `proposals.html` 及 `island-*.png` | 2026-10 初的耳区方案定稿页与分区截图（已作废，留作记录；面板部分仍可参考） |
 | `alert-takeover.html` / `.png` | 告警整耳接管参考稿（随耳区作废） |
