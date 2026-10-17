@@ -50,6 +50,8 @@ const smoke = process.argv.includes('--smoke-test');
 const smokeDirArg = process.argv.find((a) => a.startsWith('--test-directory='));
 // Everything that only runs in smoke mode lives in desktop/smoke/ (T5.4).
 const smokeMode = smoke ? require('./smoke/index.cjs') : null;
+// Island POC (T7.1): development only, never in a package (the directory is excluded by electron-builder.yml).
+const islandPoc = !app.isPackaged && process.env.TUA_ISLAND_POC === '1' && isMac;
 if (isMac) {
   // Packaged: ~/Library/Application Support/TokenUsageAssistant (unchanged). Development: TokenUsageAssistant-Dev.
   const macName = macDataName(app.isPackaged);
@@ -57,8 +59,9 @@ if (isMac) {
   app.setName(smoke ? macSmokeName : macName);
   app.setPath('userData', path.join(app.getPath('appData'), macName));
 }
-if (smoke) {
-  if (!smokeDirArg) throw new Error('Smoke test requires an isolated directory');
+if (smoke || islandPoc) {
+  if (!smokeDirArg)
+    throw new Error(smoke ? 'Smoke test requires an isolated directory' : 'Island POC requires an isolated directory');
   const testDir = path.resolve(smokeDirArg.slice('--test-directory='.length));
   app.setPath('userData', fs.existsSync(testDir) ? fs.realpathSync(testDir) : testDir);
 }
@@ -908,6 +911,7 @@ else {
       mainWindow = secureWindow('main');
       widgetWindow = secureWindow('widget');
       installIpc();
+      if (islandPoc) require(path.join(__dirname, 'island-poc', 'index.cjs')).start();
       if (smokeMode) smokeRun = smokeMode.attach(smokeContext());
       else accounts.refreshAll();
       updates = new UpdateChecker({
