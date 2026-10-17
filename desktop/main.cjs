@@ -43,6 +43,7 @@ const {
 const { windowIcon, taskbarDetails } = require('./branding.cjs');
 const { log } = require('./logger.cjs');
 const { buildDiagnostics } = require('./diagnostics.cjs');
+const { MenubarIcon } = require('./menubar-icon.cjs');
 const isMac = process.platform === 'darwin';
 const APP_ORIGIN = 'companion://app';
 const APP_ID = 'local.commandcode.tokenusageassistant';
@@ -76,6 +77,7 @@ if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 let mainWindow,
   widgetWindow,
   tray,
+  menubar,
   store,
   settings,
   bounds = {},
@@ -358,6 +360,8 @@ function percent(v) {
 }
 function updateTray() {
   if (!tray || !settings) return;
+  // T7.5: the Mac menu-bar icon shows the most urgent account window (desktop/menubar-icon.cjs).
+  menubar?.update(accounts?.summaries() || [], settings);
   const credit = monitor?.state.parts.credits;
   const balance = monitor?.state.parts.balance;
   const lines =
@@ -770,6 +774,9 @@ function smokeContext() {
     get tray() {
       return tray;
     },
+    get menubar() {
+      return menubar;
+    },
     get accounts() {
       return accounts;
     },
@@ -868,6 +875,7 @@ else {
           tray.on('click', showMain);
           tray.on('double-click', showMain);
         }
+        if (tray && isMac) menubar = new MenubarIcon({ tray, staticImage: icon });
       } catch {
         log.warn('main', 'tray-failed');
         tray = null;
@@ -943,6 +951,7 @@ else {
   });
   app.on('before-quit', () => {
     quitting = true;
+    menubar?.dispose();
     accounts?.dispose();
     toolSources?.dispose();
     claudeCollector?.close();
