@@ -115,6 +115,27 @@ class AccountManager extends EventEmitter {
       })),
     };
   }
+  // Menu-bar status input (T7.4): read-only, only the fields desktop/menubar-status.cjs needs. No credentials.
+  summaries() {
+    return this.entries.map((e) => {
+      const state = this.runtimes.get(e.id)?.monitor.state;
+      return {
+        id: e.id,
+        label: e.label,
+        provider: e.provider,
+        active: e.id === this.activeId,
+        capabilities: providerInfo(e.provider)?.capabilities || null,
+        status: state?.status || 'stale',
+        parts: {
+          credits: state?.parts.credits,
+          balance: state?.parts.balance,
+          summary: state?.parts.summary,
+          subscription: state?.parts.subscription,
+        },
+        updatedAt: { ...(state?.updatedAt || {}) },
+      };
+    });
+  }
   emitState() {
     if (!this.disposed) this.emit('change');
   }
