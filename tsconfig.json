@@ -17,6 +17,7 @@
     "desktop/balance-domain.cjs",
     "desktop/analytics-core.cjs",
     "desktop/tool-analytics.cjs",
-    "desktop/association-rules.cjs"
+    "desktop/association-rules.cjs",
+    "desktop/menubar-status.cjs"
   ]
 }
