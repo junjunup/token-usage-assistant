@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>T7.1b 菜单栏图标与弹出面板草图</title>
+    <link rel="stylesheet" href="../../node_modules/@fontsource/geist/400.css" />
+    <link rel="stylesheet" href="../../node_modules/@fontsource/geist/500.css" />
+    <link rel="stylesheet" href="../../node_modules/@fontsource/geist/600.css" />
+    <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/400.css" />
+    <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/500.css" />
+    <style>
+      /* Design tokens copied from src/styles.css (.app and .app.dark). */
+      .light {
+        --bg: #fff;
+        --fg: #18181b;
+        --muted: #73737d;
+        --line: #e9e9ec;
+        --soft: #fafafa;
+        --green: #10b981;
+        --green-pale: #e0f6ed;
+        --purple: #ae52e8;
+        --amber: #ba7917;
+        --amber-pale: #fff0d6;
+        --red: #dc4c57;
+        /* menu bar */
+        --bar: rgba(246, 246, 248, 0.82);
+        --bar-fg: rgba(0, 0, 0, 0.85);
+        --wall: linear-gradient(135deg, #c9d7e8, #e8dccf 55%, #d9c6c0);
+      }
+      .dark {
+        --bg: #141416;
+        --fg: #ededee;
+        --muted: #aaaab0;
+        --line: #303034;
+        --soft: #1b1b1e;
+        --green: #36c793;
+        --green-pale: #1e3b31;
+        --purple: #bb7ae8;
+        --amber: #e3ad57;
+        --amber-pale: #453822;
+        --red: #ee7580;
+        --bar: rgba(28, 28, 32, 0.78);
+        --bar-fg: rgba(255, 255, 255, 0.9);
+        --wall: linear-gradient(135deg, #1d2433, #2b2230 55%, #3a2a26);
+      }
+      body {
+        margin: 0;
+        background: #f3f3f5;
+        font-family: 'Geist', -apple-system, 'PingFang SC', sans-serif;
+        color: #18181b;
+      }
+      .page {
+        width: 1240px;
+        margin: 0 auto;
+        padding: 40px 40px 56px;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0 0 6px;
+      }
+      h2 {
+        font-size: 17px;
+        font-weight: 600;
+        margin: 40px 0 4px;
+      }
+      .sub {
+        color: #73737d;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .sample {
+        display: inline-block;
+        font-size: 12px;
+        color: #ba7917;
+        background: #fff0d6;
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin-left: 6px;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 14px;
+      }
+      .card {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e3e3e7;
+        background: var(--wall);
+      }
+      .card .cap {
+        font-size: 12px;
+        padding: 8px 12px;
+        color: var(--bar-fg);
+        background: var(--bar);
+        border-top: 1px solid rgba(127, 127, 127, 0.18);
+      }
+      /* menu bar strip (real point sizes, then scaled with zoom) */
+      .bar {
+        height: 37px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 14px;
+        padding: 0 14px;
+        background: var(--bar);
+        color: var(--bar-fg);
+        font:
+          13px -apple-system,
+          'PingFang SC',
+          sans-serif;
+        font-variant-numeric: tabular-nums;
+        backdrop-filter: blur(20px);
+        white-space: nowrap;
+      }
+      .zoom2 {
+        zoom: 2;
+      }
+      .glyph {
+        width: 18px;
+        height: 18px;
+        opacity: 0.92;
+      }
+      .ours {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 24px;
+        padding: 0 4px;
+        border-radius: 5px;
+        outline: 1px dashed rgba(127, 127, 127, 0.55);
+        outline-offset: 1px;
+      }
+      .ours.open {
+        background: rgba(127, 127, 127, 0.22);
+        outline: none;
+      }
+      .ours .num {
+        font-size: 13px;
+        letter-spacing: -0.1px;
+      }
+      .ours .two {
+        display: flex;
+        flex-direction: column;
+        font-size: 9.5px;
+        line-height: 10.5px;
+        letter-spacing: -0.1px;
+      }
+      .ours .two b {
+        font-weight: 400;
+        opacity: 0.6;
+        margin-right: 2px;
+      }
+      .ours .amber {
+        color: var(--amber);
+      }
+      .ours .red {
+        color: var(--red);
+      }
+      .notch {
+        width: 185px;
+        height: 32px;
+        background: #000;
+        border-radius: 0 0 10px 10px;
+        align-self: flex-start;
+        margin-right: auto;
+        margin-left: 300px;
+      }
+      /* state table */
+      table.states {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 14px;
+        font-size: 12px;
+      }
+      table.states th,
+      table.states td {
+        text-align: center;
+        padding: 0;
+        border: 1px solid #e3e3e7;
+      }
+      table.states th {
+        background: #fafafa;
+        font-weight: 500;
+        color: #52525b;
+        padding: 6px 4px;
+      }
+      table.states th.rowh {
+        width: 130px;
+        text-align: left;
+        padding-left: 10px;
+      }
+      table.states td .bar {
+        justify-content: center;
+        padding: 0;
+      }
+      .note {
+        font-size: 12px;
+        color: #73737d;
+        line-height: 1.7;
+        margin-top: 8px;
+      }
+      .note b {
+        color: #18181b;
+        font-weight: 500;
+      }
+      /* popover */
+      .scene {
+        position: relative;
+        height: 560px;
+      }
+      .scene .bar {
+        position: absolute;
+        inset: 0 0 auto 0;
+      }
+      .pop {
+        position: absolute;
+        top: 46px;
+        right: 12px;
+        width: 360px;
+        background: var(--bg);
+        color: var(--fg);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+        font-size: 13px;
+      }
+      .pop::before {
+        content: '';
+        position: absolute;
+        top: -7px;
+        left: var(--arrow, 300px);
+        width: 12px;
+        height: 12px;
+        background: var(--bg);
+        border-left: 1px solid var(--line);
+        border-top: 1px solid var(--line);
+        transform: rotate(45deg);
+      }
+      .pop .head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+      .pop .acct {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+      }
+      .pop .acct small {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 12px;
+      }
+      .pop .fresh {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .pop .sec {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .q {
+        margin-bottom: 12px;
+      }
+      .q:last-child {
+        margin-bottom: 0;
+      }
+      .q .meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 6px;
+      }
+      .q .meta .label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .q .meta .pct {
+        font-family: 'Geist Mono', monospace;
+        font-size: 15px;
+        font-weight: 500;
+      }
+      .q .reset {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .segments {
+        height: 12px;
+        display: flex;
+        gap: 2px;
+        --fill: var(--green);
+        --empty: var(--green-pale);
+      }
+      .segments span {
+        flex: 1;
+        background: var(--empty);
+      }
+      .segments span.filled {
+        background: var(--fill);
+      }
+      .segments.amber {
+        --fill: var(--amber);
+        --empty: var(--amber-pale);
+      }
+      .cells {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .cells div {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+      .cells small {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+      .cells b {
+        font:
+          500 15px 'Geist Mono',
+          monospace;
+      }
+      .cells b.token {
+        color: var(--purple);
+      }
+      .cells em {
+        display: block;
+        font-style: normal;
+        color: var(--muted);
+        font-size: 10.5px;
+        margin-top: 3px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 12px;
+      }
+      .chip.sel {
+        border-color: var(--fg);
+      }
+      .chip i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+      .chip i.amber {
+        background: var(--amber);
+      }
+      .chip .mono {
+        font-family: 'Geist Mono', monospace;
+        color: var(--muted);
+      }
+      .pop .foot {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .pop .foot a {
+        color: var(--fg);
+        text-decoration: none;
+      }
+      .pop .tag {
+        color: var(--amber);
+        font-size: 11px;
+      }
+      .ctx {
+        position: absolute;
+        top: 46px;
+        left: 12px;
+        width: 168px;
+        border-radius: 8px;
+        background: var(--bar);
+        color: var(--bar-fg);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        font:
+          13px -apple-system,
+          'PingFang SC',
+          sans-serif;
+        padding: 5px 0;
+        border: 1px solid rgba(127, 127, 127, 0.2);
+      }
+      .ctx div {
+        padding: 3px 12px;
+      }
+      .ctx hr {
+        border: 0;
+        border-top: 1px solid rgba(127, 127, 127, 0.25);
+        margin: 5px 0;
+      }
+      .ctx .cap2 {
+        font-size: 11px;
+        opacity: 0.6;
+        padding: 0 12px 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>菜单栏图标与弹出面板草图（T7.1b）<span class="sample">示例数据，非真实账户</span></h1>
+      <div class="sub">
+        虚线框是本应用的菜单栏图标，其余是通用示意图标（电池、Wi‑Fi、控制中心、时间）。三种形态都基于已批准的品牌环：<b
+          >100% 时就是原 Logo</b
+        >，剩余越少，沿环（从上方缺口起顺时针）亮起的部分越短；没亮的部分以浅色显示。平时单色（跟随菜单栏明暗），只在告警时变琥珀 / 红色。
+      </div>
+
+      <h2>一、三种形态在菜单栏中的样子（2 倍放大）</h2>
+      <div class="sub">左浅色菜单栏，右深色菜单栏。示例：5 小时窗口剩余 62%，每周剩余 78%。</div>
+      <div id="forms"></div>
+
+      <h2>二、各状态对照（2 倍放大）</h2>
+      <div class="sub">
+        同一形态在不同数据状态下的表现。告警阈值沿用现有规则：剩余 &lt;20% 琥珀、&lt;10% 红；缺数据不告警。
+      </div>
+      <div id="states"></div>
+      <div class="note">
+        <b>① 只有刻度环的局限</b>：「缺数据」「窗口未启用」「余额账户」三种情况环都不点亮，外观相同，只能靠悬停提示和面板区分；余额没有分母，按红线不能把环当余额仪表。<br />
+        <b>③ 两行小字</b>的标签取自窗口名称的缩写（如「5h」「周」）；平台只给出一个窗口时只显示一行（例如余额账户）。<br />
+        <b>宽度（以「62%」为例，含左右边距，页面实测）</b>：① 26pt，② 58pt，③ 63pt；「未启用」「¥86.40」等更长的文字会更宽。T7.1 实测本机刘海右侧到第一个状态栏图标只剩约 71pt；放不下时系统会把图标直接藏到刘海后面，不给提示。
+      </div>
+
+      <h2>三、弹出面板（左键点击图标）</h2>
+      <div class="sub">
+        面板跟随应用的浅色 / 深色主题，宽 360pt，定位在图标正下方。再点图标、点面板外、按 Esc 或切换应用时收起。右键仍弹出现有的原生菜单（左侧小图为示意）。
+      </div>
+      <div class="grid2">
+        <div class="card light">
+          <div class="scene" id="scene-light"></div>
+          <div class="cap">浅色</div>
+        </div>
+        <div class="card dark">
+          <div class="scene" id="scene-dark"></div>
+          <div class="cap">深色</div>
+        </div>
+      </div>
+      <div class="note">
+        <b>面板内容</b>：当前账户 → 两个额度窗口（分段条 + 重置时间）→ Token / 估算费用 / 余额三格（此示例账户没有余额接口，显示「—」，不显示 0）→
+        其他账户（点击切换，琥珀圆点表示告警）→ 底部「官方用量页 ›」「主窗口 ›」。费用是按用户单价的估算，不是账单。
+      </div>
+    </div>
+
+    <script>
+      // Brand mark path from desktop/assets/brand-mark.svg (viewBox -32 -32 576 576, centre 256,256).
+      const MARK =
+        'M 238.484 33.501 C 145.771 44.168, 70.496 104.882, 41.971 192 C 29.841 229.048, 28.610 271.830, 38.540 311.301 C 47.761 347.954, 69.090 384.505, 97.700 412.683 C 158.303 472.371, 248.638 493.685, 327 466.785 C 410.968 437.962, 470.500 362.701, 479.101 274.500 C 480.774 257.340, 479.112 222.987, 476.610 223.011 C 476 223.016, 462 228.795, 445.500 235.852 L 415.500 248.682 414.815 260.991 C 413.639 282.119, 410.205 297.976, 402.962 315.725 C 382.925 364.820, 339.398 400.696, 286 412.128 C 271.829 415.162, 239.395 415.473, 225.500 412.709 C 158.431 399.367, 109.498 350.408, 96.357 283.500 C 93.431 268.605, 93.884 241.979, 97.342 225.621 C 108.734 171.720, 144.982 128.586, 195.609 108.687 C 220.378 98.951, 252.145 95.340, 278.287 99.288 C 284.433 100.217, 287.325 100.298, 287.909 99.558 C 290.590 96.160, 320.091 39.956, 319.605 39.171 C 318.900 38.029, 300.039 34.415, 287.500 33.019 C 275.602 31.694, 252.192 31.924, 238.484 33.501 M 339.579 82.643 C 330.435 98.947, 323.076 112.377, 323.227 112.487 C 323.377 112.597, 327.252 114.666, 331.839 117.083 C 364.402 134.251, 394.398 169.818, 406.493 205.603 L 409.231 213.707 412.866 211.966 C 414.865 211.008, 428.200 205.169, 442.500 198.990 C 456.800 192.811, 468.858 187.430, 469.296 187.032 C 470.414 186.015, 464.816 169.057, 459.072 156.065 C 443.723 121.341, 416.807 89.126, 385.490 67.993 C 376.738 62.088, 359.936 53, 357.769 53 C 356.759 53, 350.314 63.504, 339.579 82.643';
+      let uid = 0;
+      // p = remaining ratio 0..1, or null (ring not used as a gauge: only the dim track is drawn).
+      function ring(p, fill) {
+        const id = 'm' + uid++;
+        const start = -84; // the top gap, degrees, clockwise from +x in screen coordinates
+        let wedge = '';
+        if (p !== null && p > 0) {
+          if (p >= 1) wedge = `<rect x="-40" y="-40" width="600" height="600" />`;
+          else {
+            const a0 = (start * Math.PI) / 180,
+              a1 = ((start + 360 * p) * Math.PI) / 180,
+              r = 400;
+            const x0 = 256 + r * Math.cos(a0),
+              y0 = 256 + r * Math.sin(a0),
+              x1 = 256 + r * Math.cos(a1),
+              y1 = 256 + r * Math.sin(a1);
+            wedge = `<path d="M256 256 L${x0} ${y0} A${r} ${r} 0 ${p > 0.5 ? 1 : 0} 1 ${x1} ${y1} Z" />`;
+          }
+        }
+        return `<svg class="glyph" viewBox="-32 -32 576 576"><defs><clipPath id="${id}"><path d="${MARK}" fill-rule="evenodd"/></clipPath></defs>
+          <path d="${MARK}" fill="currentColor" fill-rule="evenodd" opacity="0.28"/>
+          <g clip-path="url(#${id})" fill="${fill}">${wedge}</g></svg>`;
+      }
+      const tone = (p) => (p === null ? '' : p < 0.1 ? 'red' : p < 0.2 ? 'amber' : '');
+      const color = (p) => (tone(p) ? `var(--${tone(p)})` : 'currentColor');
+      const pct = (p) => (p === null ? '—' : Math.round(p * 100) + '%');
+
+      // state: { p, text, lines: [[label, text, p]] }
+      function item(form, s, open) {
+        const g = ring(s.p, color(s.p));
+        const cls = 'ours' + (open ? ' open' : '');
+        if (form === 1) return `<span class="${cls}">${g}</span>`;
+        if (form === 2) return `<span class="${cls}">${g}<span class="num ${tone(s.p)}">${s.text}</span></span>`;
+        const rows = s.lines
+          .map(([l, t, q]) => `<span class="${tone(q)}"><b>${l}</b>${t}</span>`)
+          .join('');
+        return `<span class="${cls}">${g}<span class="two">${rows}</span></span>`;
+      }
+      const glyphs = `
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="7" width="17" height="10" rx="2.5"/><rect x="4" y="9" width="10" height="6" rx="1" fill="currentColor" stroke="none"/><path d="M21 10.5v3"/></svg>
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9.5a13 13 0 0 1 18 0"/><path d="M6 12.8a8.5 8.5 0 0 1 12 0"/><path d="M9 16a4 4 0 0 1 6 0"/><circle cx="12" cy="19" r="0.9" fill="currentColor"/></svg>
+        <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="6" rx="3"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/><rect x="3" y="13" width="18" height="6" rx="3"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg>
+        <span>周六 9:41</span>`;
+      const normal = {
+        p: 0.62,
+        text: '62%',
+        lines: [
+          ['5h', '62%', 0.62],
+          ['周', '78%', 0.78],
+        ],
+      };
+      const bar = (form, s, open, extra = '') =>
+        `<div class="bar">${extra}${item(form, s, open)}${glyphs}</div>`;
+
+      const forms = [
+        [1, '① 只有刻度环', '宽度与现在的图标相同；看不到具体数字。'],
+        [2, '② 刻度环 + 一个数值', '显示最紧急窗口的剩余比例（或余额账户的余额）。'],
+        [3, '③ 两行小字', '同一账户的两个窗口各占一行，字号约 9.5pt。'],
+      ];
+      document.getElementById('forms').innerHTML = forms
+        .map(
+          ([f, title, desc]) => `
+        <div class="sub" style="margin-top:18px;color:#18181b;font-weight:500">${title}<span style="color:#73737d;font-weight:400;margin-left:8px">${desc}</span></div>
+        <div class="grid2" style="margin-top:8px">
+          <div class="card light"><div class="zoom2">${bar(f, normal)}</div></div>
+          <div class="card dark"><div class="zoom2">${bar(f, normal)}</div></div>
+        </div>`,
+        )
+        .join('');
+
+      const states = [
+        ['正常', normal],
+        [
+          '琥珀告警',
+          {
+            p: 0.15,
+            text: '15%',
+            lines: [
+              ['5h', '15%', 0.15],
+              ['周', '64%', 0.64],
+            ],
+          },
+        ],
+        [
+          '红色告警',
+          {
+            p: 0.06,
+            text: '6%',
+            lines: [
+              ['5h', '6%', 0.06],
+              ['周', '41%', 0.41],
+            ],
+          },
+        ],
+        [
+          '缺数据',
+          {
+            p: null,
+            text: '—',
+            lines: [
+              ['5h', '—', null],
+              ['周', '—', null],
+            ],
+          },
+        ],
+        [
+          '5h 窗口未启用',
+          {
+            p: null,
+            text: '未启用',
+            lines: [
+              ['5h', '未启用', null],
+              ['周', '78%', 0.78],
+            ],
+          },
+        ],
+        ['余额账户', { p: null, text: '¥86.40', lines: [['余额', '¥86.40', null]] }],
+      ];
+      const cell = (f, s, theme) =>
+        `<td class="${theme}" style="background:var(--wall)"><div class="zoom2"><div class="bar">${item(f, s)}</div></div></td>`;
+      document.getElementById('states').innerHTML = ['light', 'dark']
+        .map(
+          (theme) => `
+        <table class="states">
+          <tr><th class="rowh">${theme === 'light' ? '浅色菜单栏' : '深色菜单栏'}</th>${states.map(([n]) => `<th>${n}</th>`).join('')}</tr>
+          ${forms.map(([f, title]) => `<tr><th class="rowh">${title}</th>${states.map(([, s]) => cell(f, s, theme)).join('')}</tr>`).join('')}
+        </table>`,
+        )
+        .join('');
+
+      const seg = (p, cls = '') =>
+        `<div class="segments ${cls}">${Array.from({ length: 20 }, (_, i) => `<span class="${i < Math.round(p * 20) ? 'filled' : ''}"></span>`).join('')}</div>`;
+      const panel = `
+        <div class="pop">
+          <div class="head">
+            <div class="acct"><span style="color:var(--green)">${ring(1, 'currentColor').replace('class="glyph"', 'class="glyph" style="width:16px;height:16px"')}</span>Command Code <small>示例账户</small></div>
+            <div class="fresh">2 分钟前更新</div>
+          </div>
+          <div class="sec">
+            <div class="q"><div class="meta"><span class="label">5 小时窗口</span><span class="pct">62%</span></div>${seg(0.62)}<div class="reset">2 小时 14 分后重置</div></div>
+            <div class="q"><div class="meta"><span class="label">每周额度</span><span class="pct">78%</span></div>${seg(0.78)}<div class="reset">周一 09:00 重置</div></div>
+          </div>
+          <div class="sec">
+            <div class="cells">
+              <div><small>今日 Token</small><b class="token">1.24M</b><em>本机工具统计</em></div>
+              <div><small>估算费用</small><b>$3.18</b><em>按你的单价估算</em></div>
+              <div><small>余额</small><b>—</b><em>无余额接口</em></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="chips">
+              <span class="chip sel"><i></i>Command Code</span>
+              <span class="chip"><i class="amber"></i>GLM <span class="mono">15%</span></span>
+              <span class="chip"><i></i>DeepSeek <span class="mono">¥86.40</span></span>
+              <span class="chip"><span class="mono">+2</span></span>
+            </div>
+          </div>
+          <div class="foot"><a>官方用量页 ›</a><span class="tag">示例数据</span><a>主窗口 ›</a></div>
+        </div>`;
+      const ctx = `
+        <div class="ctx">
+          <div class="cap2">右键（现有原生菜单，示意）</div>
+          <div>打开用量总览</div><div>✓ 显示悬浮窗</div><div>刷新用量</div><hr/><div>开机启动</div><hr/><div>退出助手</div>
+        </div>`;
+      for (const t of ['light', 'dark'])
+        document.getElementById('scene-' + t).innerHTML =
+          `<div class="bar">${item(2, normal, true)}${glyphs}</div>` + panel + ctx;
+      // Point the panel's arrow at the menu bar item.
+      for (const scene of document.querySelectorAll('.scene')) {
+        const icon = scene.querySelector('.ours').getBoundingClientRect(),
+          pop = scene.querySelector('.pop');
+        pop.style.setProperty('--arrow', icon.left + icon.width / 2 - pop.getBoundingClientRect().left - 6 + 'px');
+      }
+    </script>
+  </body>
+</html>
