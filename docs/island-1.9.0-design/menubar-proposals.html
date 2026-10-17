@@ -432,7 +432,7 @@
 
       <h2>二、各状态对照（2 倍放大）</h2>
       <div class="sub">
-        同一形态在不同数据状态下的表现。告警阈值沿用现有规则：剩余 &lt;20% 琥珀、&lt;10% 红；缺数据不告警。
+        同一形态在不同数据状态下的表现。告警沿用应用现有规则：剩余低于「提醒阈值」（设置里 10 / 20 / 30%，默认 20%）为琥珀，额度用尽为红；缺数据不告警。
       </div>
       <div id="states"></div>
       <div class="note">
@@ -456,8 +456,8 @@
         </div>
       </div>
       <div class="note">
-        <b>面板内容</b>：当前账户 → 两个额度窗口（分段条 + 重置时间）→ Token / 估算费用 / 余额三格（此示例账户没有余额接口，显示「—」，不显示 0）→
-        其他账户（点击切换，琥珀圆点表示告警）→ 底部「官方用量页 ›」「主窗口 ›」。费用是按用户单价的估算，不是账单。
+        <b>面板内容</b>：当前账户 → 两个额度窗口（分段条 + 重置时间）→ Token / 费用 / 余额三格（此示例账户没有余额接口，显示「—」，不显示 0）→
+        其他账户（琥珀圆点表示低于提醒阈值）→ 底部「官方用量页 ›」「主窗口 ›」。三格只显示该账户接口返回的数据（这里的费用由平台返回，不是估算）；本机工具统计默认不属于任何账户，不进面板。点其他账户只切换面板里查看的账户，不改主窗口的当前账户。
       </div>
     </div>
 
@@ -488,7 +488,8 @@
           <path d="${MARK}" fill="currentColor" fill-rule="evenodd" opacity="0.28"/>
           <g clip-path="url(#${id})" fill="${fill}">${wedge}</g></svg>`;
       }
-      const tone = (p) => (p === null ? '' : p < 0.1 ? 'red' : p < 0.2 ? 'amber' : '');
+      // Existing app rule: below the reminder threshold (default 20%) is amber; exhausted is red.
+      const tone = (p) => (p === null ? '' : p <= 0 ? 'red' : p < 0.2 ? 'amber' : '');
       const color = (p) => (tone(p) ? `var(--${tone(p)})` : 'currentColor');
       const pct = (p) => (p === null ? '—' : Math.round(p * 100) + '%');
 
@@ -549,12 +550,12 @@
           },
         ],
         [
-          '红色告警',
+          '红色（额度用尽）',
           {
-            p: 0.06,
-            text: '6%',
+            p: 0,
+            text: '0%',
             lines: [
-              ['5h', '6%', 0.06],
+              ['5h', '0%', 0],
               ['周', '41%', 0.41],
             ],
           },
@@ -609,8 +610,8 @@
           </div>
           <div class="sec">
             <div class="cells">
-              <div><small>今日 Token</small><b class="token">1.24M</b><em>本机工具统计</em></div>
-              <div><small>估算费用</small><b>$3.18</b><em>按你的单价估算</em></div>
+              <div><small>今日 Token</small><b class="token">1.24M</b><em>账户接口</em></div>
+              <div><small>今日费用</small><b>$3.18</b><em>平台返回</em></div>
               <div><small>余额</small><b>—</b><em>无余额接口</em></div>
             </div>
           </div>
