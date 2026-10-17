@@ -28,7 +28,7 @@
    - 需要 secret `PUBLIC_RELEASE_TOKEN`：fine-grained token，只授权 `junjunup/TokenUsageAssistant`，权限只给 Contents: Read and write。令牌由用户自己创建和设置，不经过聊天。
    - 推送标签时**不会**自动公开发布。
 
-不打标签、只想拿到安装包时，可以在 Actions 页面手动运行 Release 工作流（workflow_dispatch）：只产出构建产物（Artifacts），不创建 Release。
+不打标签、只想拿到安装包时，可以在 Actions 页面手动运行 Release 工作流（workflow_dispatch）：只产出构建产物（Artifacts），不创建 Release。Release 工作流上传的 Artifacts 只保留 7 天（私有仓库的 Artifact 存储有配额，2026-10-18 曾因占满导致上传失败），需要的安装包请在 7 天内下载保存；打标签时 release 作业已把安装包附到草稿 Release 上，不受影响。
 
 ## 证据等级（必须如实写）
 

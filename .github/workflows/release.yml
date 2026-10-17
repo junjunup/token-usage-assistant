@@ -80,10 +80,13 @@ jobs:
         run: |
           [ -f work/upgrade-ci/upgrade-native-report.json ] || exit 0
           node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync("work/upgrade-ci/upgrade-native-report.json"));r.oldPackageSource="source rebuild of tag "+process.env.PREV_TAG+" (not a downloaded release binary)";fs.writeFileSync("release-out/upgrade-native-report.json",JSON.stringify(r,null,2)+"\n")'
+      # Artifacts only bridge the jobs of one run (the release job attaches the files to the draft release),
+      # so keep them for 7 days; private-repo artifact storage is limited (2026-10-18 quota incident).
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: windows
+          retention-days: 7
           if-no-files-found: error
           path: |
             release-out/TokenUsageAssistant-Setup-*.exe
@@ -96,6 +99,7 @@ jobs:
         if: always()
         with:
           name: windows-evidence
+          retention-days: 7
           if-no-files-found: warn
           path: evidence-windows/
 
@@ -128,6 +132,7 @@ jobs:
         if: always()
         with:
           name: mac
+          retention-days: 7
           if-no-files-found: error
           path: |
             release-out/TokenUsageAssistant-Mac-arm64-*.dmg
