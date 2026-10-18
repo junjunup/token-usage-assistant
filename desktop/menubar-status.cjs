@@ -1,9 +1,10 @@
 // @ts-check
 // Menu-bar status (T7.4): decide which account and window the menu-bar icon shows, and what it says.
-// Pure: no Electron, no I/O. Not wired in yet (T7.5). Rules: docs/island-1.9.0-design/HANDOFF.md §3.2.
+// Pure: no Electron, no I/O. Rules: docs/island-1.9.0-design/HANDOFF.md §3.2.
 // - Alert levels follow the app's existing rule (domain.cjs AlertTracker / quotaStatus): exhausted or a monthly
 //   balance at or below zero is red, below the reminder threshold is amber.
 // - Missing data is "—", never 0; resetAt=0 is "未启用"; balances keep their own currency and are never a gauge.
+// - Within an account, quota windows come first and money is the fallback (T7.9, see focusOf).
 const { monthlyQuota } = require('./domain.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 
@@ -166,6 +167,21 @@ function urgency(a, b) {
 }
 
 /**
+ * The slot the icon shows for one account (T7.9): quota windows first, money only as the fallback. A balance takes
+ * over only when it alerts more severely than the chosen window, so an exhausted balance never reads as plenty left.
+ * @param {Slot[]} slots
+ * @returns {Slot|null}
+ */
+function focusOf(slots) {
+  const sorted = [...slots].sort(urgency);
+  // A usable window has a share left, or is alerting (exhausted). Idle / unlimited / missing windows do not count.
+  const top = sorted.find((s) => s.kind === 'window' && (s.percent !== null || s.tone !== 'normal'));
+  const balance = sorted.find((s) => s.kind === 'balance');
+  if (!top) return balance || sorted[0] || null;
+  return balance && LEVEL[balance.tone] > LEVEL[top.tone] ? balance : top;
+}
+
+/**
  * @param {AccountSummary[]} accounts
  * @param {{ threshold: number }} settings
  * @returns {MenubarStatus|null} null when there is nothing to show (no accounts): the icon stays the static logo.
@@ -175,7 +191,7 @@ function menubarStatus(accounts, settings) {
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
   const ranked = accounts.map((a, order) => {
     const slots = slotsOf(a, threshold);
-    const focus = [...slots].sort(urgency)[0] || null;
+    const focus = focusOf(slots);
     return { a, order, slots, focus };
   });
   const level = (/** @type {typeof ranked[number]} */ r) => (r.focus ? LEVEL[r.focus.tone] : 0);
