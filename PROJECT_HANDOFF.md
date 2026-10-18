@@ -95,4 +95,4 @@
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 
 - 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.3–T7.8 已合并：Mac 菜单栏图标改为动态显示，左键弹出用量面板、右键为原菜单，设置里有「菜单栏图标与面板」子组；版本已升为 1.9.0-beta.1，**待计费处理后推送、跑 CI、打标签 `v1.9.0-beta.1` 并发版**。
-- **阻塞**：私有仓库的 GitHub Actions 作业因账户计费限制无法启动（2026-10-18），CI 与 Release 工作流暂时都不能运行，需要用户在 GitHub「Billing & plans」处理；T7.5 的 Windows 安装包待 CI 补齐。Release 工作流的 Artifacts 现只保留 7 天。
+- GitHub Actions：源码仓库 2026-10-18 公开后恢复运行（此前私有仓库因计费限制无法启动作业）。Release 工作流的 Artifacts 只保留 7 天。T7.5–T7.7 的 Windows 安装包随 T7.8 的 Release 补齐。
