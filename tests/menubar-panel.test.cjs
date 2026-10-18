@@ -150,3 +150,28 @@ test('T7.10: the stale notice only promises earlier values when there were any',
     '尚未同步成功，暂无数据。',
   );
 });
+
+test('T7.11: the account chip says what the menu-bar icon says (quota windows first, money as the fallback)', () => {
+  const { menubarStatus } = require('../desktop/menubar-status.cjs');
+  const idle = { remainingPercent: null, resetAt: 0, resetState: 'idle' };
+  const billing = {
+    subscription: { active: true, start: '2026-10-01', end: Date.UTC(2026, 10, 1) },
+    summary: { scope: 'billing', periodStart: '2026-10-01', funding: { monthly: 51.94 }, total: 12400, cost: 51.94 },
+  };
+  const cc = (five, week, monthly) =>
+    commandcode({
+      parts: { credits: { five, week, monthly, purchased: 0, free: 0, total: monthly }, ...billing },
+      updatedAt: { credits: 1, summary: 1 },
+    });
+  for (const [a, text] of [
+    [cc(win(100), win(100), 18.06), '100%'], // real device: monthly 25.8% left, windows 100%
+    [cc(win(null, idle), win(72), 18.06), '72%'],
+    [cc(win(null, idle), win(null, idle), 18.06), '$18.06'],
+    [cc(win(90), win(95), 0), '$0.00'],
+  ]) {
+    const chip = panelState([a], settings).accounts[0].chip;
+    const icon = menubarStatus([a], settings);
+    assert.equal(chip.text, text);
+    assert.deepEqual(chip, { text: icon?.text, tone: icon?.tone });
+  }
+});

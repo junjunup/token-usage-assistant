@@ -240,4 +240,4 @@ function menubarStatus(accounts, settings) {
   };
 }
 
-module.exports = { menubarStatus, slotsOf, shortLabel };
+module.exports = { menubarStatus, slotsOf, shortLabel, focusOf };

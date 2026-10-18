@@ -5,7 +5,7 @@
 // - The three cells only show what the account's own interface returns (Token / cost / balance); local tool
 //   statistics are never shown here (tool records belong to no account by default). Missing is "—" with a reason.
 // - Switching accounts inside the panel is local to the panel; it opens on the account the menu-bar icon shows.
-const { menubarStatus, slotsOf } = require('./menubar-status.cjs');
+const { menubarStatus, slotsOf, focusOf } = require('./menubar-status.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 
 /**
@@ -73,9 +73,8 @@ function panelAccount(a, threshold) {
   const parts = a.parts || {};
   const slots = slotsOf(a, threshold);
   const windows = slots.filter((s) => s.kind === 'window');
-  const focus = [...slots].sort(
-    (x, y) => LEVEL[y.tone] - LEVEL[x.tone] || (x.percent ?? Infinity) - (y.percent ?? Infinity) || 0,
-  )[0];
+  // The chip says what the menu-bar icon would say for this account (T7.11, same rule as T7.9).
+  const focus = focusOf(slots);
   // Up to three windows in the platform's order; the most urgent one is always shown.
   let shown = windows.slice(0, ROWS);
   const urgent = [...windows].sort((x, y) => LEVEL[y.tone] - LEVEL[x.tone])[0];
