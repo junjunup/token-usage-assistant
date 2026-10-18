@@ -57,7 +57,7 @@ TUA_MENUBAR_POC=1 ./node_modules/.bin/electron . --hidden --test-directory=$(mkt
 
 - 按 `tray.getBounds()` 放在图标正下方 6pt，水平居中，靠近屏幕边缘时夹在工作区内；实测请求位置与实际位置一致（`{x:718, y:43, width:360, height:409}`）。
 - 浅色 / 深色面板：[panel-light.jpg](poc-menubar/panel-light.jpg)、[panel-dark.jpg](poc-menubar/panel-dark.jpg)，与已批准草图一致（POC 面板没有画指向图标的小箭头）。
-- **全屏空间**：访达进入全屏后打开面板，面板显示在全屏内容之上（窗口层 101），截图：[panel-fullscreen.jpg](poc-menubar/panel-fullscreen.jpg)。用的是 `setVisibleOnAllWorkspaces(true, {visibleOnFullScreen: true})` + `setAlwaysOnTop(true, 'pop-up-menu')` + `type: 'panel'`。
+- **全屏空间**：访达进入全屏后打开面板，面板显示在全屏内容之上（窗口层 101）（截图含开发机桌面上的个人文件名，开源前已删除；窗口层与可见性以 CGWindowList 记录为准）。用的是 `setVisibleOnAllWorkspaces(true, {visibleOnFullScreen: true})` + `setAlwaysOnTop(true, 'pop-up-menu')` + `type: 'panel'`。
 - **未测**：多桌面空间之间切换、外接屏（开发机没有）。
 - 本应用本来就显示在程序坞中，面板窗口没有额外出现在程序坞或 ⌘Tab 中。
 

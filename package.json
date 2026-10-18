@@ -37,5 +37,6 @@
   },
   "main": "desktop/main.cjs",
   "description": "多平台额度、余额和本机用量桌面助手",
+  "license": "MIT",
   "author": "Local Desktop Tools"
 }

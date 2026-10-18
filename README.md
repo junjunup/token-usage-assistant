@@ -4,6 +4,8 @@
 
 当前版本：**1.9.0-beta.1**（开发测试版，未签名公证；macOS 新增菜单栏动态图标与用量面板）。更新历史见 [CHANGELOG.md](CHANGELOG.md)。
 
+**下载安装包**：[junjunup/TokenUsageAssistant 的 Releases](https://github.com/junjunup/TokenUsageAssistant/releases)（Windows 安装版 / 便携版、macOS Apple Silicon DMG / ZIP，附 SHA256 校验）。本仓库是源码仓库。
+
 ## 支持的平台与工具
 
 证据等级：①合成契约测试；②打包原生 smoke（隔离样例）；③真实账户或真机验收。没有 ③ 的项，不代表已经和真实账户核对过。
@@ -60,7 +62,7 @@ Mac 版整体为 ②：真机上的安装、Keychain、托盘、睡眠唤醒、�
 
 ```bash
 pnpm install
-pnpm run test:desktop      # 桌面与分析测试（当前基线 246 通过 / 0 失败 / 3 跳过）
+pnpm run test:desktop      # 桌面与分析测试（当前基线 323 通过 / 0 失败 / 3 跳过）
 pnpm run lint              # ESLint
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）
 pnpm run build             # 构建 dist/client（改动界面后必须重新构建）
@@ -82,6 +84,12 @@ pnpm run dev               # 浏览器预览模式（使用示例数据）
 | [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) | 当前改进计划、用户决策、执行记录 |
 | [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) | 当前状态快照：证据等级、模块结构、存储、未完成验收项 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本历史 |
-| [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md) | Mac 刘海灵动岛设计交接 |
+| [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md) | Mac 菜单栏状态与灵动岛设计交接 |
 | `docs/*-<版本>.md`、`docs/verification-<版本>/` | 各版本的专题说明和验证记录 |
 | [docs/history/](docs/history/) | 归档的旧版 AGENTS、README、交接文档和规则迁移表 |
+
+## 许可与声明
+
+- 本项目以 [MIT 许可证](LICENSE) 开源；安装包中包含的第三方组件及其许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- 文中提到的平台和工具名称归各自所有者所有，本项目与它们没有隶属或授权关系，不是任何平台的官方客户端。
+- 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告，不要在公开 issue 中贴出 API Key、令牌或账户信息。

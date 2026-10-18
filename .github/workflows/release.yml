@@ -1,7 +1,7 @@
 name: Release
 
 # Builds all four installers, runs the packaged native smoke test on each platform and records
-# integrity reports. A v* tag also creates a draft prerelease in this (private) repository.
+# integrity reports. A v* tag also creates a draft prerelease in this (source) repository.
 # Publishing to the public installer repository (D8) is a separate, manually triggered step
 # that is not part of this workflow yet.
 on:
@@ -81,7 +81,7 @@ jobs:
           [ -f work/upgrade-ci/upgrade-native-report.json ] || exit 0
           node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync("work/upgrade-ci/upgrade-native-report.json"));r.oldPackageSource="source rebuild of tag "+process.env.PREV_TAG+" (not a downloaded release binary)";fs.writeFileSync("release-out/upgrade-native-report.json",JSON.stringify(r,null,2)+"\n")'
       # Artifacts only bridge the jobs of one run (the release job attaches the files to the draft release),
-      # so keep them for 7 days; private-repo artifact storage is limited (2026-10-18 quota incident).
+      # so keep them for 7 days (artifact storage was exhausted while the repository was private, 2026-10-18).
       - uses: actions/upload-artifact@v7
         if: always()
         with:
