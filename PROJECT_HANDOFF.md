@@ -27,7 +27,7 @@
 | OpenCode / Harness / Codex rollout / Claude 导出 | ①② | Harness 官方运行时测试需单独安装（本机跳过） |
 | 账户关联与核对 | ①② | 未做真实账户核账；当前数据无法给出真实差值 |
 | Mac 打包版 | ② | `codesign` 通过，打包后 smoke ok，`spctl` rejected（预期）；真机验收未完成 |
-| Mac 菜单栏图标 / 弹出面板 / 设置（1.9.0-beta.1） | ① + 开发机 POC + ② | 原生 smoke 覆盖图标、面板与设置联动；深色菜单栏、外接屏、多桌面空间、屏幕共享与手感待真机（验收清单第 12–17 项） |
+| Mac 菜单栏图标 / 弹出面板 / 设置（1.9.0-beta.1） | ① + 开发机 POC + ② | 原生 smoke 覆盖图标、面板与设置联动；2026-10-18 Claude 在本机做了部分 ③（第 12、14、15 项通过，第 16、17 项部分完成，见验收清单）；浅色 / 深色切换与告警色、系统截图 / 录屏 / 会议共享、锁屏、外接屏、多桌面空间、全屏中点图标待用户真机 |
 | Windows 打包版 | ②（beta.5 时） | 实际 NSIS 覆盖安装、重启自启动未测 |
 
 可用于真实账户验收的平台：Codex（ChatGPT 订阅）、Command Code、Zcode；Claude、GLM、MiniMax、火山目前只有契约样例。
@@ -94,5 +94,5 @@
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 
-- 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.3–T7.8 已合并：Mac 菜单栏图标改为动态显示，左键弹出用量面板、右键为原菜单，设置里有「菜单栏图标与面板」子组；1.9.0-beta.1 已发布到 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.1)；剩真机验收（清单第 12–17 项；第 3 项已由用户填写）。T7.9（同一账户内额度窗口优先、金额兜底）已合并，随下一个测试版发布，本机 Mac 测试包 `-dev.8964ec3`。
+- 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.3–T7.8 已合并：Mac 菜单栏图标改为动态显示，左键弹出用量面板、右键为原菜单，设置里有「菜单栏图标与面板」子组；1.9.0-beta.1 已发布到 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.1)；真机验收：第 3 项已由用户填写；第 12、14、15 项已由 Claude 实测通过，第 13 项和第 16、17 项的剩余部分待用户。T7.9（同一账户内额度窗口优先、金额兜底）已合并，随下一个测试版发布，本机 Mac 测试包 `-dev.8964ec3`。
 - GitHub Actions：源码仓库 2026-10-18 公开后恢复运行（此前私有仓库因计费限制无法启动作业）。Release 工作流的 Artifacts 只保留 7 天。T7.5–T7.7 的 Windows 安装包随 T7.8 的 Release 补齐。
