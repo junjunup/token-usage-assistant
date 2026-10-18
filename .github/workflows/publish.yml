@@ -1,10 +1,11 @@
 name: Publish
 
 # Manually publishes an already-built release to the public installer repository (D8).
-# It reuses the exact installers attached to the private release for the tag (no rebuild) and
+# It reuses the exact installers attached to the source repository's release for the tag (no rebuild) and
 # uploads only the four installers plus SHA256SUMS.txt: no source, no integrity JSON (they hold
-# runner paths), no smoke reports. Gate: the private release must be published (not a draft)
-# after review. dry_run (default) prepares and lists everything without publishing.
+# runner paths), no smoke reports. The source release must be published (not a draft); since the source repository
+# went public (2026-10-18) that release is public too, so the review gate is the dry_run (default), which prepares
+# and lists everything without publishing.
 on:
   workflow_dispatch:
     inputs:
@@ -33,7 +34,7 @@ jobs:
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Invalid tag: $TAG"; exit 1; }
           echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
-      - name: Download installers from the private release
+      - name: Download installers from the source release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
