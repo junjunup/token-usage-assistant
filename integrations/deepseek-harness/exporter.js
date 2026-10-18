@@ -12,6 +12,10 @@ const EMPTY_USAGE = Object.freeze({ uncachedInputTokens: null, outputTokens: nul
 const OBSERVED = new Set(['step/start', 'step/end', 'turn/end', 'request/context', 'assistant/message', 'assistant/attempt', 'llm/retry', 'llm/retry-started']);
 const FIXED_ERRORS = new Set(['unsupported-runtime', 'unsupported-config', 'unsupported-format', 'invalid-usage', 'missing-attempt-boundary', 'io-error', 'queue-overflow', 'source-conflict']);
 const GAP_CODES = new Set([...FIXED_ERRORS, 'interrupted-writer']);
+// Windows reports a file that another process is creating, deleting or holding open as EPERM / EACCES / EBUSY
+// instead of EEXIST; these are transient contention, not failures (T4.7).
+const BUSY = new Set(['EPERM', 'EACCES', 'EBUSY']);
+const pause = ms => new Promise(done => setTimeout(done, ms));
 
 function normalizeUsage(value) {
   if (value === undefined) return { ...EMPTY_USAGE };
@@ -94,7 +98,7 @@ export class UsageExporter {
         await handle.writeFile(JSON.stringify({ pid: process.pid }));
       } catch (error) {
         if (handle) { try { await handle.close(); await this.io.unlink(file); } catch {} handle = null; }
-        if (error?.code !== 'EEXIST') throw error;
+        if (error?.code !== 'EEXIST' && !BUSY.has(error?.code)) throw error;
         try {
           const stat = await this.io.stat(file);
           if (Date.now() - stat.mtimeMs > 1000) {
@@ -106,11 +110,21 @@ export class UsageExporter {
         } catch {}
         // eslint-disable-next-line preserve-caught-error -- deliberately generic; the raw cause is not attached (privacy rule).
         if (Date.now() >= deadline) throw new Error('io-error');
-        await new Promise(done => setTimeout(done, 10));
+        await pause(10);
       }
     }
     try { return await action(); }
     finally { await handle.close(); await this.io.unlink(file); }
+  }
+
+  /** rename() over a file another process has open fails on Windows for a moment; retry for about a second. */
+  async replace(from, to) {
+    for (let attempt = 0; ; attempt++) {
+      try { return await this.io.rename(from, to); } catch (error) {
+        if (!BUSY.has(error?.code) || attempt >= 24) throw error;
+        await pause(Math.min(10 + attempt * 5, 50));
+      }
+    }
   }
 
   async writeStatus() {
@@ -143,7 +157,7 @@ export class UsageExporter {
       const temporary = join(this.directory, `.status-${process.pid}-${randomUUID()}.tmp`);
       try {
         await this.io.writeFile(temporary, `${JSON.stringify(status)}\n`, { flag: 'wx', mode: 0o600 });
-        await this.io.rename(temporary, join(this.directory, 'status.json'));
+        await this.replace(temporary, join(this.directory, 'status.json'));
       } finally { try { await this.io.unlink(temporary); } catch {} }
     });
   }

@@ -58,6 +58,8 @@ dsh plugin --profile my-profile remove dsh-token-usage-assistant
 
 助手端对数据源的“停用”或“移除”只停止助手读取；它不会卸载 Harness 插件，也不会删除导出记录。需要停止文件继续增长时，应按上面的步骤停用导出插件。
 
+**更新插件**（2026-10-19，T4.7）：Windows 上多个 Harness 进程同时导出到同一目录时，旧版插件偶尔会因为锁文件或 `status.json` 被另一个进程占用而停止导出（助手显示该来源 `io-error`）。新版会在短时间内重试，导出格式与 `source.json` 身份都不变（导出器版本仍为 1.4.0）。更新方法：先退出该 profile 的 Harness，按上面的步骤 `remove` 再 `plugin add` 重新安装插件，然后启动同一 profile；已有导出目录和来源身份保持不变。
+
 ## 采集和计数规则
 
 插件监听官方 `session/event(session, event)` 提交后事件。只访问会话身份、项目目录、事件序号与时间、turn/step、provider/model、状态及 usage 计数白名单。对话正文、工具参数与结果、系统提示词、凭据、错误正文和回放数据均不访问或导出；测试用会抛异常的 getter 验证这些字段没有被读取。
