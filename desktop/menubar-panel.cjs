@@ -14,7 +14,7 @@ const { formatAmount } = require('./balance-domain.cjs');
  * @typedef {{ value: string, unit: string, note: string, tone: Tone }} Cell
  * @typedef {{ id: string, label: string, percent: number|null, text: string, tone: Tone,
  *   window: import('./menubar-status.cjs').WindowInfo|null }} Row
- * @typedef {{ id: string, label: string, provider: string, stale: boolean, status: string,
+ * @typedef {{ id: string, label: string, provider: string, stale: boolean, notice: string|null, status: string,
  *   chip: { text: string, tone: Tone }, rows: Row[], more: number,
  *   balances: { currency: string, text: string }[], available: boolean|null,
  *   cells: { tokens: Cell, cost: Cell, balance: Cell }, updatedAt: number|null }} PanelAccount
@@ -111,12 +111,15 @@ function panelAccount(a, threshold) {
   const monthly = slots.find((s) => s.id === 'monthly');
   if (monthly) balance = { value: monthly.text, unit: '月度余额', note: '账户接口', tone: monthly.tone };
   const stamps = Object.values(a.updatedAt || {}).filter((v) => typeof v === 'number' && v > 0);
+  const stale = STALE.includes(String(a.status || ''));
   return {
     id: a.id,
     label: a.label,
     provider: a.provider,
     status: String(a.status || ''),
-    stale: STALE.includes(String(a.status || '')),
+    stale,
+    // T7.10: an account that never synced has no earlier values to fall back on.
+    notice: !stale ? null : stamps.length ? '数据未更新，显示的是上次成功的值。' : '尚未同步成功，暂无数据。',
     chip: focus ? { text: focus.text, tone: focus.tone } : { text: '—', tone: 'normal' },
     rows,
     more: Math.max(0, windows.length - rows.length),

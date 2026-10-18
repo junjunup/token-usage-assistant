@@ -143,6 +143,11 @@ snapshots.deepseek = {
   nextRefreshAt: now + 60000,
 };
 state.version = '1.8.0-beta.4';
+// T7.10: ?desktop-preview=panel-unsynced shows the Claude account as connected but never synced.
+if (new URLSearchParams(location.search).get('desktop-preview') === 'panel-unsynced' && snapshots.claude) {
+  snapshots.claude.parts = {};
+  snapshots.claude.updatedAt = {};
+}
 if (new URLSearchParams(location.search).get('platform') === 'darwin') state.platform = 'darwin';
 state.associations = { groups: [], rules: [], issue: '' };
 state.toolSources =

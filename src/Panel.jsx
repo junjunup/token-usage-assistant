@@ -115,7 +115,7 @@ export function Panel() {
                 <Live intervalMs={30000}>{(now) => ago(account.updatedAt, now)}</Live>
               </span>
             </header>
-            {account.stale && <div className="panel-stale">数据未更新，显示的是上次成功的值。</div>}
+            {account.notice && <div className="panel-stale">{account.notice}</div>}
             <section className="panel-section">
               {account.rows.map((row) => (
                 <Row key={row.id} row={row} />

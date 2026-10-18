@@ -139,3 +139,14 @@ test('compact numbers', () => {
   assert.equal(compact(999), '999');
   assert.equal(compact(2500000000), '2.5B');
 });
+
+test('T7.10: the stale notice only promises earlier values when there were any', () => {
+  const notice = (a) => panelState([a], settings).accounts[0].notice;
+  assert.equal(notice(commandcode()), null);
+  assert.equal(notice(commandcode({ status: 'offline' })), '数据未更新，显示的是上次成功的值。');
+  assert.equal(notice(commandcode({ status: 'stale', parts: {}, updatedAt: {} })), '尚未同步成功，暂无数据。');
+  assert.equal(
+    notice(commandcode({ status: 'auth-error', parts: {}, updatedAt: undefined })),
+    '尚未同步成功，暂无数据。',
+  );
+});
