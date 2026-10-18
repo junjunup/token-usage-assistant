@@ -1,6 +1,6 @@
 # 项目交接：当前状态快照
 
-> 更新：2026-10-16。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
+> 更新：2026-10-18。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
 > 规则见 [AGENTS.md](AGENTS.md)；进行中的工作见 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)；Mac 菜单栏状态与灵动岛设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)。
 
 ## 1. 当前版本与环境
@@ -46,6 +46,8 @@
 | `desktop/providers.cjs`、`provider-catalog.cjs`、`provider-domain.cjs` | GLM / MiniMax / 火山 / DeepSeek / OpenCode Go 客户端、平台目录、额度归一化 |
 | `desktop/providers/`（`index.cjs` 与每个平台一个文件） | 平台注册表（T5.3a）：元数据、请求构造、响应体错误分类、归一化、官方页面；`provider-catalog.cjs`、`providers.cjs` 和 `main.cjs` 的官方页面都由它派生 |
 | `desktop/tool-kinds/`（`index.cjs` 与每种工具一个文件） | 工具来源种类注册表（T5.3b）：默认名称、原生选择器、`inspect`、`scan`、是否做重叠检查；`tool-sources.cjs`、`tool-worker.cjs` 和 `main.cjs` 的选择器都由它派生 |
+| `desktop/menubar-status.cjs` | 菜单栏状态投影（T7.4，纯模块、严格类型检查）：从各账户的数据决定菜单栏图标显示哪个账户 / 窗口、文字和告警色 |
+| `desktop/menubar-icon.cjs`、`desktop/menubar-render/` | Mac 菜单栏动态图标（T7.5）：隐藏渲染页用 canvas 画刻度环 + 数值，主进程设为托盘图标；检测图标是否被系统藏到刘海后面 |
 | `desktop/balance-domain.cjs` | DeepSeek 余额归一化与金额格式 |
 | `desktop/domain.cjs` | 通用额度状态与重置描述 |
 | `desktop/subscriptions.cjs`、`subscription-status.cjs` | Codex / Claude 订阅额度归一化与连接状态 |
@@ -88,3 +90,6 @@
 ## 6. 下一步
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
+
+- 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.5 已合并：Mac 菜单栏图标改为动态显示，尚未发版。
+- **阻塞**：私有仓库的 GitHub Actions 作业因账户计费限制无法启动（2026-10-18），CI 与 Release 工作流暂时都不能运行，需要用户在 GitHub「Billing & plans」处理；T7.5 的 Windows 安装包待 CI 补齐。Release 工作流的 Artifacts 现只保留 7 天。
