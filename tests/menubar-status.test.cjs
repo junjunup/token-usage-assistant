@@ -210,3 +210,66 @@ test('AccountManager.summaries exposes only what the status needs, without crede
   assert.equal(JSON.stringify(s).includes('sk-should-not-leak'), false);
   assert.equal(JSON.stringify(s).includes('secret-id'), false);
 });
+
+// T7.9: quota windows first, money as the fallback; a balance takes over only when it alerts more severely.
+const withMonthly = (a, monthly, spent = null) => {
+  a.parts.credits.monthly = monthly;
+  if (spent !== null) {
+    a.parts.subscription = { active: true, start: '2026-10-01', end: Date.UTC(2026, 10, 1) };
+    a.parts.summary = { scope: 'billing', periodStart: '2026-10-01', funding: { monthly: spent } };
+    a.updatedAt = { credits: 1, summary: 1 };
+  }
+  return a;
+};
+
+test('T7.9: healthy windows win even when the monthly balance has a smaller share left', () => {
+  // $18.06 left of $60 is 30%, below both windows, and still the icon shows the window with the least left.
+  const a = withMonthly(commandcode(win(80), win(64)), 18.06, 41.94);
+  assert.equal(Math.round(slotsOf(a, 20).find((s) => s.id === 'monthly')?.percent ?? -1), 30);
+  const s = menubarStatus([a], settings);
+  assert.equal(s?.windowId, 'week');
+  assert.equal(s?.text, '64%');
+  assert.equal(s?.tone, 'normal');
+});
+
+test('T7.9: an idle 5-hour window falls through to the weekly window, not to the balance', () => {
+  const a = withMonthly(commandcode(win(null, { resetAt: 0, resetState: 'idle' }), win(72)), 18.06, 41.94);
+  const s = menubarStatus([a], settings);
+  assert.equal(s?.windowId, 'week');
+  assert.equal(s?.text, '72%');
+});
+
+test('T7.9: with no usable window the monthly balance is the fallback', () => {
+  const idle = { resetAt: 0, resetState: 'idle' };
+  const a = withMonthly(commandcode(win(null, idle), win(null, idle)), 18.06);
+  const s = menubarStatus([a], settings);
+  assert.equal(s?.windowId, 'monthly');
+  assert.equal(s?.text, '$18.06');
+  assert.equal(s?.ring, null); // no derived share without the billing summary
+  // Without any balance either, the idle window is still shown honestly.
+  assert.equal(menubarStatus([commandcode(win(null, idle), null)], settings)?.text, '未启用');
+});
+
+test('T7.9: a balance alerting more severely than the windows takes over; the same level stays on the window', () => {
+  const amber = withMonthly(commandcode(win(90), win(95)), 6, 54); // 10% left: amber, windows normal
+  assert.equal(menubarStatus([amber], settings)?.windowId, 'monthly');
+  assert.equal(menubarStatus([amber], settings)?.tone, 'amber');
+  const bothAmber = withMonthly(commandcode(win(15), win(95)), 6, 54);
+  assert.equal(menubarStatus([bothAmber], settings)?.windowId, 'five');
+  const bothRed = withMonthly(commandcode(win(0, { exceeded: true }), win(40)), 0);
+  assert.equal(menubarStatus([bothRed], settings)?.windowId, 'five');
+  assert.equal(menubarStatus([bothRed], settings)?.tone, 'red');
+});
+
+test('T7.9: the two-line form keeps the platform order with the balance only when it is the focus', () => {
+  const a = withMonthly(commandcode(win(80), win(64)), 18.06, 41.94);
+  assert.deepEqual(
+    menubarStatus([a], settings)?.lines.map((l) => l.label),
+    ['5h', '周'],
+  );
+  a.parts.credits.monthly = 0;
+  assert.deepEqual(
+    menubarStatus([a], settings)?.lines.map((l) => l.label),
+    ['5h', '月'],
+  );
+});

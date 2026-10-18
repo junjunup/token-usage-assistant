@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>T7.9 菜单栏图标选值：修改前后对比</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px 24px;
+        font: 13px/1.5 -apple-system, 'PingFang SC', sans-serif;
+        color: #1d1d1f;
+        background: #fff;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 4px;
+      }
+      p {
+        margin: 0 0 14px;
+        color: #6e6e73;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #e5e5ea;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: middle;
+      }
+      th {
+        font-weight: 600;
+        color: #6e6e73;
+        font-size: 12px;
+      }
+      .bar {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 24px;
+        padding: 0 8px;
+        border-radius: 4px;
+        margin: 2px 0;
+      }
+      .bar.light {
+        background: #e9e7e4;
+      }
+      .bar.dark {
+        background: #2b2a2e;
+      }
+      .bar.dark img.template {
+        filter: invert(1);
+      }
+      .bar img {
+        height: 22px;
+        display: block;
+      }
+      .cell {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .label {
+        font-size: 11px;
+        color: #6e6e73;
+      }
+      .changed {
+        color: #b4561b;
+        font-weight: 600;
+      }
+      .same {
+        color: #6e6e73;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>T7.9 菜单栏图标选值：修改前（1.9.0-beta.1）与修改后</h1>
+    <p>同一组样例账户分别用旧规则和新规则计算，图标用应用实际的渲染代码绘制（② 默认形态，下方为 ③ 两行）。每格上为浅色菜单栏、下为深色菜单栏。</p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 34%">样例账户</th>
+          <th>修改前</th>
+          <th>修改后</th>
+          <th style="width: 15%">结果</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <script src="../../../desktop/menubar-render/mark.js"></script>
+    <script src="../../../desktop/menubar-render/render.js"></script>
+    <script src="scenarios.js"></script>
+    <script>
+      /* global SCENARIOS, render */
+      const img = (m, dark) => {
+        const r = render({ ...m, dark: m.template ? false : dark });
+        const el = document.createElement('img');
+        el.src = r.dataURL;
+        el.style.width = r.width + 'px';
+        if (m.template) el.className = 'template';
+        return el;
+      };
+      const cell = (side) => {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = '显示：' + (side.label || '—');
+        div.append(label);
+        for (const dark of [false, true]) {
+          const bar = document.createElement('span');
+          bar.className = 'bar ' + (dark ? 'dark' : 'light');
+          bar.append(img(side.value, dark), img(side.two, dark));
+          div.append(bar);
+        }
+        return div;
+      };
+      const rows = document.getElementById('rows');
+      for (const s of SCENARIOS) {
+        const tr = document.createElement('tr');
+        const t = document.createElement('td');
+        t.textContent = s.title;
+        const o = document.createElement('td');
+        o.append(cell(s.old));
+        const n = document.createElement('td');
+        n.append(cell(s.new));
+        const r = document.createElement('td');
+        r.textContent = s.note;
+        r.className = s.note === '变化' ? 'changed' : 'same';
+        tr.append(t, o, n, r);
+        rows.append(tr);
+      }
+    </script>
+  </body>
+</html>
