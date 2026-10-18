@@ -877,6 +877,21 @@ h1 > span {
   margin: 0;
   line-height: 1.6;
 }
+/* T7.7: the macOS menu-bar subgroup inside PREFERENCES */
+.settings-subhead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 26px 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.menubar-settings .inline-warning {
+  margin: 14px 0 0;
+}
 .setting-row select {
   border: 1px solid var(--line);
   padding: 8px 12px;

@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean }} Settings */
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -31,6 +31,12 @@ const DEFAULT_SETTINGS = Object.freeze({
   widgetExpanded: false,
   // T5.2: ask the public installer repository for newer versions (one GitHub request at start and every 24 h).
   updateCheck: true,
+  // T7.7 (macOS menu bar): icon form ① ring / ② ring + value / ③ two lines; show usage (off = static logo);
+  // alert colours; screen-capture protection for the popover panel.
+  menubarForm: 'value',
+  menubarUsage: true,
+  menubarAlertColor: true,
+  panelProtect: true,
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>
@@ -319,6 +325,7 @@ function patchSettings(current, patch) {
     if (key === 'theme' && ['light', 'dark'].includes(value)) result[key] = value;
     else if (key === 'refreshSeconds' && [30, 60, 120, 300].includes(value)) result[key] = value;
     else if (key === 'threshold' && [10, 20, 30].includes(value)) result[key] = value;
+    else if (key === 'menubarForm' && ['ring', 'value', 'two'].includes(value)) result[key] = value;
     else if (
       typeof (/** @type {Record<string, any>} */ (DEFAULT_SETTINGS)[key]) === 'boolean' &&
       typeof value === 'boolean'

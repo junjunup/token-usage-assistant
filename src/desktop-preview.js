@@ -238,6 +238,15 @@ if (credentialIssuePreview)
   };
 // Preview of an available update (?desktop-preview=update-available, T5.2).
 state.settings = { ...state.settings, updateCheck: true };
+// T7.7 menu-bar settings (defaults) and ?desktop-preview=menubar-hidden for the "hidden by the system" notice.
+state.settings = {
+  ...state.settings,
+  menubarForm: 'value',
+  menubarUsage: true,
+  menubarAlertColor: true,
+  panelProtect: true,
+};
+state.menubar = { hidden: new URLSearchParams(location.search).get('desktop-preview') === 'menubar-hidden' };
 if (new URLSearchParams(location.search).get('desktop-preview') === 'update-available')
   state.update = { status: 'available', version: '1.8.0-beta.8', checkedAt: now };
 // Preview of an unverified upstream version (?desktop-preview=unverified-version, T5.1): the Codex source reads a

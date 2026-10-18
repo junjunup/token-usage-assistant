@@ -27,6 +27,7 @@ import {
   WarningCircle,
   ArrowsLeftRight,
   FileArrowDown,
+  AppWindow,
 } from '@phosphor-icons/react';
 import '@fontsource/geist/400.css';
 import '@fontsource/geist/500.css';
@@ -90,6 +91,75 @@ function Toggle({ label, checked, onChange, disabled = false }) {
     >
       <span />
     </button>
+  );
+}
+// T7.7: menu-bar icon and popover panel settings (macOS only). Defaults: form ②, usage on, alert colours on,
+// panel protection on. When the system hides the icon next to the notch we only say so; the form never changes by
+// itself (user decision, 2026-10-18).
+const MENUBAR_FORMS = [
+  { value: 'ring', label: '① 只有刻度环' },
+  { value: 'value', label: '② 刻度环 + 数值' },
+  { value: 'two', label: '③ 两行小字' },
+];
+function MenubarSettings({ state, settings, pref }) {
+  const usage = settings.menubarUsage !== false;
+  return (
+    <div className="menubar-settings">
+      <div className="settings-subhead">
+        <AppWindow size={15} />
+        菜单栏图标与面板
+      </div>
+      {state.menubar?.hidden === true && usage && (
+        <div className="inline-warning" role="status">
+          <WarningCircle size={16} />
+          <span>菜单栏空间不足，图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。</span>
+        </div>
+      )}
+      <div className="setting-row">
+        <div>
+          <h2>图标形态</h2>
+          <p>菜单栏图标显示最紧急的账户窗口。② 约 51–81pt 宽，③ 约 73pt；放不下时系统会把图标藏到刘海后面。</p>
+        </div>
+        <Select
+          label="菜单栏图标形态"
+          value={settings.menubarForm || 'value'}
+          disabled={!usage}
+          onChange={(value) => pref({ menubarForm: value })}
+          menuWidth={180}
+          options={MENUBAR_FORMS}
+        />
+      </div>
+      <div className="setting-row">
+        <div>
+          <h2>菜单栏显示用量</h2>
+          <p>关闭后菜单栏只显示静态 Logo，适合屏幕共享或演示；菜单栏图标不受截屏保护。</p>
+        </div>
+        <Toggle label="菜单栏显示用量" checked={usage} onChange={(v) => pref({ menubarUsage: v })} />
+      </div>
+      <div className="setting-row">
+        <div>
+          <h2>告警时变色</h2>
+          <p>剩余低于提醒阈值时显示琥珀色，额度用尽时显示红色；关闭后始终单色。</p>
+        </div>
+        <Toggle
+          label="告警时变色"
+          checked={settings.menubarAlertColor !== false}
+          disabled={!usage}
+          onChange={(v) => pref({ menubarAlertColor: v })}
+        />
+      </div>
+      <div className="setting-row">
+        <div>
+          <h2>面板截屏与共享保护</h2>
+          <p>开启后，系统截图、录屏和屏幕共享通常拍不到弹出面板；部分使用新版系统接口的软件可能例外。</p>
+        </div>
+        <Toggle
+          label="面板截屏与共享保护"
+          checked={settings.panelProtect !== false}
+          onChange={(v) => pref({ panelProtect: v })}
+        />
+      </div>
+    </div>
   );
 }
 function Segments({ value, label, tone = 'green', small = false }) {
@@ -578,6 +648,16 @@ export function DesktopApp() {
                       </Live>
                     </span>
                   </div>
+                  {mac && state.menubar?.hidden === true && settings.menubarUsage !== false && (
+                    <div className="inline-warning" role="status">
+                      <WarningCircle size={17} />
+                      <span>菜单栏空间不足，用量图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。</span>
+                      <button onClick={() => setView('settings')}>
+                        菜单栏设置
+                        <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+                  )}
                   {(data.errors.length > 0 || state.credentialIssue) && (
                     <div className="inline-warning" role="status">
                       <WarningCircle size={17} />
@@ -1020,6 +1100,7 @@ export function DesktopApp() {
                       onChange={(v) => pref({ theme: v ? 'dark' : 'light' })}
                     />
                   </div>
+                  {mac && <MenubarSettings state={state} settings={settings} pref={pref} />}
                   <div className="settings-bottom">
                     <span>
                       <Check size={14} />

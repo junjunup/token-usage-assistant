@@ -148,6 +148,8 @@ function state() {
     },
     // The active account's real refresh interval (Codex never polls faster than every 120 s).
     refreshInterval: accounts?.active?.monitor.intervalSeconds,
+    // T7.7: whether the system hid the menu-bar icon next to the notch (true / false / null when unknown).
+    menubar: menubar ? { hidden: menubar.hidden } : null,
   };
 }
 function broadcast() {
@@ -950,13 +952,15 @@ else {
           tray.on('double-click', showMain);
         }
         if (tray && isMac) {
-          menubar = new MenubarIcon({ tray, staticImage: icon });
+          // Visibility changes (the system hides items next to the notch) reach the settings and overview notices.
+          menubar = new MenubarIcon({ tray, staticImage: icon, onHidden: () => broadcast() });
           menubarPanel = new MenubarPopover({
             tray,
             url: `${APP_ORIGIN}/index.html?surface=panel`,
             preload: path.join(__dirname, 'preload.cjs'),
             devTools: !app.isPackaged,
             payload: panelPayload,
+            protect: () => settings?.panelProtect !== false,
           });
           tray.on('click', () => menubarPanel.toggle());
           tray.on('right-click', () => trayMenu && tray.popUpContextMenu(trayMenu));
