@@ -9,7 +9,7 @@ const number = (v) => typeof v === 'number' && Number.isFinite(v);
 const format = (v) => (number(v) ? v.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) : '—');
 const toneFor = (w, threshold) =>
   w.exceeded ? 'red' : number(w.remainingPercent) && w.remainingPercent < threshold ? 'amber' : 'green';
-function Bar({ value, label, tone = 'green', small = false }) {
+export function Bar({ value, label, tone = 'green', small = false }) {
   const length = small ? 20 : 32,
     clamped = number(value) ? Math.max(0, Math.min(100, value)) : null;
   return (

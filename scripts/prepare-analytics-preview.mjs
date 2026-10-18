@@ -12,6 +12,8 @@ for (const name of [
   'tool-analytics',
   'provider-domain',
   'provider-fixture',
+  'menubar-status',
+  'menubar-panel',
 ]) {
   let code = fs.readFileSync(`desktop/${name}.cjs`, 'utf8');
   // Match the require lines regardless of formatting whitespace.
@@ -31,6 +33,8 @@ for (const name of [
     /const\s*\{\s*count\s*,\s*finite\s*,\s*text\s*,\s*timestamp\s*\}\s*=\s*require\('\.\/domain\.cjs'\);/,
     "import { count, finite, text, timestamp } from './domain.js';",
   );
+  // Any remaining destructured require of a sibling module (T7.6: menubar-status / menubar-panel).
+  code = code.replace(/const\s*(\{[^}]*\})\s*=\s*require\('\.\/([\w-]+)\.cjs'\);/g, "import $1 from './$2.js';");
   if (/\brequire\(/.test(code)) throw new Error(`Unconverted require() in desktop/${name}.cjs`);
   code = code.replace(/module\.exports\s*=\s*\{([^}]+)\};?\s*$/, (_all, keys) => `export {${keys}};\n`);
   fs.writeFileSync(

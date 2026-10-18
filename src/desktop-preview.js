@@ -10,6 +10,7 @@ import {
 } from './generated/provider-domain.js';
 import { normalizeDeepSeek } from './generated/balance-domain.js';
 import { PROVIDERS } from './generated/provider-catalog.js';
+import { panelState } from './generated/menubar-panel.js';
 const now = Date.now();
 let state = {
   version: '1.2.0',
@@ -377,4 +378,36 @@ export const previewBridge = {
     ),
   }),
   saveDiagnostics: async () => ({ ok: true, value: true }),
+};
+
+// Popover panel preview (T7.6, ?surface=panel; ?theme=dark for the dark theme). The view model comes from the
+// same pure module as the desktop app (desktop/menubar-panel.cjs, generated), fed with the preview snapshots.
+function previewPanel() {
+  const summaries = state.accounts.map((a) => ({
+    id: a.id,
+    label: a.label,
+    provider: a.provider,
+    active: a.id === state.activeAccountId,
+    capabilities: PROVIDERS.find((p) => p.id === a.provider)?.capabilities || null,
+    status: snapshots[a.provider]?.status,
+    parts: snapshots[a.provider]?.parts,
+    updatedAt: snapshots[a.provider]?.updatedAt,
+  }));
+  const theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
+  return {
+    ...panelState(summaries, state.settings),
+    theme,
+    officials: Object.fromEntries(summaries.map((a) => [a.id, true])),
+    anchorX: 290,
+    arrow: 8,
+    openedAt: 1,
+  };
+}
+export const previewPanelBridge = {
+  ready: async () => ok(true),
+  panelState: async () => ok(previewPanel()),
+  panelResize: async () => ok(true),
+  panelOfficial: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
+  panelMain: async () => ok(true),
+  onPanel: () => () => {},
 };
