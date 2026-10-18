@@ -7,3 +7,5 @@ work/
 /a/
 src/generated/
 docs/island-1.9.0-design-handoff.zip
+# Local assistant / editor settings
+.claude/

@@ -4,8 +4,8 @@ final result: passed (package-native Windows regression; existing pins and Mac v
 
 ## Findings from beta.3 and fixes
 
-- [P2, fixed] Rail logo visibly shifted right. User evidence: `C:/Users/Jun/AppData/Local/Temp/codex-clipboard-572a4373-88ec-4699-ab40-f2a6289ca2c6.png` (83 × 82). The button's default horizontal padding constrained a 27 px SVG; `place-items:center` alone was insufficient. Set padding to zero only on the native rail brand button and make its SVG block-level. Shape, size, border, radius and all other page components remain unchanged.
-- [P1, fixed in new package] Windows taskbar showed the Electron icon. User evidence: `C:/Users/Jun/AppData/Local/Temp/codex-clipboard-61dc433e-6b42-4217-9138-3a0293f12153.png` (2560 × 48). The old runtime window used a 512 × 512 PNG/HICON even though the executable contained the ring. Windows now loads the matching small icon from `app.ico`; main-window shell metadata explicitly references the stable launcher/installed executable. The prior EXE-only QA did not cover this and its earlier pass must not be treated as evidence of taskbar correctness.
+- [P2, fixed] Rail logo visibly shifted right. User evidence: `C:/Users/<user>/AppData/Local/Temp/codex-clipboard-572a4373-88ec-4699-ab40-f2a6289ca2c6.png` (83 × 82). The button's default horizontal padding constrained a 27 px SVG; `place-items:center` alone was insufficient. Set padding to zero only on the native rail brand button and make its SVG block-level. Shape, size, border, radius and all other page components remain unchanged.
+- [P1, fixed in new package] Windows taskbar showed the Electron icon. User evidence: `C:/Users/<user>/AppData/Local/Temp/codex-clipboard-61dc433e-6b42-4217-9138-3a0293f12153.png` (2560 × 48). The old runtime window used a 512 × 512 PNG/HICON even though the executable contained the ring. Windows now loads the matching small icon from `app.ico`; main-window shell metadata explicitly references the stable launcher/installed executable. The prior EXE-only QA did not cover this and its earlier pass must not be treated as evidence of taskbar correctness.
 
 ## Post-fix evidence and normalization
 
