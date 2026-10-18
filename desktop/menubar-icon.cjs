@@ -2,7 +2,7 @@
 // - Drawn on a canvas in a hidden, sandboxed renderer (option a, T7.3) and set as a 2x image; redrawn only when the
 //   content (or, for alert colours, the system appearance) changes. No animation.
 // - Normal states use template images (macOS tints them); amber / red use the app's colour tokens.
-// - No accounts or a failed render: the static logo. The tooltip and menus are handled by main.cjs as before.
+// - No accounts or a failed or stuck render (5 s timeout, T7.12): the static logo, retried later. The tooltip and menus are handled by main.cjs as before.
 // - The system hides status items that do not fit next to the notch, silently. We detect it with CGWindowList
 //   (no screen-recording permission needed) and only report it; the form is never switched automatically.
 const path = require('node:path');
@@ -10,6 +10,20 @@ const { execFile } = require('node:child_process');
 const { BrowserWindow, nativeImage, nativeTheme, screen } = require('electron');
 const { menubarStatus } = require('./menubar-status.cjs');
 const { log } = require('./logger.cjs');
+
+const RENDER_TIMEOUT = 5000;
+const RETRY_AFTER = 30000;
+const RETRY_MAX = 600000;
+
+/** Reject after `ms` so a renderer that never answers cannot block every later redraw (T7.12). */
+function within(promise, ms) {
+  let timer;
+  const expire = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms);
+    timer.unref?.();
+  });
+  return Promise.race([promise, expire]).finally(() => clearTimeout(timer));
+}
 
 // Lists this process's status-item windows (layer 25) with their on-screen flag.
 const ONSCREEN_JXA =
@@ -77,9 +91,20 @@ function ringCentre(bitmap, width, height, ringWidth) {
 }
 
 class MenubarIcon {
-  /** @param {{ tray: any, staticImage: any, form?: 'ring'|'value'|'two', onHidden?: (hidden: boolean|null) => void }} o */
-  constructor({ tray, staticImage, form = 'value', onHidden = () => {} }) {
-    Object.assign(this, { tray, staticImage, form, onHidden });
+  /**
+   * @param {{ tray: any, staticImage: any, form?: 'ring'|'value'|'two', onHidden?: (hidden: boolean|null) => void,
+   *   timeoutMs?: number, retryMs?: number }} o
+   */
+  constructor({
+    tray,
+    staticImage,
+    form = 'value',
+    onHidden = () => {},
+    timeoutMs = RENDER_TIMEOUT,
+    retryMs = RETRY_AFTER,
+  }) {
+    Object.assign(this, { tray, staticImage, form, onHidden, timeoutMs, retryMs });
+    this.failures = 0;
     this.status = null;
     this.key = undefined;
     this.mode = 'static';
@@ -130,7 +155,12 @@ class MenubarIcon {
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', (e) => e.preventDefault());
     win.webContents.on('will-attach-webview', (e) => e.preventDefault());
-    await win.loadFile(path.join(__dirname, 'menubar-render', 'render.html'));
+    try {
+      await within(win.loadFile(path.join(__dirname, 'menubar-render', 'render.html')), this.timeoutMs);
+    } catch (error) {
+      if (!win.isDestroyed()) win.destroy();
+      throw error;
+    }
     this.window = win;
     return win;
   }
@@ -141,7 +171,10 @@ class MenubarIcon {
     try {
       const started = Date.now();
       const win = await this.renderer();
-      const out = await win.webContents.executeJavaScript('render(' + JSON.stringify(model) + ')');
+      const out = await within(
+        win.webContents.executeJavaScript('render(' + JSON.stringify(model) + ')'),
+        this.timeoutMs,
+      );
       if (this.disposed || key !== this.key) return;
       const image = nativeImage.createEmpty();
       image.addRepresentation({ scaleFactor: 2, dataURL: out.dataURL });
@@ -151,11 +184,24 @@ class MenubarIcon {
       this.image = image;
       if (this.mode !== 'dynamic') log.info('menubar', 'dynamic', { durationMs: Date.now() - started });
       this.mode = 'dynamic';
+      this.failures = 0;
       this.scheduleCheck(600);
-    } catch {
-      log.warn('menubar', 'render-failed');
+    } catch (error) {
+      log.warn('menubar', error instanceof Error && error.message === 'timeout' ? 'render-timeout' : 'render-failed');
+      // A stuck renderer is replaced, not reused. Cause of the first-launch hang is unconfirmed (T7.12).
+      if (this.window && !this.window.isDestroyed()) this.window.destroy();
+      this.window = null;
       this.useStatic();
+      if (key === this.key) this.retry();
     }
+  }
+  // Forget the drawn key so the next apply() draws again; also try on a timer (backing off) in case no update comes.
+  retry() {
+    this.key = undefined;
+    clearTimeout(this.retryTimer);
+    const delay = Math.min(this.retryMs * 2 ** this.failures++, RETRY_MAX);
+    this.retryTimer = setTimeout(() => this.apply(), delay);
+    this.retryTimer.unref?.();
   }
   useStatic() {
     if (this.disposed) return;
@@ -212,6 +258,7 @@ class MenubarIcon {
   dispose() {
     this.disposed = true;
     clearTimeout(this.checkTimer);
+    clearTimeout(this.retryTimer);
     nativeTheme.removeListener('updated', this.redraw);
     for (const event of ['display-added', 'display-removed', 'display-metrics-changed'])
       screen.removeListener(event, this.recheck);
