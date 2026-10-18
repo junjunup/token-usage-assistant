@@ -347,6 +347,70 @@ test('Harness concurrent exporters share one source identity and serialize compl
   assert.equal(latest(rows).length, 2);
 });
 
+// T4.7: Windows reports lock and status-file contention as EPERM; it is retried, never fatal.
+const busy = () => Object.assign(new Error('SECRET contention detail'), { code: 'EPERM' });
+
+test('T4.7: a transient EPERM on the lock and on the status rename is retried; both writers keep every line', async (t) => {
+  let lockFailures = 1,
+    renameFailures = 1;
+  const io = {
+    ...fs,
+    open: async (file, ...rest) => {
+      if (String(file).endsWith('.export.lock') && lockFailures-- > 0) throw busy();
+      return fs.open(file, ...rest);
+    },
+    rename: async (...args) => {
+      if (renameFailures-- > 0) throw busy();
+      return fs.rename(...args);
+    },
+  };
+  const { exporter: first, directory } = await setup(t);
+  const { UsageExporter, HARNESS_VERSION } = await plugin;
+  const second = new UsageExporter({
+    outputDirectory: directory,
+    runtimeVersion: HARNESS_VERSION,
+    now: () => BASE,
+    io,
+  });
+  await second.ready;
+  const a = session('busy-a'),
+    b = session('busy-b');
+  first.observe(a, event(0, 'step/start', { turn: 1, step: 1 }));
+  second.observe(b, event(0, 'step/start', { turn: 1, step: 1 }));
+  settle(first, a, 1);
+  settle(second, b, 1);
+  await Promise.all([first.close(), second.close()]);
+  assert.equal(lockFailures < 0 && renameFailures < 0, true);
+  assert.equal(first.error, null);
+  assert.equal(second.error, null);
+  const rows = (await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+  assert.equal(rows.length, 4);
+  assert.equal(latest(rows).length, 2);
+  const status = JSON.parse(await fs.readFile(path.join(directory, 'status.json'), 'utf8'));
+  assert.equal(status.code, null);
+});
+
+test('T4.7: a lock that stays unavailable still ends in a fixed io-error without leaking the cause', async (t) => {
+  const io = {
+    ...fs,
+    open: async (file, ...rest) => {
+      if (String(file).endsWith('.export.lock')) throw busy();
+      return fs.open(file, ...rest);
+    },
+  };
+  const { directory } = await setup(t);
+  const { UsageExporter, HARNESS_VERSION } = await plugin;
+  const stuck = new UsageExporter({ outputDirectory: directory, runtimeVersion: HARNESS_VERSION, now: () => BASE, io });
+  await stuck.ready.catch(() => {});
+  const s = session('stuck');
+  stuck.observe(s, event(0, 'step/start', { turn: 1, step: 1 }));
+  settle(stuck, s, 1);
+  await stuck.tail;
+  assert.equal(stuck.error, 'io-error');
+  const rows = (await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8')).trim();
+  assert.doesNotMatch(rows, /busy|SECRET/);
+});
+
 test('Harness one process stopping does not hide another active writer or erase its failure gap', async (t) => {
   const { exporter: first, directory } = await setup(t);
   const { UsageExporter, HARNESS_VERSION } = await plugin;
