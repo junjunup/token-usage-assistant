@@ -1,6 +1,7 @@
 // Stage 6 baseline (D3 keeps the version at 1.8.0-beta.8 until stage 6 ends): previous tag v1.8.0-beta.8 -> current
 // main. Still 8 platforms, 7 with quota, DeepSeek balance.
-// When the version is bumped (beta.9), add a 1.8.0-beta.8-to-1.8.0-beta.9 profile (also with oldHistory: 'sqlite').
+// The next version became 1.9.0-beta.1 (D3 adjusted 2026-10-18, menu-bar first version): see
+// 1.8.0-beta.8-to-1.9.0-beta.1.cjs.
 module.exports = {
   from: ['1.8.0-beta.8'],
   to: '1.8.0-beta.8',
