@@ -22,6 +22,43 @@ function createDatabase(root) {
 function startupFailed() {
   atomicWrite(resultFile(), { ok: false, error: 'startup failed' });
 }
+// T7.5: on macOS the tray icon follows the account state through main.cjs (no direct update() call here):
+// - before any saved account exists it keeps the static logo;
+// - once accounts exist it becomes the dynamic icon matching the status projection, with the ring centred where the
+//   brand mark is (18, 22 px in the 2x image). Elsewhere the tray is unchanged.
+async function menubarSmoke(ctx, phase) {
+  if (!isMac) return { ok: true, skipped: 'not-macos' };
+  if (!ctx.menubar) return { ok: false, error: 'menubar icon missing' };
+  const { menubarStatus } = require('../menubar-status.cjs');
+  let expected = null,
+    snap = null;
+  for (let i = 0; i < 20; i++) {
+    expected = menubarStatus(ctx.accounts.summaries(), ctx.settings);
+    snap = await ctx.menubar.snapshot();
+    if ((expected?.text ?? null) === (snap.status?.text ?? null) && (expected ? snap.mode === 'dynamic' : true)) break;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  const centred = !!snap.centre && Math.abs(snap.centre.x - 18) <= 1.5 && Math.abs(snap.centre.y - 22) <= 1.5;
+  const ok =
+    phase === 'empty'
+      ? expected === null && snap.mode === 'static'
+      : !!expected &&
+        snap.mode === 'dynamic' &&
+        snap.status?.text === expected.text &&
+        snap.status?.accountId === expected.accountId &&
+        snap.size?.height === 22 &&
+        centred;
+  return {
+    ok,
+    phase,
+    mode: snap.mode,
+    text: snap.status?.text,
+    tone: snap.status?.tone,
+    template: snap.template,
+    size: snap.size,
+    centre: snap.centre,
+  };
+}
 // Starts the smoke run once both renderers are ready (finish), with a 45 s handshake timeout.
 function attach(ctx) {
   ctx.monitor.configure('local-smoke-key');
@@ -92,6 +129,7 @@ function attach(ctx) {
         hasCredits: !!ctx.monitor.state.parts.credits,
         hasSummary: !!ctx.monitor.state.parts.summary,
       };
+      const menubarEmpty = await menubarSmoke(ctx, 'empty');
       report.providers = await require('./provider-native-smoke.cjs').runProviderSmoke({
         accounts: ctx.accounts,
         store: ctx.store,
@@ -148,6 +186,8 @@ function attach(ctx) {
         settings: ctx.settings,
         applySettings: ctx.applySettings,
       });
+      const menubarAccounts = await menubarSmoke(ctx, 'accounts');
+      report.menubar = { ok: menubarEmpty.ok && menubarAccounts.ok, empty: menubarEmpty, accounts: menubarAccounts };
       report.branding = await require('./branding-native-smoke.cjs').runBrandingSmoke({
         mainWindow: ctx.mainWindow,
         store: ctx.store,
@@ -155,6 +195,7 @@ function attach(ctx) {
         applySettings: ctx.applySettings,
       });
       report.ok =
+        report.menubar.ok &&
         report.opencode.ok &&
         report.ok &&
         report.branding.ok &&

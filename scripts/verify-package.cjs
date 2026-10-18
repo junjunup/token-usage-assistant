@@ -48,11 +48,23 @@ for (const p of names) {
 const packaged = JSON.parse(asar.extractFile(archive, 'package.json'));
 for (const key of ['name', 'version', 'main', 'description']) assert.equal(packaged[key], source[key]);
 assert.ok(!packaged.devDependencies);
-// Every desktop module must be packaged, including desktop/smoke/ (the native smoke runs inside the package).
+// Development-only directories that electron-builder.yml excludes (the T7.x POCs) must NOT be packaged.
+const excludedDirs = fs
+  .readFileSync(path.join(root, 'electron-builder.yml'), 'utf8')
+  .split('\n')
+  .map((line) => /^\s*-\s*'!desktop\/([^/*']+)\/\*\*'/.exec(line)?.[1])
+  .filter(Boolean);
+for (const dir of excludedDirs)
+  assert.ok(
+    !checks.some((x) => x.file.startsWith('desktop/' + dir + '/')),
+    'development-only directory packaged: ' + dir,
+  );
+// Every other desktop module must be packaged, including desktop/smoke/ (the native smoke runs inside the package).
 for (const name of fs
   .readdirSync(path.join(root, 'desktop'), { recursive: true })
   .map((x) => x.replaceAll('\\', '/'))
-  .filter((x) => x.endsWith('.cjs') && !x.endsWith('.test.cjs')))
+  .filter((x) => x.endsWith('.cjs') && !x.endsWith('.test.cjs'))
+  .filter((x) => !excludedDirs.some((dir) => x.startsWith(dir + '/'))))
   assert.ok(
     checks.some((x) => x.file === 'desktop/' + name),
     'missing desktop module ' + name,
