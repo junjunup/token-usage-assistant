@@ -47,6 +47,8 @@
 | `desktop/providers/`（`index.cjs` 与每个平台一个文件） | 平台注册表（T5.3a）：元数据、请求构造、响应体错误分类、归一化、官方页面；`provider-catalog.cjs`、`providers.cjs` 和 `main.cjs` 的官方页面都由它派生 |
 | `desktop/tool-kinds/`（`index.cjs` 与每种工具一个文件） | 工具来源种类注册表（T5.3b）：默认名称、原生选择器、`inspect`、`scan`、是否做重叠检查；`tool-sources.cjs`、`tool-worker.cjs` 和 `main.cjs` 的选择器都由它派生 |
 | `desktop/menubar-status.cjs` | 菜单栏状态投影（T7.4，纯模块、严格类型检查）：从各账户的数据决定菜单栏图标显示哪个账户 / 窗口、文字和告警色 |
+| `desktop/menubar-panel.cjs` | 菜单栏面板视图模型（T7.6，纯模块、严格类型检查；也生成到 `src/generated/` 供浏览器预览） |
+| `desktop/menubar-popover.cjs`、`src/Panel.jsx`、`src/panel.css` | Mac 菜单栏弹出面板（T7.6）：窗口定位与收起；渲染面 `?surface=panel`，只能调用 5 个面板专用 IPC |
 | `desktop/menubar-icon.cjs`、`desktop/menubar-render/` | Mac 菜单栏动态图标（T7.5）：隐藏渲染页用 canvas 画刻度环 + 数值，主进程设为托盘图标；检测图标是否被系统藏到刘海后面 |
 | `desktop/balance-domain.cjs` | DeepSeek 余额归一化与金额格式 |
 | `desktop/domain.cjs` | 通用额度状态与重置描述 |
@@ -91,5 +93,5 @@
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 
-- 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.5 已合并：Mac 菜单栏图标改为动态显示，尚未发版。
+- 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.5、T7.6 已合并：Mac 菜单栏图标改为动态显示，左键弹出用量面板、右键为原菜单；尚未发版。
 - **阻塞**：私有仓库的 GitHub Actions 作业因账户计费限制无法启动（2026-10-18），CI 与 Release 工作流暂时都不能运行，需要用户在 GitHub「Billing & plans」处理；T7.5 的 Windows 安装包待 CI 补齐。Release 工作流的 Artifacts 现只保留 7 天。
