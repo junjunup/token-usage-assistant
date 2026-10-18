@@ -127,6 +127,54 @@ async function panelSmoke(ctx) {
     hidden,
   };
 }
+// T7.7: the menu-bar settings take effect through applySettings (the normal path): usage off is the static logo,
+// the forms change the drawn width, and the panel's content protection follows its setting. Everything is restored.
+async function menubarSettingsSmoke(ctx) {
+  if (!isMac) return { ok: true, skipped: 'not-macos' };
+  if (!ctx.menubar || !ctx.menubarPanel?.window) return { ok: false, error: 'menubar or panel missing' };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const saved = { ...ctx.settings };
+  const set = async (patch) => {
+    ctx.applySettings({ ...ctx.settings, ...patch });
+    await sleep(400);
+    return ctx.menubar.snapshot();
+  };
+  const off = await set({ menubarUsage: false });
+  const on = await set({ menubarUsage: true });
+  const ring = await set({ menubarForm: 'ring' });
+  const two = await set({ menubarForm: 'two' });
+  // The panel window is recreated with the new protection setting (Electron cannot switch it off in place).
+  const protection = async (value) => {
+    await set({ panelProtect: value });
+    ctx.menubarPanel.show();
+    await sleep(600);
+    const on = ctx.menubarPanel.window.isContentProtected();
+    ctx.menubarPanel.hide();
+    return on;
+  };
+  const unprotected = (await protection(false)) === false;
+  const protectedAgain = (await protection(true)) === true;
+  ctx.applySettings(saved);
+  await sleep(400);
+  const restored = await ctx.menubar.snapshot();
+  return {
+    ok:
+      off.mode === 'static' &&
+      on.mode === 'dynamic' &&
+      ring.size?.width === 18 &&
+      two.size?.width > 18 &&
+      unprotected &&
+      protectedAgain &&
+      restored.mode === 'dynamic',
+    usageOff: off.mode,
+    usageOn: on.mode,
+    ringWidth: ring.size?.width,
+    twoWidth: two.size?.width,
+    unprotected,
+    protectedAgain,
+    restored: restored.mode,
+  };
+}
 // Starts the smoke run once both renderers are ready (finish), with a 45 s handshake timeout.
 function attach(ctx) {
   ctx.monitor.configure('local-smoke-key');
@@ -257,6 +305,7 @@ function attach(ctx) {
       const menubarAccounts = await menubarSmoke(ctx, 'accounts');
       report.menubar = { ok: menubarEmpty.ok && menubarAccounts.ok, empty: menubarEmpty, accounts: menubarAccounts };
       report.panel = await panelSmoke(ctx);
+      report.menubarSettings = await menubarSettingsSmoke(ctx);
       report.branding = await require('./branding-native-smoke.cjs').runBrandingSmoke({
         mainWindow: ctx.mainWindow,
         store: ctx.store,
@@ -266,6 +315,7 @@ function attach(ctx) {
       report.ok =
         report.menubar.ok &&
         report.panel.ok &&
+        report.menubarSettings.ok &&
         report.opencode.ok &&
         report.ok &&
         report.branding.ok &&

@@ -20,11 +20,12 @@ const ONSCREEN_JXA =
 /**
  * What the renderer draws, or null for the static logo.
  * @param {import('./menubar-status.cjs').MenubarStatus|null} status
- * @param {{ form?: 'ring'|'value'|'two', dark: boolean }} options
+ * @param {{ form?: 'ring'|'value'|'two', dark: boolean, alertColor?: boolean }} options alertColor false (T7.7
+ *   setting off) keeps every state monochrome.
  */
-function iconModel(status, { form = 'value', dark }) {
+function iconModel(status, { form = 'value', dark, alertColor = true }) {
   if (!status) return null;
-  const template = status.tone === 'normal' && status.lines.every((l) => l.tone === 'normal');
+  const template = !alertColor || (status.tone === 'normal' && status.lines.every((l) => l.tone === 'normal'));
   return {
     form,
     ratio: status.ring,
@@ -93,13 +94,24 @@ class MenubarIcon {
     for (const event of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(event, this.recheck);
   }
   /** @param {any[]} summaries AccountManager.summaries() @param {{ threshold: number }} settings */
+  // T7.7 settings: menubarForm, menubarUsage (off = static logo), menubarAlertColor (off = monochrome).
   update(summaries, settings) {
     this.status = menubarStatus(summaries, settings);
+    this.form = ['ring', 'value', 'two'].includes(settings?.menubarForm) ? settings.menubarForm : 'value';
+    this.usage = settings?.menubarUsage !== false;
+    this.alertColor = settings?.menubarAlertColor !== false;
     return this.apply();
   }
   apply() {
     if (this.disposed) return this.settled;
-    const model = iconModel(this.status, { form: this.form, dark: nativeTheme.shouldUseDarkColors });
+    const model =
+      this.usage === false
+        ? null
+        : iconModel(this.status, {
+            form: this.form,
+            dark: nativeTheme.shouldUseDarkColors,
+            alertColor: this.alertColor,
+          });
     const key = JSON.stringify(model);
     if (key === this.key) return this.settled;
     this.key = key;

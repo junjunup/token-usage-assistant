@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { iconModel, onscreenFor, ringCentre } = require('../desktop/menubar-icon.cjs');
+const { DEFAULT_SETTINGS, patchSettings } = require('../desktop/domain.cjs');
 
 const status = (over = {}) => ({
   accountId: 'cc',
@@ -79,4 +80,25 @@ test('ring centre is the bounding-box centre of visible pixels in the ring area'
   const c = ringCentre(bitmap, width, height, 36);
   assert.ok(c && Math.abs(c.x - 18) <= 0.5 && Math.abs(c.y - 22) <= 0.5);
   assert.equal(ringCentre(Buffer.alloc(width * height * 4), width, height, 36), null);
+});
+
+test('T7.7 settings: defaults and validation', () => {
+  assert.equal(DEFAULT_SETTINGS.menubarForm, 'value');
+  assert.equal(DEFAULT_SETTINGS.menubarUsage, true);
+  assert.equal(DEFAULT_SETTINGS.menubarAlertColor, true);
+  assert.equal(DEFAULT_SETTINGS.panelProtect, true);
+  for (const form of ['ring', 'value', 'two'])
+    assert.equal(patchSettings(DEFAULT_SETTINGS, { menubarForm: form }).menubarForm, form);
+  assert.throws(() => patchSettings(DEFAULT_SETTINGS, { menubarForm: 'three' }));
+  assert.equal(patchSettings(DEFAULT_SETTINGS, { menubarUsage: false }).menubarUsage, false);
+  assert.throws(() => patchSettings(DEFAULT_SETTINGS, { menubarAlertColor: 'no' }));
+  assert.throws(() => patchSettings(DEFAULT_SETTINGS, { panelProtect: 0 }));
+});
+
+test('alert colours off keeps every state monochrome; the form is passed through', () => {
+  const red = iconModel(status({ tone: 'red', text: '0%' }), { form: 'ring', dark: true, alertColor: false });
+  assert.equal(red?.template, true);
+  assert.equal(red?.dark, false);
+  assert.equal(red?.form, 'ring');
+  assert.equal(red?.tone, 'red'); // the text and ring still follow the data; only the colour is dropped
 });

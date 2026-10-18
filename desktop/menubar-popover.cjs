@@ -12,10 +12,10 @@ const ARROW = 8; // points above the card for the arrow that points at the icon
 class MenubarPopover {
   /**
    * @param {{ tray: any, url: string, preload: string, devTools: boolean, payload: () => any,
-   *   onShow?: () => void }} o
+   *   protect?: () => boolean, onShow?: () => void }} o protect: the T7.7 "panel protection" setting
    */
-  constructor({ tray, url, preload, devTools, payload, onShow = () => {} }) {
-    Object.assign(this, { tray, url, preload, devTools, payload, onShow });
+  constructor({ tray, url, preload, devTools, payload, protect = () => true, onShow = () => {} }) {
+    Object.assign(this, { tray, url, preload, devTools, payload, protect, onShow });
     this.window = null;
     this.lastBlurHide = 0;
     this.anchorX = WIDTH / 2;
@@ -48,7 +48,11 @@ class MenubarPopover {
     });
     win.setAlwaysOnTop(true, 'pop-up-menu');
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    win.setContentProtection(true);
+    // Electron 44 on macOS 15 cannot turn content protection off again once it was on (the window stays hidden
+    // from capture and isContentProtected() stays true, T7.7), so the setting is fixed per window and a change
+    // recreates the window (see send()).
+    this.protectedAs = this.protect();
+    win.setContentProtection(this.protectedAs);
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', (e, target) => {
       if (target !== this.url) e.preventDefault();
@@ -109,7 +113,14 @@ class MenubarPopover {
     return { ...this.payload(), anchorX: this.anchorX, arrow: ARROW, openedAt: this.openedAt };
   }
   send() {
-    if (this.webContents) this.webContents.send('assistant:panel', this.state());
+    if (!this.webContents) return;
+    // Every settings change ends in a broadcast: a changed protection setting replaces the window, which is
+    // created again (with the new setting) the next time the panel opens.
+    if (this.protectedAs !== this.protect()) {
+      this.dispose();
+      return;
+    }
+    this.webContents.send('assistant:panel', this.state());
   }
   dispose() {
     if (this.window && !this.window.isDestroyed()) this.window.destroy();
