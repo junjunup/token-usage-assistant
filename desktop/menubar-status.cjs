@@ -10,7 +10,9 @@ const { formatAmount } = require('./balance-domain.cjs');
 /**
  * @typedef {'normal'|'amber'|'red'} Tone
  * @typedef {{ id: string, label: string, short: string, kind: 'window'|'balance', ratio: number|null,
- *   percent: number|null, text: string, tone: Tone, resetAt: number|null }} Slot
+ *   percent: number|null, text: string, tone: Tone, resetAt: number|null, window?: WindowInfo }} Slot
+ * @typedef {{ resetAt: number|null, resetState: string, used: number|null, unlimited: boolean, exceeded: boolean }}
+ *   WindowInfo the raw fields resetDescription() needs (T7.6 panel)
  * @typedef {{ id: string, label: string, provider: string, active: boolean,
  *   capabilities?: { quota?: boolean, balance?: boolean } | null,
  *   status?: string, parts?: any, updatedAt?: any }} AccountSummary
@@ -62,7 +64,15 @@ function shortLabel(label) {
  */
 function windowSlot(id, label, w, threshold) {
   if (!w || w.applicable === false) return null;
-  const base = { id, label, short: shortLabel(label), kind: /** @type {'window'} */ ('window') };
+  /** @type {WindowInfo} */
+  const info = {
+    resetAt: typeof w.resetAt === 'number' ? w.resetAt : null,
+    resetState: typeof w.resetState === 'string' ? w.resetState : 'unknown',
+    used: typeof w.used === 'number' ? w.used : null,
+    unlimited: !!w.unlimited,
+    exceeded: !!w.exceeded,
+  };
+  const base = { id, label, short: shortLabel(label), kind: /** @type {'window'} */ ('window'), window: info };
   if (w.unlimited) return { ...base, ratio: null, percent: null, text: '不限', tone: 'normal', resetAt: null };
   const p = typeof w.remainingPercent === 'number' && Number.isFinite(w.remainingPercent) ? w.remainingPercent : null;
   const tone = w.exceeded ? 'red' : p !== null && p < threshold ? 'amber' : 'normal';

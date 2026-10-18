@@ -44,6 +44,16 @@ const { windowIcon, taskbarDetails } = require('./branding.cjs');
 const { log } = require('./logger.cjs');
 const { buildDiagnostics } = require('./diagnostics.cjs');
 const { MenubarIcon } = require('./menubar-icon.cjs');
+const { MenubarPopover } = require('./menubar-popover.cjs');
+const { panelState } = require('./menubar-panel.cjs');
+// T7.6: the popover panel may only use these channels (least privilege); everything else is refused.
+const PANEL_CHANNELS = new Set([
+  'assistant:panel-state',
+  'assistant:panel-resize',
+  'assistant:panel-official',
+  'assistant:panel-main',
+  'assistant:renderer-ready',
+]);
 const isMac = process.platform === 'darwin';
 const APP_ORIGIN = 'companion://app';
 const APP_ID = 'local.commandcode.tokenusageassistant';
@@ -77,7 +87,9 @@ if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 let mainWindow,
   widgetWindow,
   tray,
+  trayMenu,
   menubar,
+  menubarPanel,
   store,
   settings,
   bounds = {},
@@ -143,6 +155,7 @@ function broadcast() {
   const s = state();
   for (const w of [mainWindow, widgetWindow]) if (w && !w.isDestroyed()) w.webContents.send('assistant:state', s);
   updateTray();
+  menubarPanel?.send();
 }
 function savePreferences() {
   store.saveSettings(settings, bounds);
@@ -379,44 +392,63 @@ function updateTray() {
             '5 小时 ' + percent(credit?.five?.remainingPercent) + ' · 每周 ' + percent(credit?.week?.remainingPercent),
           ];
   tray.setToolTip(['Token 用量助手', accounts?.active.entry.label || '未连接', ...lines].join('\n'));
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      ...(updates?.state.status === 'available'
-        ? [
-            { label: `发现新版本 ${updates.state.latest.version}，查看…`, click: () => openUpdate() },
-            { type: 'separator' },
-          ]
-        : []),
-      { label: '打开用量总览', click: showMain },
-      {
-        label: '显示悬浮窗',
-        type: 'checkbox',
-        checked: settings.floating,
-        click: (item) => applySettings({ ...settings, floating: item.checked }),
+  trayMenu = Menu.buildFromTemplate([
+    ...(updates?.state.status === 'available'
+      ? [
+          { label: `发现新版本 ${updates.state.latest.version}，查看…`, click: () => openUpdate() },
+          { type: 'separator' },
+        ]
+      : []),
+    { label: '打开用量总览', click: showMain },
+    {
+      label: '显示悬浮窗',
+      type: 'checkbox',
+      checked: settings.floating,
+      click: (item) => applySettings({ ...settings, floating: item.checked }),
+    },
+    { label: '刷新用量', enabled: !!monitor?.key && !monitor?.state.fetching, click: () => monitor.refresh() },
+    { type: 'separator' },
+    {
+      label: '开机启动',
+      type: 'checkbox',
+      checked: settings.launchAtLogin,
+      enabled: app.isPackaged,
+      click: (item) => applySettings({ ...settings, launchAtLogin: item.checked }),
+    },
+    { type: 'separator' },
+    {
+      label: '退出助手',
+      click: () => {
+        quitting = true;
+        app.quit();
       },
-      { label: '刷新用量', enabled: !!monitor?.key && !monitor?.state.fetching, click: () => monitor.refresh() },
-      { type: 'separator' },
-      {
-        label: '开机启动',
-        type: 'checkbox',
-        checked: settings.launchAtLogin,
-        enabled: app.isPackaged,
-        click: (item) => applySettings({ ...settings, launchAtLogin: item.checked }),
-      },
-      { type: 'separator' },
-      {
-        label: '退出助手',
-        click: () => {
-          quitting = true;
-          app.quit();
-        },
-      },
-    ]),
-  );
+    },
+  ]);
+  // T7.6: on macOS the left click opens the popover panel and the right click shows this menu; setContextMenu would
+  // take the left click too. Windows keeps the menu as before.
+  if (!(isMac && menubarPanel)) tray.setContextMenu(trayMenu);
+}
+// Panel payload (T7.6): every account's panel view model, the theme, and which accounts have an official page.
+function panelPayload() {
+  const summaries = accounts?.summaries() || [];
+  const officials = {};
+  for (const a of summaries) {
+    const runtime = accounts.runtimes.get(a.id);
+    officials[a.id] = !!providerDefinition(a.provider)?.officialUrl({
+      region: runtime?.entry.region,
+      identity: runtime?.monitor.state.parts.identity,
+      target: 'usage',
+    });
+  }
+  return { ...panelState(summaries, settings), theme: settings.theme, officials };
+}
+function panelOnly(event) {
+  if (!menubarPanel || event.sender !== menubarPanel.webContents) throw new Error('请在用量面板中操作');
 }
 function trusted(event) {
   return (
-    [mainWindow, widgetWindow].some((w) => w && !w.isDestroyed() && w.webContents === event.sender) &&
+    ([mainWindow, widgetWindow].some((w) => w && !w.isDestroyed() && w.webContents === event.sender) ||
+      (!!menubarPanel?.webContents && menubarPanel.webContents === event.sender)) &&
     event.senderFrame === event.sender.mainFrame &&
     event.senderFrame.url.startsWith(`${APP_ORIGIN}/index.html?surface=`)
   );
@@ -427,6 +459,8 @@ function mainOnly(event) {
 function handle(channel, fn) {
   ipcMain.handle(channel, async (event, value) => {
     if (!trusted(event)) return { ok: false, error: '不受信任的请求' };
+    if (menubarPanel?.webContents === event.sender && !PANEL_CHANNELS.has(channel))
+      return { ok: false, error: '不受信任的请求' };
     try {
       return { ok: true, value: await fn(event, value) };
     } catch (e) {
@@ -556,8 +590,14 @@ function installIpc() {
     }
   });
   handle('assistant:renderer-ready', (event) => {
-    readySurfaces.add(event.sender === mainWindow?.webContents ? 'main' : 'widget');
-    if (smokeRun && readySurfaces.size === 2) smokeRun.finish();
+    readySurfaces.add(
+      event.sender === mainWindow?.webContents
+        ? 'main'
+        : event.sender === widgetWindow?.webContents
+          ? 'widget'
+          : 'panel',
+    );
+    if (smokeRun && readySurfaces.has('main') && readySurfaces.has('widget')) smokeRun.finish();
     return true;
   });
   handle('assistant:connect', async (event, value) => {
@@ -683,6 +723,37 @@ function installIpc() {
     } else throw inputError('不支持的窗口操作');
     return true;
   });
+  // Popover panel (T7.6).
+  handle('assistant:panel-state', (event) => {
+    panelOnly(event);
+    return menubarPanel.state();
+  });
+  handle('assistant:panel-resize', (event, height) => {
+    panelOnly(event);
+    menubarPanel.resize(height);
+    return true;
+  });
+  handle('assistant:panel-main', (event) => {
+    panelOnly(event);
+    menubarPanel.hide();
+    showMain();
+    return true;
+  });
+  handle('assistant:panel-official', (event, id) => {
+    panelOnly(event);
+    const runtime = accounts.runtimes.get(String(id));
+    if (!runtime) throw inputError('账户不存在');
+    const { provider, region } = runtime.entry;
+    // Official pages come from the platform registry only (desktop/providers/).
+    const url = providerDefinition(provider)?.officialUrl({
+      region,
+      identity: runtime.monitor.state.parts.identity,
+      target: 'usage',
+    });
+    if (!url) throw inputError('不支持的地址');
+    menubarPanel.hide();
+    return shell.openExternal(url);
+  });
   handle('assistant:official', (_event, target) => {
     if (!['usage', 'studio'].includes(target)) throw inputError('不支持的地址');
     const { provider, region } = accounts.active.entry;
@@ -776,6 +847,9 @@ function smokeContext() {
     },
     get menubar() {
       return menubar;
+    },
+    get menubarPanel() {
+      return menubarPanel;
     },
     get accounts() {
       return accounts;
@@ -875,7 +949,18 @@ else {
           tray.on('click', showMain);
           tray.on('double-click', showMain);
         }
-        if (tray && isMac) menubar = new MenubarIcon({ tray, staticImage: icon });
+        if (tray && isMac) {
+          menubar = new MenubarIcon({ tray, staticImage: icon });
+          menubarPanel = new MenubarPopover({
+            tray,
+            url: `${APP_ORIGIN}/index.html?surface=panel`,
+            preload: path.join(__dirname, 'preload.cjs'),
+            devTools: !app.isPackaged,
+            payload: panelPayload,
+          });
+          tray.on('click', () => menubarPanel.toggle());
+          tray.on('right-click', () => trayMenu && tray.popUpContextMenu(trayMenu));
+        }
       } catch {
         log.warn('main', 'tray-failed');
         tray = null;
@@ -952,6 +1037,7 @@ else {
   app.on('before-quit', () => {
     quitting = true;
     menubar?.dispose();
+    menubarPanel?.dispose();
     accounts?.dispose();
     toolSources?.dispose();
     claudeCollector?.close();

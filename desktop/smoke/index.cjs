@@ -59,6 +59,74 @@ async function menubarSmoke(ctx, phase) {
     centre: snap.centre,
   };
 }
+// T7.6: the menu-bar popover panel (macOS). Opened without a click (same positioning code), it must be sandboxed,
+// content-protected, open on the account the icon shows, refuse IPC channels outside its allow-list, and hide again.
+// Light and dark captures of the real panel are kept in the isolated test directory for the D10 review.
+async function panelSmoke(ctx) {
+  if (!isMac) return { ok: true, skipped: 'not-macos' };
+  const panel = ctx.menubarPanel;
+  if (!panel) return { ok: false, error: 'panel missing' };
+  const fs = require('node:fs');
+  const { menubarStatus } = require('../menubar-status.cjs');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const until = async (test, ms = 10000) => {
+    for (const end = Date.now() + ms; Date.now() < end; await sleep(100)) if (await test()) return true;
+    return false;
+  };
+  panel.show();
+  const ready = await until(() => ctx.readySurfaces.has('panel'));
+  await sleep(800);
+  const win = panel.window;
+  const prefs = win.webContents.getLastWebPreferences();
+  const expected = menubarStatus(ctx.accounts.summaries(), ctx.settings)?.accountLabel || '';
+  const name = await win.webContents.executeJavaScript('document.querySelector(".panel-name")?.textContent || ""');
+  const denied = await win.webContents.executeJavaScript(
+    'window.tokenAssistant.getState().then((r) => r.ok ? "" : r.error)',
+  );
+  const allowed = await win.webContents.executeJavaScript('window.tokenAssistant.panelState().then((r) => r.ok)');
+  const capture = async (file) => {
+    const image = await win.webContents.capturePage();
+    fs.writeFileSync(path.join(app.getPath('userData'), file), image.toPNG());
+    return image.getSize();
+  };
+  const visible = win.isVisible();
+  const theme = ctx.settings.theme;
+  ctx.applySettings({ ...ctx.settings, theme: 'light' });
+  await sleep(800);
+  const light = await capture('panel-light.png');
+  ctx.applySettings({ ...ctx.settings, theme: 'dark' });
+  await sleep(800);
+  const dark = await capture('panel-dark.png');
+  ctx.applySettings({ ...ctx.settings, theme });
+  panel.hide();
+  await sleep(200);
+  const hidden = !win.isVisible();
+  return {
+    ok:
+      ready &&
+      visible &&
+      prefs.sandbox === true &&
+      prefs.contextIsolation === true &&
+      prefs.nodeIntegration === false &&
+      win.isContentProtected() &&
+      !!expected &&
+      name === expected &&
+      denied === '不受信任的请求' &&
+      allowed === true &&
+      hidden,
+    ready,
+    visible,
+    sandbox: prefs.sandbox,
+    contextIsolation: prefs.contextIsolation,
+    contentProtected: win.isContentProtected(),
+    account: name === expected,
+    deniedOutsideAllowList: denied === '不受信任的请求',
+    bounds: win.getBounds(),
+    light,
+    dark,
+    hidden,
+  };
+}
 // Starts the smoke run once both renderers are ready (finish), with a 45 s handshake timeout.
 function attach(ctx) {
   ctx.monitor.configure('local-smoke-key');
@@ -188,6 +256,7 @@ function attach(ctx) {
       });
       const menubarAccounts = await menubarSmoke(ctx, 'accounts');
       report.menubar = { ok: menubarEmpty.ok && menubarAccounts.ok, empty: menubarEmpty, accounts: menubarAccounts };
+      report.panel = await panelSmoke(ctx);
       report.branding = await require('./branding-native-smoke.cjs').runBrandingSmoke({
         mainWindow: ctx.mainWindow,
         store: ctx.store,
@@ -196,6 +265,7 @@ function attach(ctx) {
       });
       report.ok =
         report.menubar.ok &&
+        report.panel.ok &&
         report.opencode.ok &&
         report.ok &&
         report.branding.ok &&

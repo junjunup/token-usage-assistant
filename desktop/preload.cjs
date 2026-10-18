@@ -30,6 +30,16 @@ contextBridge.exposeInMainWorld(
     previewDiagnostics: () => call('assistant:diagnostics-preview'),
     saveDiagnostics: () => call('assistant:diagnostics-save'),
     ready: () => call('assistant:renderer-ready'),
+    // Popover panel (T7.6); main.cjs only accepts these from the panel window.
+    panelState: () => call('assistant:panel-state'),
+    panelResize: (height) => call('assistant:panel-resize', height),
+    panelOfficial: (accountId) => call('assistant:panel-official', accountId),
+    panelMain: () => call('assistant:panel-main'),
+    onPanel: (callback) => {
+      const listener = (_event, value) => callback(value);
+      ipcRenderer.on('assistant:panel', listener);
+      return () => ipcRenderer.removeListener('assistant:panel', listener);
+    },
     onState: (callback) => {
       const listener = (_event, value) => callback(value);
       ipcRenderer.on('assistant:state', listener);

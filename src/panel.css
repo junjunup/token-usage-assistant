@@ -1,0 +1,223 @@
+/* Menu-bar popover panel (T7.6). Follows the approved mock (docs/island-1.9.0-design/menubar-proposals.html, §三);
+   colour tokens come from .app / .app.dark in styles.css. The window itself is transparent. */
+html.panel-surface,
+html.panel-surface body,
+html.panel-surface #root {
+  background: transparent;
+  margin: 0;
+  overflow: hidden;
+}
+.app.panel-root {
+  width: 360px;
+  min-height: 0;
+  background: transparent;
+  position: relative;
+  padding: 0 0 2px;
+  font-size: 13px;
+  user-select: none;
+  cursor: default;
+}
+.panel-arrow {
+  position: absolute;
+  top: 3px;
+  width: 12px;
+  height: 12px;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  transform: rotate(45deg);
+  z-index: 1;
+}
+.panel-card {
+  position: relative;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.panel-head,
+.panel-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+}
+.panel-head {
+  border-bottom: 1px solid var(--line);
+}
+.panel-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.panel-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.panel-account small,
+.panel-muted {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.panel-stale {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--amber);
+  background: var(--amber-pale);
+  border-bottom: 1px solid var(--line);
+}
+.panel-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.panel-row + .panel-row {
+  margin-top: 12px;
+}
+.panel-row-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.panel-pct,
+.panel-mono,
+.panel-cell b,
+.panel-balance b {
+  font-family: 'Geist Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.panel-pct {
+  font-size: 15px;
+  font-weight: 500;
+}
+.panel-pct.amber,
+.panel-cell b.amber {
+  color: var(--amber);
+}
+.panel-pct.red,
+.panel-cell b.red {
+  color: var(--red);
+}
+.panel-reset {
+  margin-top: 5px;
+}
+.panel-more {
+  margin-top: 10px;
+}
+.panel-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.panel-balance + .panel-balance {
+  margin-top: 6px;
+}
+.panel-balance b {
+  font-size: 20px;
+  font-weight: 500;
+}
+.panel-cells {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.panel-cell {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+.panel-cell small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.panel-cell b {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.panel-cell b.token {
+  color: var(--purple);
+}
+.panel-cell em {
+  display: block;
+  font-style: normal;
+  color: var(--muted);
+  font-size: 10.5px;
+  margin-top: 3px;
+}
+.panel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.panel-chip,
+.panel-link {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+.panel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 12px;
+}
+.panel-chip.selected {
+  border-color: var(--fg);
+}
+.panel-chip .panel-mono {
+  color: var(--muted);
+}
+.panel-chip:focus-visible,
+.panel-link:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.panel-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex: none;
+}
+.panel-dot.amber {
+  background: var(--amber);
+}
+.panel-dot.red {
+  background: var(--red);
+}
+.panel-foot {
+  font-size: 12px;
+}
+.panel-error {
+  color: var(--red);
+  font-size: 11px;
+}
+.panel-empty {
+  padding: 18px 14px;
+}
+.panel-empty p {
+  margin: 0 0 8px;
+}
