@@ -62,7 +62,7 @@ Mac 版整体为 ②：真机上的安装、Keychain、托盘、睡眠唤醒、�
 
 ```bash
 pnpm install
-pnpm run test:desktop      # 桌面与分析测试（当前基线 328 通过 / 0 失败 / 3 跳过）
+pnpm run test:desktop      # 桌面与分析测试（当前基线 329 通过 / 0 失败 / 3 跳过）
 pnpm run lint              # ESLint
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）
 pnpm run build             # 构建 dist/client（改动界面后必须重新构建）

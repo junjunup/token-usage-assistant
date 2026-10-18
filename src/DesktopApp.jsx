@@ -104,7 +104,7 @@ const MENUBAR_FORMS = [
 function MenubarSettings({ state, settings, pref }) {
   const usage = settings.menubarUsage !== false;
   return (
-    <div className="menubar-settings">
+    <div className="menubar-settings" id="menubar-settings">
       <div className="settings-subhead">
         <AppWindow size={15} />
         菜单栏图标与面板
@@ -118,7 +118,10 @@ function MenubarSettings({ state, settings, pref }) {
       <div className="setting-row">
         <div>
           <h2>图标形态</h2>
-          <p>菜单栏图标显示最紧急的账户窗口。② 约 51–81pt 宽，③ 约 73pt；放不下时系统会把图标藏到刘海后面。</p>
+          <p>
+            菜单栏图标显示最紧急的账户窗口。① 约 34pt 宽；② 约 60–95pt、③ 约
+            75–100pt，随数值长短变化；放不下时系统会把图标藏到刘海后面。
+          </p>
         </div>
         <Select
           label="菜单栏图标形态"
@@ -233,8 +236,17 @@ export function DesktopApp() {
   // Drop selected sources that were removed or disabled.
   if (state?.toolSources && sourceIds.some((id) => !state.toolSources.some((s) => s.id === id && s.enabled)))
     setSourceIds(sourceIds.filter((id) => state.toolSources.some((s) => s.id === id && s.enabled)));
+  // Where the next view change should land: the top, or a settings group a link points at (T7.10).
+  const jumpTo = useRef(null);
+  const openSettingsAt = (id) => {
+    jumpTo.current = id;
+    setView('settings');
+  };
   useEffect(() => {
-    document.querySelector('.native-app .main-content')?.scrollTo({ top: 0 });
+    const target = jumpTo.current && document.getElementById(jumpTo.current);
+    jumpTo.current = null;
+    if (target) target.scrollIntoView({ block: 'start' });
+    else document.querySelector('.native-app .main-content')?.scrollTo({ top: 0 });
   }, [view]);
   useEffect(() => {
     let alive = true;
@@ -652,7 +664,7 @@ export function DesktopApp() {
                     <div className="inline-warning" role="status">
                       <WarningCircle size={17} />
                       <span>菜单栏空间不足，用量图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。</span>
-                      <button onClick={() => setView('settings')}>
+                      <button onClick={() => openSettingsAt('menubar-settings')}>
                         菜单栏设置
                         <ArrowUpRight size={14} />
                       </button>
