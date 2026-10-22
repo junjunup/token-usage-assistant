@@ -2,7 +2,7 @@
 
 倒序排列。每个版本的详细说明、验证记录见对应的 `docs/` 专题文档和 `docs/verification-<版本>/`。证据等级：①合成契约测试 ②打包原生 smoke ③真实账户或真机验收。
 
-## 1.9.0-beta.2（未发布）
+## 1.9.0-beta.2（2026-10-23，菜单栏改进）
 
 - macOS 安装包附带 Electron 与 Chromium（及其组件）的许可证文件：应用内 `Contents/Resources/LICENSE.electron.txt`、`LICENSES.chromium.html`（Windows 安装包原本就有）。
 - DeepSeek Harness 导出插件（导出器版本仍为 1.4.0，导出格式不变）：Windows 上多个 Harness 进程同时导出到同一目录时，锁文件或 `status.json` 被另一个进程占用会返回 `EPERM`，旧版插件把它当成致命错误，此后停止导出（来源显示 `io-error`）。现在会在短时间内重试，持续失败仍报 `io-error`。需要在 Harness 中重新安装插件才生效（T4.7）。
