@@ -47,4 +47,10 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   gatekeeperAssess: false
+  # Electron's own license and the bundled Chromium / Node.js licenses (electron-builder adds these on Windows only).
+  extraResources:
+    - from: node_modules/electron/dist/LICENSE
+      to: LICENSE.electron.txt
+    - from: node_modules/electron/dist/LICENSES.chromium.html
+      to: LICENSES.chromium.html
   notarize: false

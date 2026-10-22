@@ -4,7 +4,7 @@ Token 用量助手本身以 [MIT 许可证](LICENSE) 发布。安装包中还包
 
 | 组件 | 版本 | 许可证 | 用途 |
 |---|---|---|---|
-| [Electron](https://github.com/electron/electron) | 44.4.4 | MIT | 桌面应用运行时；它包含的 Chromium、Node.js 等组件的许可证见 Electron 发行包中的 `LICENSE` 与 `LICENSES.chromium.html`（Mac 安装包目前没有附带这两个文件，待补） |
+| [Electron](https://github.com/electron/electron) | 44.4.4 | MIT | 桌面应用运行时；它包含的 Chromium、Node.js 等组件的许可证见 Electron 发行包中的 `LICENSE` 与 `LICENSES.chromium.html`（Windows 安装目录与 Mac 应用的 `Contents/Resources` 中分别为 `LICENSE.electron.txt` 与 `LICENSES.chromium.html`，自 1.9.0-beta.2 起 Mac 也附带） |
 | [React](https://github.com/facebook/react) / React DOM | 19.2.0 | MIT | 界面 |
 | [Chart.js](https://github.com/chartjs/Chart.js) | 4.5.1 | MIT | 用量图表 |
 | [Phosphor Icons](https://github.com/phosphor-icons/react) | 2.1.10 | MIT | 界面图标 |
