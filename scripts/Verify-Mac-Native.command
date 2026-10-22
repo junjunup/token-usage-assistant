@@ -76,6 +76,17 @@ else
   record 'infoPlist' 0 "CFBundleIdentifier=${BUNDLE_ID}, CFBundleIconFile=${ICON_NAME}, CFBundleShortVersionString=${BUNDLE_VERSION}"
 fi
 
+# 4b. Third-party license files shipped inside the bundle (Electron, Chromium and its components).
+LICENSE_MISSING=''
+for f in LICENSE.electron.txt LICENSES.chromium.html; do
+  [ -s "$APP/Contents/Resources/$f" ] || LICENSE_MISSING="$LICENSE_MISSING $f"
+done
+if [ -z "$LICENSE_MISSING" ]; then
+  record 'licenseFiles' 1 'Contents/Resources 含 LICENSE.electron.txt 与 LICENSES.chromium.html'
+else
+  record 'licenseFiles' 0 "Contents/Resources 缺少：${LICENSE_MISSING}"
+fi
+
 # 5. Native smoke test in an isolated directory (first real nativeMacTest evidence).
 SMOKE_DIR="$(mktemp -d "$TMP/smoke.XXXXXXXX")"
 EXEC_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST" 2>/dev/null || true)"
