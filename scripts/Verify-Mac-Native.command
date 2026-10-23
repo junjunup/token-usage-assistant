@@ -81,8 +81,13 @@ LICENSE_MISSING=''
 for f in LICENSE.electron.txt LICENSES.chromium.html; do
   [ -s "$APP/Contents/Resources/$f" ] || LICENSE_MISSING="$LICENSE_MISSING $f"
 done
+# T8.7: the app's own license and the third-party notices / license texts, byte-identical to the repository's.
+for pair in LICENSE.txt:LICENSE THIRD_PARTY_NOTICES.md:THIRD_PARTY_NOTICES.md THIRD_PARTY_LICENSES.txt:THIRD_PARTY_LICENSES.txt; do
+  f="${pair%%:*}"; src="${pair#*:}"
+  cmp -s "$APP/Contents/Resources/$f" "$ROOT/$src" || LICENSE_MISSING="$LICENSE_MISSING $f"
+done
 if [ -z "$LICENSE_MISSING" ]; then
-  record 'licenseFiles' 1 'Contents/Resources 含 LICENSE.electron.txt 与 LICENSES.chromium.html'
+  record 'licenseFiles' 1 'Contents/Resources 含 LICENSE.electron.txt、LICENSES.chromium.html，以及与仓库一致的 LICENSE.txt、THIRD_PARTY_NOTICES.md、THIRD_PARTY_LICENSES.txt'
 else
   record 'licenseFiles' 0 "Contents/Resources 缺少：${LICENSE_MISSING}"
 fi
