@@ -12,6 +12,11 @@ VERSION="$(node -p "require('./package.json').version")"
 # CI overrides: TUA_RELEASE_DIR (build output) and TUA_REPORT_DIR (where mac-app-integrity.json goes).
 OUT="${TUA_RELEASE_DIR:-$ROOT/release-v$VERSION}"
 REPORT_DIR="${TUA_REPORT_DIR:-$ROOT/docs/verification-$VERSION}"
+# T8.10: a local build at an already-released version must not overwrite the official report committed for it.
+if [ -z "${TUA_REPORT_DIR:-}" ] && git -C "$ROOT" ls-files --error-unmatch "docs/verification-$VERSION/mac-app-integrity.json" >/dev/null 2>&1; then
+  REPORT_DIR="$ROOT/work/local-verification-$VERSION"
+  echo "docs/verification-$VERSION/ 已有正式报告，本次报告写到 $REPORT_DIR"
+fi
 APP="$(find "$OUT" -maxdepth 3 -type d -name 'Token 用量助手.app' 2>/dev/null | head -1)"
 if [ -z "$APP" ]; then
   echo "未在 $OUT 下找到 Token 用量助手.app；请先运行 scripts/Build-Mac-App.command。"
