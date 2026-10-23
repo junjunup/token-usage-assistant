@@ -386,3 +386,52 @@ test('widget expansion stays within the selected display work area', () => {
   assert.equal(expanded.y, 40);
   assert.equal(expanded.x, compact.x);
 });
+
+// T8.2: preferences this build does not know (written by a newer version) survive a save.
+test('T8.2: unknown preferences are kept on save; invalid known values still fall back to the default', () => {
+  const os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tua-prefs-'));
+  try {
+    const store = new LocalStore(dir, { isEncryptionAvailable: () => false });
+    fs.writeFileSync(
+      store.file('settings.json'),
+      JSON.stringify({
+        preferences: { theme: 'dark', refreshSeconds: 999, futurePreference: { a: 1 }, futureFlag: false },
+        bounds: { main: { x: 5 } },
+      }),
+    );
+    const { preferences, bounds } = store.settings();
+    assert.equal(preferences.theme, 'dark');
+    assert.equal(preferences.refreshSeconds, settings.refreshSeconds);
+    assert.equal(Object.hasOwn(preferences, 'futurePreference'), false);
+    store.saveSettings({ ...preferences, threshold: 10 }, bounds);
+    const raw = JSON.parse(fs.readFileSync(store.file('settings.json'), 'utf8'));
+    assert.deepEqual(raw.preferences.futurePreference, { a: 1 });
+    assert.equal(raw.preferences.futureFlag, false);
+    assert.equal(raw.preferences.threshold, 10);
+    assert.equal(raw.preferences.refreshSeconds, settings.refreshSeconds);
+    assert.deepEqual(raw.bounds, { main: { x: 5 } });
+    // A fresh read after the save still keeps them aside.
+    const again = new LocalStore(dir, { isEncryptionAvailable: () => false });
+    again.saveSettings(again.settings().preferences, {});
+    assert.deepEqual(JSON.parse(fs.readFileSync(again.file('settings.json'), 'utf8')).preferences.futurePreference, {
+      a: 1,
+    });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('T8.2: a settings file whose preferences are not an object keeps nothing unknown', () => {
+  const os = require('node:os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tua-prefs-'));
+  try {
+    const store = new LocalStore(dir, { isEncryptionAvailable: () => false });
+    fs.writeFileSync(store.file('settings.json'), JSON.stringify({ preferences: ['dark'], bounds: {} }));
+    store.saveSettings(store.settings().preferences, {});
+    const raw = JSON.parse(fs.readFileSync(store.file('settings.json'), 'utf8'));
+    assert.deepEqual(Object.keys(raw.preferences).sort(), Object.keys(settings).sort());
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

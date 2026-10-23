@@ -15,4 +15,6 @@ module.exports = {
   association: true,
   // Since beta.7 account history is in history.sqlite (T4.1): no history.json to compare.
   oldHistory: 'sqlite',
+  // T8.2: builds after the tag keep preferences they do not know; check it on every branch build from now on.
+  unknownPreferencesKept: true,
 };

@@ -56,6 +56,8 @@ function plannedChecks(profile) {
           'newMetadataDoesNotAffectOldVault',
         ]
       : []),
+    // T8.2: only for profiles whose new package keeps preferences it does not know (1.9.0-beta.3 and later builds).
+    ...(profile.unknownPreferencesKept ? ['newBuildKeepsUnknownPreferences'] : []),
     'noNetworkRequests',
     'isolatedUserDataOnly',
   ];
@@ -517,6 +519,29 @@ app
         'newMetadataDoesNotAffectOldVault',
         equal(rollbackStore.accounts(), vault) &&
           preservedFiles.every((name) => hash(newStore.file(name)) === before[name]),
+      );
+    }
+    if (profile.unknownPreferencesKept) {
+      // A newer version's preference must survive a load and save by this build (T8.2). Uses its own directory
+      // under the isolated root so the byte-identity checks above are unaffected.
+      stage = 'unknown-preferences';
+      const prefsRoot = path.join(directory, 'synthetic-unknown-preferences');
+      fs.mkdirSync(prefsRoot, { recursive: true });
+      const future = { futurePreference: { mode: 'x', level: 2 }, futureFlag: false };
+      fs.writeFileSync(
+        path.join(prefsRoot, 'settings.json'),
+        JSON.stringify({ preferences: { ...preferences, ...future }, bounds }),
+      );
+      const prefsStore = new newStoreModule.LocalStore(prefsRoot, safeStorage),
+        loaded = prefsStore.settings();
+      prefsStore.saveSettings(loaded.preferences, loaded.bounds);
+      const written = JSON.parse(fs.readFileSync(path.join(prefsRoot, 'settings.json'), 'utf8'));
+      check(
+        'newBuildKeepsUnknownPreferences',
+        equal(written.preferences.futurePreference, future.futurePreference) &&
+          written.preferences.futureFlag === false &&
+          Object.keys(preferences).every((key) => equal(written.preferences[key], preferences[key])) &&
+          !Object.hasOwn(loaded.preferences, 'futurePreference'),
       );
     }
     check('noNetworkRequests', networkCalls === 0);
