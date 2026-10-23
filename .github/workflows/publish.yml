@@ -34,6 +34,12 @@ jobs:
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Invalid tag: $TAG"; exit 1; }
           echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
+      # T8.10: the tagged CHANGELOG.md provides this version's notes (the run fails if it has no section).
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+          path: source
+
       - name: Download installers from the source release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -57,13 +63,19 @@ jobs:
           - macOS Apple Silicon（13+）：DMG 或 ZIP。ad-hoc 签名、未公证：首次打开请在「应用程序」中右键 → 打开。
           - 校验：SHA256SUMS.txt。
           - 证据等级：CI 打包原生 smoke（隔离样例）；不代表真实账户或真机验收。
+
+          ## 本版改动
+
           NOTES
+          node source/scripts/changelog-section.cjs "$VERSION" >> notes.md
           {
             echo "### Files to publish to $PUBLIC_REPO ($VERSION)"
             echo '```'
             ls -l public
             cat public/SHA256SUMS.txt
             echo '```'
+            echo "### Release notes"
+            cat notes.md
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish to the public installer repository
