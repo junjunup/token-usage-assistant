@@ -110,3 +110,23 @@ test('the update check is a default-on, user-switchable setting and is wired mai
   assert.match(main, /url\?\.startsWith\(PAGE_PREFIX\)\) return shell\.openExternal\(url\)/);
   assert.match(main, /if \(settings\.updateCheck && !smoke\) updates\.start\(\);/);
 });
+
+// T8.6: a local development build (x.y.z-beta.N-dev.<commit>) compares as the version it was built from.
+test('T8.6: development builds compare as their base version and are told about newer releases', async () => {
+  const { parseVersion } = require('../desktop/update-check.cjs');
+  assert.deepEqual(parseVersion('1.9.0-beta.2-dev.0b82765'), parseVersion('1.9.0-beta.2'));
+  assert.ok(compareVersions('1.9.0-beta.3', '1.9.0-beta.2-dev.0b82765') > 0);
+  assert.equal(compareVersions('1.9.0-beta.2', '1.9.0-beta.2-dev.0b82765'), 0);
+  assert.ok(compareVersions('1.9.0-beta.1', '1.9.0-beta.2-dev.0b82765') < 0);
+  assert.equal(parseVersion('1.9.0-beta.2-dev.XYZ'), null);
+  assert.equal(parseVersion('1.9.0-beta.2-dev.'), null);
+  const checker = new UpdateChecker({
+    currentVersion: '1.9.0-beta.2-dev.0b82765',
+    fetch: async () => reply(200, [{ tag_name: 'v1.9.0-beta.3' }, { tag_name: 'v1.9.0-beta.2' }]),
+  });
+  checker.running = true; // check() without start(): no timer is scheduled
+  const state = await checker.check();
+  checker.stop();
+  assert.equal(state.status, 'available');
+  assert.equal(state.latest.version, '1.9.0-beta.3');
+});

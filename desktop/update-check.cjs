@@ -9,8 +9,9 @@ const PAGE_PREFIX = `https://github.com/${REPOSITORY}/releases/tag/`;
 const DAY = 24 * 60 * 60 * 1000;
 const MAX_BYTES = 2_000_000;
 
-// x.y.z or x.y.z-beta.N (also -alpha.N / -rc.N). Anything else is ignored.
-const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)\.(\d+))?$/;
+// x.y.z or x.y.z-beta.N (also -alpha.N / -rc.N). Anything else is ignored. A local development build adds
+// -dev.<short commit> (D1) and compares as the version it was built from (T8.6), so it is told about newer releases.
+const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)\.(\d+))?(?:-dev\.[0-9a-f]{7,40})?$/;
 const STAGES = { alpha: 0, beta: 1, rc: 2 };
 
 /**

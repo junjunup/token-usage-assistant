@@ -524,3 +524,30 @@ test('credential retry recovers after a failed decrypt without rewriting the enc
   assert.equal(manager.retryLoad(), true, 'no issue: nothing to retry');
   assert.equal(manager.entries.length, 1);
 });
+
+// T8.6: opening the encrypted account list is timed (a long time usually means a Keychain prompt).
+test('T8.6: account loading logs its duration and count, success or failure, without account data', (t) => {
+  const { log } = require('../desktop/logger.cjs');
+  const seen = [];
+  const info = log.info,
+    warn = log.warn;
+  log.info = (module, code, extra) => seen.push(['info', module, code, extra]);
+  log.warn = (module, code, extra) => seen.push(['warn', module, code, extra]);
+  t.after(() => {
+    log.info = info;
+    log.warn = warn;
+  });
+  const { manager, store } = harness(t);
+  manager.load();
+  const loaded = seen.find((e) => e[1] === 'accounts' && e[2] === 'loaded');
+  assert.ok(loaded);
+  assert.deepEqual(Object.keys(loaded[3]).sort(), ['count', 'durationMs']);
+  assert.ok(Number.isInteger(loaded[3].durationMs) && loaded[3].durationMs >= 0);
+  fs.writeFileSync(store.file('accounts.encrypted.json'), 'corrupt');
+  const { manager: broken } = harness(t);
+  broken.store = store;
+  broken.load();
+  const failed = seen.find((e) => e[1] === 'accounts' && e[2] === 'load-failed');
+  assert.ok(failed);
+  assert.deepEqual(Object.keys(failed[3]), ['durationMs']);
+});

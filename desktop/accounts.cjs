@@ -181,6 +181,9 @@ class AccountManager extends EventEmitter {
     return runtime;
   }
   load() {
+    // T8.6: how long the encrypted account list took to open. Several seconds usually mean macOS was showing a
+    // Keychain prompt (a lead for the first-launch issue in T7.12); no account data is logged.
+    const started = Date.now();
     try {
       const value = this.store.accounts(),
         ids = new Set();
@@ -192,8 +195,9 @@ class AccountManager extends EventEmitter {
       this.entries = entries;
       for (const entry of entries) this.runtimes.set(entry.id, this.runtime(entry));
       this.activeId = this.runtimes.has(value.activeId) ? value.activeId : entries[0]?.id || '';
+      log.info('accounts', 'loaded', { count: entries.length, durationMs: Date.now() - started });
     } catch {
-      log.warn('accounts', 'load-failed');
+      log.warn('accounts', 'load-failed', { durationMs: Date.now() - started });
       this.issue = '本机账户列表暂不可用，已有加密文件未被覆盖。请恢复备份后重启助手。';
     }
     this.emitState();
