@@ -202,6 +202,21 @@ if (selectedProvider && scenario === 'offline') {
   state.data.status = 'offline';
   state.data.errors = [{ endpoint: 'credits', status: 503, message: '平台暂时不可用，当前显示上次数据。' }];
 }
+// T8.5: ?provider=claude&desktop-preview=claude-port-changed shows the local connection status after the collector
+// moved to another port (same texts as desktop/subscription-status.cjs; the preview does not run the collector).
+if (
+  selectedProvider === 'claude' &&
+  new URLSearchParams(location.search).get('desktop-preview') === 'claude-port-changed'
+)
+  state.connectionStatus = {
+    quota: { status: 'stale', label: '最近额度 · 等待更新', message: '当前是上次观察值，尚未确认实时额度。' },
+    details: {
+      status: 'waiting',
+      label: '采集端口已更换 · 需重开会话',
+      message:
+        '原端口 49835 不可用，已改用 52001。套餐额度会自动恢复；工具明细需要关闭正在运行的 Claude Code，再用生成的 Start-Claude.command 重新打开。',
+    },
+  };
 if (selectedProvider === 'deepseek' && scenario === 'unknown') state.data.parts.balance.balances[0].granted = null;
 if (selectedProvider && selectedProvider !== 'deepseek' && scenario === 'unknown')
   state.data.parts.credits.windows.forEach((w) => {

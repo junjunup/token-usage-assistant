@@ -1,7 +1,7 @@
 const path = require('node:path');
 const { launcherName } = require('./platform.cjs');
 const { sameLocation } = require('./codex-connect.cjs');
-function connectionStatus(entry, data, sources = [], collectorIssue = '') {
+function connectionStatus(entry, data, sources = [], collectorIssue = '', portChange = null) {
   if (!entry || !['codex', 'claude'].includes(entry.provider)) return null;
   const claude = entry.provider === 'claude',
     windows = data?.parts?.credits?.windows || [],
@@ -75,6 +75,21 @@ function connectionStatus(entry, data, sources = [], collectorIssue = '') {
           : '在工具分析中刷新；缺少日志时不推算 Token。',
       };
   }
+  // T8.5: the collector moved to another port. Quota recovers by itself; usage details need a new session, because
+  // Claude Code reads the usage endpoint only when the session starts.
+  if (claude && portChange && !['disabled', 'error'].includes(details.status))
+    details = {
+      status: 'waiting',
+      label: '采集端口已更换 · 需重开会话',
+      message:
+        '原端口 ' +
+        portChange.from +
+        ' 不可用，已改用 ' +
+        portChange.to +
+        '。套餐额度会自动恢复；工具明细需要关闭正在运行的 Claude Code，再用生成的 ' +
+        launcherName() +
+        ' 重新打开。',
+    };
   return { quota: { ...quota, observedAt: at }, details };
 }
 module.exports = { connectionStatus };

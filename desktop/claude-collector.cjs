@@ -112,6 +112,9 @@ class ClaudeCollector {
     this.home = home;
     this.server = null;
     this.issue = '';
+    // T8.5: set when the saved port could not be used and another one was taken; cleared by the first usage event
+    // on the new port. Quota recovers by itself (the status-line helper reads collector.json on every run).
+    this.portChange = null;
     this.sessions = Object.create(null);
     this.config = null;
   }
@@ -189,6 +192,7 @@ class ClaudeCollector {
           chunks = [];
           if (req.url === '/quota') this.receiveQuota(input);
           else {
+            this.portChange = null;
             const parsed = parseOtel(input, cfg.sourceId, this.sessions);
             if (parsed.rows.length)
               fs.appendFileSync(
@@ -218,10 +222,7 @@ class ClaudeCollector {
     server.headersTimeout = 5000;
     server.maxConnections = 8;
     try {
-      await new Promise((resolve, reject) => {
-        server.once('error', reject);
-        server.listen(cfg.port, '127.0.0.1', resolve);
-      });
+      await this.listen(server, cfg);
     } catch (e) {
       this.health('stopped');
       throw e;
@@ -251,6 +252,42 @@ class ClaudeCollector {
     } catch {
       log.warn('claude-collector', 'status-write-failed');
     }
+  }
+  // Listen on the saved port. If the system refuses it (EACCES: e.g. a Windows reserved port range) or it is taken
+  // (EADDRINUSE), try a few other random ports, then let the system choose; the new port is saved (T8.5).
+  async listen(server, cfg, randomPort = () => 49152 + crypto.randomInt(16000)) {
+    const attempt = (port) =>
+      new Promise((resolve, reject) => {
+        const onError = (e) => {
+          server.removeListener('listening', onListening);
+          reject(e);
+        };
+        const onListening = () => {
+          server.removeListener('error', onError);
+          resolve(server.address().port);
+        };
+        server.once('error', onError);
+        server.once('listening', onListening);
+        server.listen(port, '127.0.0.1');
+      });
+    const from = cfg.port;
+    let lastError;
+    for (const port of [from, randomPort(), randomPort(), randomPort(), 0]) {
+      try {
+        const bound = await attempt(port);
+        if (bound !== from) {
+          cfg.port = bound;
+          atomicWrite(path.join(this.home, 'collector.json'), cfg);
+          this.portChange = { from, to: bound };
+          log.info('claude-collector', 'port-changed', { errno: lastError?.code });
+        }
+        return bound;
+      } catch (e) {
+        lastError = e;
+        if (!['EACCES', 'EADDRINUSE'].includes(e?.code)) throw e;
+      }
+    }
+    throw lastError;
   }
   receiveQuota(input) {
     if (typeof input?.version !== 'string' || !VERSION.test(input.version) || !clean(input.sessionId, 200))
