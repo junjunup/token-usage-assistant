@@ -69,6 +69,16 @@ for (const name of fs
     checks.some((x) => x.file === 'desktop/' + name),
     'missing desktop module ' + name,
   );
+// T8.7: license files next to the app (resources/) are byte-identical to the repository's; Electron's own two
+// license files sit in the install root (added by electron-builder on Windows).
+const licenses = ['LICENSE.txt', 'THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_LICENSES.txt'].map((file) => {
+  const source = file === 'LICENSE.txt' ? 'LICENSE' : file;
+  const bytes = fs.readFileSync(path.join(out, 'win-unpacked', 'resources', file));
+  assert.equal(digest(bytes), digest(fs.readFileSync(path.join(root, source))), 'license file differs: ' + file);
+  return { file: 'resources/' + file, sha256: digest(bytes) };
+});
+for (const file of ['LICENSE.electron.txt', 'LICENSES.chromium.html'])
+  assert.ok(fs.statSync(path.join(out, 'win-unpacked', file)).size > 0, 'missing Electron license file: ' + file);
 const files = ['TokenUsageAssistant-Portable-' + version + '.exe', 'TokenUsageAssistant-Setup-' + version + '.exe'].map(
   (file) => {
     const bytes = fs.readFileSync(path.join(out, file));
@@ -116,6 +126,7 @@ const report = {
   at: new Date().toISOString(),
   asarSha256,
   payloads,
+  licenses,
   verifiedFiles: checks.length,
   desktopFiles: checks.filter((p) => p.file.startsWith('desktop/')).length,
   files,

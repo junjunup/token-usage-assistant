@@ -12,6 +12,14 @@ files:
   - '!desktop/menubar-poc/**' # T7.3 POC: development only
 asar: true
 npmRebuild: false
+# T8.7: the app's MIT license and the third-party notices / full license texts, next to app.asar on both platforms.
+extraResources:
+  - from: LICENSE
+    to: LICENSE.txt
+  - from: THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
+  - from: THIRD_PARTY_LICENSES.txt
+    to: THIRD_PARTY_LICENSES.txt
 win:
   icon: desktop/assets/app.ico
   signExecutable: false
