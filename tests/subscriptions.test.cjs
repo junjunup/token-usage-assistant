@@ -613,3 +613,95 @@ test('T8.4: renamed, missing or malformed windows from an unverified version are
     assert.throws(() => c.receiveQuota(input));
   assert.equal(fs.readFileSync(file, 'utf8'), before);
 });
+
+// T8.5: the collector moves to another port when the saved one cannot be used.
+test('T8.5: a taken port is replaced, saved, used by the launcher config, and the notice clears on the first event', async (t) => {
+  const http = require('node:http');
+  const blocker = http.createServer();
+  await new Promise((r) => blocker.listen(0, '127.0.0.1', r));
+  t.after(() => blocker.close());
+  const taken = blocker.address().port;
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  const cfg = c.prepare();
+  cfg.port = taken;
+  fs.writeFileSync(path.join(home, 'collector.json'), JSON.stringify(cfg));
+  c.config = null;
+  await c.start();
+  t.after(() => c.close());
+  const saved = JSON.parse(fs.readFileSync(path.join(home, 'collector.json'), 'utf8'));
+  assert.notEqual(saved.port, taken);
+  assert.equal(saved.token, cfg.token);
+  assert.equal(saved.sourceId, cfg.sourceId);
+  assert.deepEqual(c.portChange, { from: taken, to: saved.port });
+  c.generateLauncher();
+  const settings = JSON.parse(fs.readFileSync(path.join(home, 'claude-settings.json'), 'utf8'));
+  assert.equal(settings.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT, `http://127.0.0.1:${saved.port}/v1/logs`);
+  const status = await fetch(`http://127.0.0.1:${saved.port}/v1/logs`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-tua-token': cfg.token },
+    body: JSON.stringify(otel()),
+  });
+  assert.equal(status.status, 200);
+  assert.equal(c.portChange, null);
+});
+
+test('T8.5: EACCES moves on to another port; other listen errors are reported without touching the config', async (t) => {
+  const { EventEmitter } = require('node:events');
+  const fake = (codes) => {
+    const s = new EventEmitter();
+    let n = 0;
+    s.listen = (port) => {
+      const code = codes[n++];
+      setImmediate(() => (code ? s.emit('error', Object.assign(new Error('x'), { code })) : s.emit('listening')));
+      s.bound = port || 61234;
+    };
+    s.address = () => ({ port: s.bound });
+    return s;
+  };
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  const cfg = c.prepare(),
+    original = cfg.port;
+  assert.equal(await c.listen(fake(['EACCES', 'EACCES']), cfg, () => 50001), 50001);
+  assert.deepEqual(c.portChange, { from: original, to: 50001 });
+  assert.equal(JSON.parse(fs.readFileSync(path.join(home, 'collector.json'), 'utf8')).port, 50001);
+  // All random ports refused: the system chooses one.
+  const c2 = new ClaudeCollector(setup(t)),
+    cfg2 = c2.prepare();
+  assert.equal(await c2.listen(fake(['EADDRINUSE', 'EACCES', 'EACCES', 'EACCES']), cfg2, () => 50002), 61234);
+  // A different error is not retried and the saved port stays.
+  const home3 = setup(t),
+    c3 = new ClaudeCollector(home3),
+    cfg3 = c3.prepare(),
+    before = fs.readFileSync(path.join(home3, 'collector.json'), 'utf8');
+  await assert.rejects(
+    c3.listen(fake(['EINVAL']), cfg3, () => 50003),
+    { code: 'EINVAL' },
+  );
+  assert.equal(fs.readFileSync(path.join(home3, 'collector.json'), 'utf8'), before);
+  assert.equal(c3.portChange, null);
+  // Nothing works at all: the last error is reported.
+  const c4 = new ClaudeCollector(setup(t)),
+    cfg4 = c4.prepare();
+  await assert.rejects(
+    c4.listen(fake(['EACCES', 'EACCES', 'EACCES', 'EACCES', 'EACCES']), cfg4, () => 50004),
+    {
+      code: 'EACCES',
+    },
+  );
+});
+
+test('T8.5: a port change shows on the Claude details status until a new session reports', () => {
+  const { connectionStatus } = require('../desktop/subscription-status.cjs');
+  const entry = { provider: 'claude', credential: { home: '/x' } };
+  const s = connectionStatus(entry, { parts: {} }, [], '', { from: 49835, to: 52001 });
+  assert.equal(s.details.label, '采集端口已更换 · 需重开会话');
+  assert.match(s.details.message, /原端口 49835 不可用，已改用 52001。套餐额度会自动恢复/);
+  assert.equal(connectionStatus(entry, { parts: {} }, []).details.label, '工具明细待添加');
+  assert.equal(
+    connectionStatus({ provider: 'codex', credential: { home: '/x' } }, { parts: {} }, [], '', { from: 1, to: 2 })
+      .details.label,
+    '工具明细待添加',
+  );
+});
