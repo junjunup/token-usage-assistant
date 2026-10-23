@@ -52,7 +52,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - `appId`（`local.commandcode.tokenusageassistant`）、`executableName`、已打包应用的 userData 路径一律不变。Mac 打包版：`~/Library/Application Support/TokenUsageAssistant`；Windows：原 Electron userData。Mac 开发版（未打包）用 `TokenUsageAssistant-Dev` 作为应用名和数据目录，Keychain 条目也随之独立（`platform.cjs` 的 `macDataName`）。Mac 上的 `--smoke-test`（打包版和开发版都是）用 `TokenUsageAssistant-Smoke` 作为应用名，Keychain 条目为 `TokenUsageAssistant-Smoke Safe Storage`（`macSmokeName`），不触碰打包版或开发版的条目。
 - 凭据加密：Windows 用 DPAPI，Mac 用 Keychain（Electron safeStorage）。DPAPI 文件绑定当前 Windows 用户，不能作为跨电脑备份。
 - 升级时保留账户凭据、设置和窗口位置；配置损坏时不自动覆盖；旧迁移文件（例如 `local-source.json`）保留。
-- 不引入新的原生依赖。不覆盖、不删除旧发布产物（统一存放在 `~/Documents/TokenUsageAssistant-releases/`）。
+- 不引入新的原生依赖。不覆盖、不删除旧发布产物（统一存放在 `~/Documents/TokenUsageAssistant-releases/`）。其中的 `.app` 一律放在 `apps.noindex/<原目录名>/mac-arm64/` 下，不留在各版本目录里，避免系统按 bundle id 选中旧版（T8.12）；启动打包版一律用完整路径（`open "/Applications/Token 用量助手.app"`）。
 - 多账户（最多 20 个）各自加密保存；轮询、缓存、告警相互隔离；支持区域选择和动态额度窗口。
 - 某个来源格式异常或失败时，要显式报告并隔离，不能阻断其他来源。
 
