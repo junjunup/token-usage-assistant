@@ -12,6 +12,11 @@ VERSION="$(node -p "require('./package.json').version")"
 # CI overrides: TUA_RELEASE_DIR (build output) and TUA_REPORT_DIR (where mac-app-integrity.json goes).
 OUT="${TUA_RELEASE_DIR:-$ROOT/release-v$VERSION}"
 REPORT_DIR="${TUA_REPORT_DIR:-$ROOT/docs/verification-$VERSION}"
+# T8.10: a local build at an already-released version must not overwrite the official report committed for it.
+if [ -z "${TUA_REPORT_DIR:-}" ] && git -C "$ROOT" ls-files --error-unmatch "docs/verification-$VERSION/mac-app-integrity.json" >/dev/null 2>&1; then
+  REPORT_DIR="$ROOT/work/local-verification-$VERSION"
+  echo "docs/verification-$VERSION/ 已有正式报告，本次报告写到 $REPORT_DIR"
+fi
 APP="$(find "$OUT" -maxdepth 3 -type d -name 'Token 用量助手.app' 2>/dev/null | head -1)"
 if [ -z "$APP" ]; then
   echo "未在 $OUT 下找到 Token 用量助手.app；请先运行 scripts/Build-Mac-App.command。"
@@ -101,8 +106,14 @@ echo "运行原生 smoke 测试 (隔离目录 ${SMOKE_DIR}) …… "
   >"$SMOKE_DIR/stdout.log" 2>"$SMOKE_DIR/stderr.log" &
 SMOKE_PID=$!
 SMOKE_TIMEOUT=0
-for _ in $(seq 1 150); do
+# T8.10: note every 5 s whether a Keychain prompt (SecurityAgent window) is on screen while the smoke runs.
+SECURITY_SEEN=0
+for i in $(seq 1 150); do
   kill -0 "$SMOKE_PID" 2>/dev/null || break
+  if [ $((i % 5)) -eq 1 ]; then
+    n="$(osascript -l JavaScript -e 'ObjC.import("CoreGraphics");const l=ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly,0));l.js.map(w=>ObjC.deepUnwrap(w)).filter(d=>d.kCGWindowOwnerName==="SecurityAgent").length' 2>/dev/null || echo 0)"
+    [ "${n:-0}" -gt 0 ] 2>/dev/null && SECURITY_SEEN=$((SECURITY_SEEN + 1))
+  fi
   sleep 1
 done
 if kill -0 "$SMOKE_PID" 2>/dev/null; then
@@ -114,7 +125,7 @@ SMOKE_EXIT=$?
 SMOKE_REPORT="$SMOKE_DIR/smoke-result.json"
 SMOKE_COPY="$TMP/smoke-result.json"
 if [ "$SMOKE_TIMEOUT" -eq 1 ]; then
-  record 'nativeSmokeTest' 0 'smoke 测试 150 秒未退出，已终止'
+  record 'nativeSmokeTest' 0 "smoke 测试 150 秒未退出，已终止；期间看到钥匙串授权窗 ${SECURITY_SEEN} 次（每 5 秒检查一次）"
 elif [ ! -f "$SMOKE_REPORT" ]; then
   record 'nativeSmokeTest' 0 "exit=${SMOKE_EXIT}, 未生成 smoke-result.json; stderr: $(tail -c 400 "$SMOKE_DIR/stderr.log" 2>/dev/null | tr '\n\t' '  ')"
 else
@@ -126,6 +137,16 @@ else
   else
     record 'nativeSmokeTest' 0 "exit=${SMOKE_EXIT}, ok=false, version=${SMOKE_VERSION}"
   fi
+fi
+# T8.10: keep the evidence of a failed smoke (synthetic isolated data only: report, logs, stdout / stderr), so the
+# first-run hang can be examined; the rest of the temp directory is still removed.
+if ! grep -q '^nativeSmokeTest 1$' "$ORDER"; then
+  KEEP="$ROOT/work/smoke-failures/$(date +%Y%m%d-%H%M%S)-$VERSION"
+  mkdir -p "$KEEP"
+  for f in smoke-result.json stdout.log stderr.log; do [ -f "$SMOKE_DIR/$f" ] && cp "$SMOKE_DIR/$f" "$KEEP/"; done
+  [ -d "$SMOKE_DIR/logs" ] && cp -R "$SMOKE_DIR/logs" "$KEEP/"
+  printf 'timeout=%s exit=%s securityAgentSeen=%s\n' "$SMOKE_TIMEOUT" "$SMOKE_EXIT" "$SECURITY_SEEN" > "$KEEP/summary.txt"
+  echo "smoke 失败证据已保留：$KEEP"
 fi
 
 # 6. Packaged userData stays at ~/Library/Application Support/TokenUsageAssistant (source-level confirmation).

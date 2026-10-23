@@ -124,7 +124,7 @@ $env:TUA_HARNESS_CLI_RUNTIME = (Resolve-Path work/harness-cli-validation-1.4).Pa
 node --test tests/harness-plugin.test.cjs
 ```
 
-此项测试自动在临时目录设置独立 `DSH_HOME`，执行 `plugin add`、`--dump-config`、最小 profile 启动、`plugin remove` 后清理，绝不修改用户现有 Harness 配置。两个测试环境变量均设置时，本文件的 16 项测试全部执行；未设置的外部运行时检查会明确跳过。
+此项测试自动在临时目录设置独立 `DSH_HOME`，执行 `plugin add`、`--dump-config`、最小 profile 启动、`plugin remove` 后清理，绝不修改用户现有 Harness 配置。两个测试环境变量均设置时，本文件的 16 项测试全部执行；未设置的外部运行时检查会明确跳过。助手的 CI 自 T8.10 起按本节方法安装这两个运行时，这些测试在 CI 上每次都运行。
 
 ## 上游依据
 
