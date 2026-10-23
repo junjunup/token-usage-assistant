@@ -24,7 +24,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "@vitejs/plugin-react": "5.0.4",
     "chart.js": "^4.5.1",
-    "electron": "44.4.4",
+    "electron": "44.9.3",
     "electron-builder": "26.15.3",
     "eslint": "10.11.0",
     "eslint-plugin-react-hooks": "7.1.1",
