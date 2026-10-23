@@ -5,7 +5,7 @@
 
 ## 1. 当前版本与环境
 
-- 版本：`1.9.0-beta.2`（`package.json`）。包含 T7.9–T7.12、T4.7 与 Mac 安装包的 Electron / Chromium 许可证文件。2026-10-23 打标签 `v1.9.0-beta.2`（→ `237987f`）并发布：源码仓库 Release 与安装包仓库 Release 均为 prerelease。
+- 版本：`1.9.0-beta.3`（`package.json`，2026-10-24 升版，尚未打标签发布）。稳固版：T8.1 Electron 44.9.3、T8.2 设置向前兼容、T8.3 锁屏兜底、T8.4 Claude 额度结构校验、T8.5 Claude 采集端口自动更换、T8.6 开发包检查更新与账户加载耗时、T8.7 许可证随包，以及 T8.10 发版流程加固。上一个发布：2026-10-23 打标签 `v1.9.0-beta.2`（→ `237987f`），源码仓库 Release 与安装包仓库 Release 均为 prerelease。
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.2`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.2（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。

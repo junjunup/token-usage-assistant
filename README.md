@@ -2,7 +2,7 @@
 
 中文本机桌面助手（Windows x64 + Apple Silicon macOS），分两条线：一条查看 AI 编程平台的额度和余额，一条统计本机编程工具的用量。两条线各自独立，数字不相加。有托盘/菜单栏图标、置顶悬浮窗、深浅色主题；凭据只保存在本机并加密。非任何平台的官方客户端。
 
-当前版本：**1.9.0-beta.2**（开发测试版，未签名公证；macOS 菜单栏动态图标与用量面板，本版改进图标选值与稳定性）。更新历史见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：**1.9.0-beta.3**（开发测试版，未签名公证；本版为稳固版：Electron 安全更新、设置向前兼容、锁屏与 Claude 端口的兜底，安装包附带许可证全文）。更新历史见 [CHANGELOG.md](CHANGELOG.md)。
 
 **下载安装包**：[junjunup/TokenUsageAssistant 的 Releases](https://github.com/junjunup/TokenUsageAssistant/releases)（Windows 安装版 / 便携版、macOS Apple Silicon DMG / ZIP，附 SHA256 校验）。本仓库是源码仓库。
 
