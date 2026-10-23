@@ -1,0 +1,535 @@
+{
+  "ok": true,
+  "version": "1.9.0-beta.2",
+  "sourceVersion": "1.9.0-beta.2",
+  "at": "2026-10-22T15:52:58.788Z",
+  "asarSha256": "166cdae5e7776151954cb0df88c02ceeef05b2cb5802186a7ec5f5a82f745572",
+  "payloads": [
+    {
+      "kind": "Setup",
+      "entry": "inner-0/resources/app.asar",
+      "asarSha256": "166cdae5e7776151954cb0df88c02ceeef05b2cb5802186a7ec5f5a82f745572"
+    },
+    {
+      "kind": "Portable",
+      "entry": "inner-0/resources/app.asar",
+      "asarSha256": "166cdae5e7776151954cb0df88c02ceeef05b2cb5802186a7ec5f5a82f745572"
+    }
+  ],
+  "verifiedFiles": 125,
+  "desktopFiles": 81,
+  "files": [
+    {
+      "file": "TokenUsageAssistant-Portable-1.9.0-beta.2.exe",
+      "bytes": 111886091,
+      "sha256": "5b5a03790cdd875ac0765085def7347733e54a2ab47b0691ea6cbb5fd22d6748"
+    },
+    {
+      "file": "TokenUsageAssistant-Setup-1.9.0-beta.2.exe",
+      "bytes": 112106438,
+      "sha256": "9469138dc3baab3af8f953be60a651cb6c126c73ff91ab0a5d193af38aff9238"
+    }
+  ],
+  "checks": [
+    {
+      "file": "desktop/accounts.cjs",
+      "sha256": "4a47af1e99c6c0e54cf21ad20af41d5b91daf10a183aed9b6f07427c094befc3"
+    },
+    {
+      "file": "desktop/analytics-core.cjs",
+      "sha256": "b9d9e322e8a5305c04636f83fc918a72b6d7abd75af7d15d35c17fc6dad7d8e9"
+    },
+    {
+      "file": "desktop/analytics-fixture.cjs",
+      "sha256": "db1d7695f47a4e63a159462f40770843381550434c4745413f62faab6d3997dc"
+    },
+    {
+      "file": "desktop/analytics-service.cjs",
+      "sha256": "ca5321a28e4d201c38291fb4e82870810cedcaaaaaca39ac8f46722859b89c70"
+    },
+    {
+      "file": "desktop/api.cjs",
+      "sha256": "6644027feadeafa6790c43493b097f57012de435e823c97c5b29cba65d215805"
+    },
+    {
+      "file": "desktop/assets/app.icns",
+      "sha256": "795b66c75cc7e597577af2ec1f9118efd2e7980673a1e1e7c7e740b142d48b43"
+    },
+    {
+      "file": "desktop/assets/app.ico",
+      "sha256": "1d7a31bc79a81155d9189a078f5470ebe79c8936b50e6feaeba380413427ef92"
+    },
+    {
+      "file": "desktop/assets/app.png",
+      "sha256": "f96992773d2364f2fd81c037623a747f7e9b25ac2fb10b706ee5cc9aa797008d"
+    },
+    {
+      "file": "desktop/assets/brand-mark.svg",
+      "sha256": "416033cd7f719705c638455dae355b4c92c92a42437363c34b0abb2d02bc0e57"
+    },
+    {
+      "file": "desktop/assets/tray.png",
+      "sha256": "b5b0936d13427f0fa4ca2ca79be13f3e47e2efbe3937f9e18ed03c901914eb03"
+    },
+    {
+      "file": "desktop/association-rules.cjs",
+      "sha256": "b9c1e3419f05396dbdd29b0b07818f8e08de71ca9963816729b1d9bfc4d26341"
+    },
+    {
+      "file": "desktop/associations.cjs",
+      "sha256": "cde58b835fcfa50b071d8dce8fd1a18a7f95d3df534557532bcde725f8fbf91f"
+    },
+    {
+      "file": "desktop/balance-domain.cjs",
+      "sha256": "aa88eeb43509c65af24c02cd373a11e016415c8ed9957d74fc860f1a373ed27d"
+    },
+    {
+      "file": "desktop/branding.cjs",
+      "sha256": "4e11a8ed0e27af759e449cd9700ee7ff11de436ee8c0da56b3c570a13a53ed95"
+    },
+    {
+      "file": "desktop/claude-collector.cjs",
+      "sha256": "33e1155eb5daaab1da1ed6bd917c84075a7a0a3274f28dd58bb4c6e5c151e42d"
+    },
+    {
+      "file": "desktop/claude-launcher.cjs",
+      "sha256": "cce2a4332b5aaf4fd20123901014ed90678305ed46b4335c9673f3355b996c53"
+    },
+    {
+      "file": "desktop/claude-launcher.ps1",
+      "sha256": "96894a4ed87f80a9cf8e4fdbe42cac62688acfa049d9c84ad0614ae2f3c134bf"
+    },
+    {
+      "file": "desktop/claude-statusline.cjs",
+      "sha256": "b4001589ed003e5d42e160c3cbce05c518d4bd3fc79e42f9c8cf635457831c2f"
+    },
+    {
+      "file": "desktop/claude-statusline.ps1",
+      "sha256": "f027cca8f678271ae5596d8ced03c2820696e9624d846fab26047e2e17729d35"
+    },
+    {
+      "file": "desktop/codex-connect.cjs",
+      "sha256": "a3d37cd8ba0856eef88f6369344ff09d1d477a197cc16e6b2c241a292e1cd411"
+    },
+    {
+      "file": "desktop/codex-reader.cjs",
+      "sha256": "38435641110331f18318aeaa8d7e8af67ef252e2e8cc44e40c7a10a85d8cce72"
+    },
+    {
+      "file": "desktop/codex-rpc.cjs",
+      "sha256": "b43fa64ae4d59d0e1596abc3ed8b4fc5405ada41dfa0823e35b253526e29c867"
+    },
+    {
+      "file": "desktop/diagnostics.cjs",
+      "sha256": "976365ef50949d30bb9c0dbfd7a858484aa569fa4c5430126577bf98dbe786b5"
+    },
+    {
+      "file": "desktop/domain.cjs",
+      "sha256": "4fc83fd76b0e3a865a3e4a8727232340019a930e329d750e753ba1d833f473f0"
+    },
+    {
+      "file": "desktop/harness-reader.cjs",
+      "sha256": "5d74b59f234a6f86ffa4833be9bb7d328535f6be57514f7fcbb1b05cc5e1a8be"
+    },
+    {
+      "file": "desktop/history-db.cjs",
+      "sha256": "80a9ba9dd68dd091b8badfb1ebbb05b7a2e07de9cbac843e89f8adf47593dc73"
+    },
+    {
+      "file": "desktop/history.cjs",
+      "sha256": "4edb7a8ce7c600c7f6103b2ec17fec03516be875442311ef8d3447206ca40020"
+    },
+    {
+      "file": "desktop/logger.cjs",
+      "sha256": "f6984c3d456a1bbba5ea648bd7f66bacdc1a21fedba1dcf039ae4e02f5ae2168"
+    },
+    {
+      "file": "desktop/main.cjs",
+      "sha256": "c214941213d6ebda4f7d1a707f9180aef5d544b08e993ff50d974c8d2498d265"
+    },
+    {
+      "file": "desktop/menubar-icon.cjs",
+      "sha256": "c88dfc74c2dede828cb63b519d53f19395394f761e142cb55815c76fab10c8a2"
+    },
+    {
+      "file": "desktop/menubar-panel.cjs",
+      "sha256": "835e38cf2e678443b90b7919943f67cf1c48fcb29bfa60cd748535f10229d9c1"
+    },
+    {
+      "file": "desktop/menubar-popover.cjs",
+      "sha256": "b6e8d7fee36bae3e34f1a92959e932fafc8d9eb392137da334383acc8d7a03d7"
+    },
+    {
+      "file": "desktop/menubar-render/mark.js",
+      "sha256": "f8aca552d54de7f7d2b41c572896506f8ab986ae251ca3243ac5fd3f87bcdede"
+    },
+    {
+      "file": "desktop/menubar-render/render.html",
+      "sha256": "e62aa9c44b306286abf6496acdde7dfcee176213636b3acf8631f28d4bd6a826"
+    },
+    {
+      "file": "desktop/menubar-render/render.js",
+      "sha256": "b55fa158a26c5ad02826281748dc6e6fc39333d98ce06ca3943a8798d64660bc"
+    },
+    {
+      "file": "desktop/menubar-status.cjs",
+      "sha256": "30d05d58088d02528bf283add846b32aa8de83ad44b88407f02768e550a4e3b9"
+    },
+    {
+      "file": "desktop/metadata-json.cjs",
+      "sha256": "63d8875b63a43d5c6247784cd31107514a3c01fd0a4764db9d86986d524fa697"
+    },
+    {
+      "file": "desktop/monitor.cjs",
+      "sha256": "ddd0fa161f046fe33f15c040800f4f12de6fe6ab7378500720ed5058e2be5aa2"
+    },
+    {
+      "file": "desktop/opencode-reader.cjs",
+      "sha256": "61cc635f1b1dedd20ba51dd64f7dc2c9fe9000dc80d934297f6e96f31cb776c6"
+    },
+    {
+      "file": "desktop/platform.cjs",
+      "sha256": "f09a51638325298ec8f37d00b33db75ecd13a8548b7fe95c1b6331bc5e9f2656"
+    },
+    {
+      "file": "desktop/preload.cjs",
+      "sha256": "6d282543c656bd0e324203ccbc96bf5f318d593bf6cb620c0bb0939a44ad1e22"
+    },
+    {
+      "file": "desktop/provider-catalog.cjs",
+      "sha256": "1a213ee8d1aacede256cbfef722d1128ba0905228f39e67a26bd8db928da5172"
+    },
+    {
+      "file": "desktop/provider-domain.cjs",
+      "sha256": "0581ca6d5526046d8dcb2635c1a058f1f8d779b69c6400f30be91a7e35e5c503"
+    },
+    {
+      "file": "desktop/provider-fixture.cjs",
+      "sha256": "15817c41bbb1ed5ec91acb8fa064d3dbbdd06653da9e76414d6a6e28661af627"
+    },
+    {
+      "file": "desktop/providers.cjs",
+      "sha256": "db215c773a8b71c73b5c150137c3bfc1ffe21baa49f07cb69e6854cd670da1dd"
+    },
+    {
+      "file": "desktop/providers/claude.cjs",
+      "sha256": "6e1315920b3ad4834aeece3252623df93739364e01897fcf80f4ac6392b55272"
+    },
+    {
+      "file": "desktop/providers/codex.cjs",
+      "sha256": "cd3e77169626303275d97364feaf7910b5078c13a31f6fc42c20484f9ab6a577"
+    },
+    {
+      "file": "desktop/providers/commandcode.cjs",
+      "sha256": "c60b4512d0d3bfa77a980786294a4cde02271a7ff040c644f44cfa10cd1a1aa9"
+    },
+    {
+      "file": "desktop/providers/deepseek.cjs",
+      "sha256": "f06e313e5eb988c95c3bcad889aca6646a8918200cbe3048cebf10f10943c83e"
+    },
+    {
+      "file": "desktop/providers/glm.cjs",
+      "sha256": "0884c14230edf3d501fb0a0ef5a8b53a01f860f8e4c25e25fb9d49b38d322533"
+    },
+    {
+      "file": "desktop/providers/index.cjs",
+      "sha256": "41e648a68be8da08b261437ddb87ce66cd768703ed349b6b5918c9184a155912"
+    },
+    {
+      "file": "desktop/providers/minimax.cjs",
+      "sha256": "8fbf331830fc4c0ff7e4cd8d249a24c133160d0b7b10a4031e9a0f93728e001a"
+    },
+    {
+      "file": "desktop/providers/opencode-go.cjs",
+      "sha256": "5aa036acf48e1bc473cdafae18ce0a7f72955f7a187979177749eb15d7e513ed"
+    },
+    {
+      "file": "desktop/providers/volcengine.cjs",
+      "sha256": "9cf085dcea9b5a56e77886f600a54d069dbb8878c0f23d675af9c20ff60d5dba"
+    },
+    {
+      "file": "desktop/smoke/association-native-smoke.cjs",
+      "sha256": "a7500fc026e834e604b9c357468fc36c68fae8ae2ff06db49100f2808af061ed"
+    },
+    {
+      "file": "desktop/smoke/balance-native-smoke.cjs",
+      "sha256": "2a46963815cd5b8b9e843615bac97c6b4ea17965be9ca236be9aa4b9a628b7bf"
+    },
+    {
+      "file": "desktop/smoke/branding-native-smoke.cjs",
+      "sha256": "f395e1571332d6cdd1cb3bb61cb4df8962ba8f90ebb75da0ae72e14af5a601c4"
+    },
+    {
+      "file": "desktop/smoke/index.cjs",
+      "sha256": "3b5b845fb26ba7780e1d4fa15ef577ac3fc1516bc394c6f4a61217ebe49e991b"
+    },
+    {
+      "file": "desktop/smoke/opencode-fixture.cjs",
+      "sha256": "079d696012ab1de4fb3bef3010bbb6dba4fb86342dc1d8cdf04bc516eed138a4"
+    },
+    {
+      "file": "desktop/smoke/opencode-native-smoke.cjs",
+      "sha256": "ae0ceeeae373f205bbba3440e1fe1a5b04f3388b468302af0f40572e3c36d6d5"
+    },
+    {
+      "file": "desktop/smoke/provider-native-smoke.cjs",
+      "sha256": "7f7921101885c6a4b65eabd9c6b69d67aee2253f03bb7a1063e6e06975b5d5e0"
+    },
+    {
+      "file": "desktop/smoke/smoke-fixture.cjs",
+      "sha256": "79893e4d8b726ea6954d157a4ef74337f0cf8b22cae5c5b0fababb39cf0b86b5"
+    },
+    {
+      "file": "desktop/smoke/subscription-native-smoke.cjs",
+      "sha256": "9b394f7219dc0767cb54883bdfae0cc977a85686b2674145a36f0322dbc951d9"
+    },
+    {
+      "file": "desktop/smoke/tool-fixture.cjs",
+      "sha256": "19909a01ff2222c120d396df60de6f1b983f569f846a98b3395c348a41005316"
+    },
+    {
+      "file": "desktop/smoke/tool-native-smoke.cjs",
+      "sha256": "b384abde666ec1e3311a717d565b26dc2ecdf3c5f9b25954bb73f5722a67dfe0"
+    },
+    {
+      "file": "desktop/store.cjs",
+      "sha256": "ba1bd337d78a62ab1c6828841d982618d7704dd958256e9648962aff521eddd7"
+    },
+    {
+      "file": "desktop/subscription-status.cjs",
+      "sha256": "820769ee9c033fba9bb52d55978cc115032ea9ef46572613065be9e7a1dca27b"
+    },
+    {
+      "file": "desktop/subscriptions.cjs",
+      "sha256": "465b24a2b7011315fc8800c9c0f68358f447af3e2b2438c4d674699960294365"
+    },
+    {
+      "file": "desktop/tool-analytics.cjs",
+      "sha256": "f48b672364e377e123b6edf7b419ff17582e3652fc9f3104c461afac96a2531a"
+    },
+    {
+      "file": "desktop/tool-kinds/claude-code.cjs",
+      "sha256": "e238beebfbfd2414b8dca35d36b265c1f150017146e72c5e3213a837c7e7b09a"
+    },
+    {
+      "file": "desktop/tool-kinds/codex.cjs",
+      "sha256": "d873a0a924b311bb3659a9ba1531cc609622357d6d3fe24830a9b48c2d194010"
+    },
+    {
+      "file": "desktop/tool-kinds/harness.cjs",
+      "sha256": "ea9abd235628395e1cda7025ff0f2e1c2f1e0cf82c697419419a023cdef03952"
+    },
+    {
+      "file": "desktop/tool-kinds/index.cjs",
+      "sha256": "e1ee2c7f702f4bd757b860105eb08f628b6a6361d702ba6e705aaa74734ae6e3"
+    },
+    {
+      "file": "desktop/tool-kinds/opencode.cjs",
+      "sha256": "a0e585822aec2339045515542c55388e07f846bc3815b0cf81a8d1ee9741b828"
+    },
+    {
+      "file": "desktop/tool-kinds/zcode.cjs",
+      "sha256": "9bd1a962377286444aa18c0cd06fdf2275b6a86a45ed3be6edaa636dc2ca2679"
+    },
+    {
+      "file": "desktop/tool-sources.cjs",
+      "sha256": "24edbeb921b7dd070752e0731f7265de3ede077d3ee52f4406ded2ccf686b844"
+    },
+    {
+      "file": "desktop/tool-worker.cjs",
+      "sha256": "f3e9a017dbe6ea60b10c0ebbc65547030684429d96862479fcfa08f2a1eae661"
+    },
+    {
+      "file": "desktop/update-check.cjs",
+      "sha256": "6043f99359750851771460edf396ce72e152331aca08b3c0d8b149ed8d0244d4"
+    },
+    {
+      "file": "desktop/widget-bounds.cjs",
+      "sha256": "ddba027a0deb62a846026f0bea507df99b2685d962dce1793d18378ef5eff607"
+    },
+    {
+      "file": "desktop/zcode-reader.cjs",
+      "sha256": "0a73a58427fa9e245602c0d9d165c9cbddbf13ea8e1fc93c4b9e329a47354d6a"
+    },
+    {
+      "file": "desktop/zcode-worker.cjs",
+      "sha256": "c2f3be76ac7c82df32525a0001e15ee2a8fc5adc492395983bca732329600478"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-400-normal-DXusLSnH.woff2",
+      "sha256": "a84e32ccb6abf96b931d1dd242bd95b00433e3efb721c7345e7713747a050ca1"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-400-normal-DkrqoNl2.woff",
+      "sha256": "3e8ea3d40e9a78b6e3b12a28453ca9840386781c42609292ae2c4558dc3bbfee"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-500-normal-BboVsk8R.woff",
+      "sha256": "4ac63e96a203c646402ca8e2eddd674b9f83e044d2fd543d8c914ba3b92c7d55"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-500-normal-NWpm63d5.woff2",
+      "sha256": "2f6cfec71f9f8ec8efc18fd3d8e9cfc2b4c8dd073ef0189758ef8d0df9d44a91"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-600-normal-BeW5VFD_.woff2",
+      "sha256": "05f146c56f1659e43557865a3dabc2237b855135f45cb9ec974f777afa653d58"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-600-normal-CnEeIcMC.woff",
+      "sha256": "17984ba91446a2fe06abc91e9cfe2dd03183b25e096f9dbd0ac23da58577e4fe"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-ext-400-normal-ChfpGzr5.woff",
+      "sha256": "6f98f6c17620699c7543827ca21c82b321babb3075222e4e1096cdaf36b7f2d6"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-ext-500-normal-BXrH8YSv.woff",
+      "sha256": "bbb8d94b28352406df02647b02d33ae2b84a47b0379063feddf6c3d0058e686e"
+    },
+    {
+      "file": "dist/client/assets/geist-cyrillic-ext-600-normal-PR76dHFV.woff",
+      "sha256": "0ae10fd42dbf30ff3fb02e7db19628d7e6e54190ea4772eef7fca7ea0ca2e8a7"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-400-normal-B40WzpMT.woff2",
+      "sha256": "ead637fd0b6b887d829b3ce3f25fdc242b1de0cfb69c0d97987933675d1315ba"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-400-normal-akEymXtG.woff",
+      "sha256": "b3f9725f946d712db8a411a4ec1bbac766ce87baac703d4a8dcb9f38a89b2cfc"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-500-normal-BDXIbFrL.woff",
+      "sha256": "184e4ca021088a07ea0b86a0bc743dadc37ec86ddbfff46d80658a5c6ec7c743"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-500-normal-CTWBw9NS.woff2",
+      "sha256": "6145bf6706dbc1b6686f04f871489cf724951f00b752745896ccdcac07639a53"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-600-normal-CSETrqM2.woff2",
+      "sha256": "edde7cc4e2719898f981a6d970a756030fff75a8ed36dd6a457a60181b889ebf"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-600-normal-DsPlZH-9.woff",
+      "sha256": "a08b94ffdc16be071cc85ace7ea5884463fc05775346ec2a292be651b3665a25"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-ext-400-normal-Bz1pQMyt.woff",
+      "sha256": "4b5402bd7cc384ace038bf652e0b31287403e0bc54f935117ebc94f2129493a7"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-ext-400-normal-CND6cjiG.woff2",
+      "sha256": "6e4c9792d82ae0ddb7e0e4c83afa7deb9fcf785ca373c25f63cfe577d0f78fd7"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-ext-500-normal-BovoTgeE.woff2",
+      "sha256": "b35a1f6ecc3923cc5edfcc45b4394e5905168fe10bf6f507c1d752962f69cbc2"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-ext-500-normal-C9fx-R30.woff",
+      "sha256": "85134ca03690bce2d29036598467111b0e538334ce3031f9ceb4979cb10020a5"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-ext-600-normal-CVFbg5dS.woff2",
+      "sha256": "bc1a2cbd3a79ed5b1209c2b8d3c7abe5458675f6ed6f80ddb3a16fa82d3ad5d3"
+    },
+    {
+      "file": "dist/client/assets/geist-latin-ext-600-normal-TmIUreF9.woff",
+      "sha256": "558a2a706b6a7a50979f200c0bf9ecd086a52a886671938657b32bed56d2e865"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-cyrillic-400-normal-C51Di1Mf.woff2",
+      "sha256": "c3e3d9893a3de6713b06bc2fadeacafd9ec05594c5ed18f2e23383669d9dbb9f"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-cyrillic-400-normal-CPJFfJgk.woff",
+      "sha256": "02b8fba2fdff88ac36fe4dbea0323081886af73ea68dabe08cad05ca62a489be"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-cyrillic-500-normal-D2cXvDHF.woff2",
+      "sha256": "4c8a1cdd921e467c7f8d410b2308986a3acdf1065b9e0bdc4976108a855edb1f"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-cyrillic-500-normal-DfuvdVgn.woff",
+      "sha256": "91a08f259b2314d053eab6473643a2b0bb3b78ffd5a70fbfcb7006fa1a1cbe7a"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-400-normal-B2yvC1Cq.woff",
+      "sha256": "ec7ecd39327c39a2b2792c8b402d094619b6c1e517a74420cde8fd67a71ed083"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-400-normal-DTRLJnHl.woff2",
+      "sha256": "3f98383b122fe015a48536cd4a1cda855a201718923ffe74931a01597107b9b5"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-500-normal-D-GG86Jb.woff",
+      "sha256": "04dde39e58d3539d8a8933f649c556887984c89efe1d1da53c8bb2412da12138"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-500-normal-YINYabwD.woff2",
+      "sha256": "72971bd4908d3984fa1b1426bb363730e4957e16a0f58bfbca76993095715488"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-ext-400-normal-CfzLURNc.woff",
+      "sha256": "7cc6e726dcf12d457c59e75d843d9486fe05410495d36735035c9c984345638c"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-ext-400-normal-DI-rJ0UV.woff2",
+      "sha256": "8ede9cb664d0e0446ed066201d58e444f6147645ae0cb1108f765f68c54fe0a4"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-ext-500-normal-Buglb9-a.woff2",
+      "sha256": "84c2a01e0e35619e561d46285ccecec68aae76cb96c618b8e047806cb5530741"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-latin-ext-500-normal-CrWEgvU_.woff",
+      "sha256": "1c1714e8e9c550c95828150544640b0a04697562b460bb3a522a555a7ebbdef2"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-symbols2-400-normal-DjbiTEEA.woff",
+      "sha256": "980c7c91c59d3f4a3e361c7204fdf521302f1fb01ea35f958f57a79e6e6291a3"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-symbols2-500-normal-CmnCPGa0.woff",
+      "sha256": "85f29019cb4ec8c86d58ecd7ce89d35fabcf7e7c58bd62a9b38d33aeb7498e20"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-vietnamese-400-normal-CZEPLOgu.woff",
+      "sha256": "5e6255c9b6336d6cc03b626d802b1408da4662e77a9030ccbc4101c2ed851526"
+    },
+    {
+      "file": "dist/client/assets/geist-mono-vietnamese-500-normal-Dx9-epDo.woff",
+      "sha256": "288bc86db5dbad0b24f8b2e0d480b72878f02de90fcf31a1ccb9a918035fffe6"
+    },
+    {
+      "file": "dist/client/assets/geist-vietnamese-400-normal-C8xY9-dI.woff",
+      "sha256": "24a1dc9527ac1e09ec0b6919ed7b6b33ee832ff706250685cfdb3889f4c75a37"
+    },
+    {
+      "file": "dist/client/assets/geist-vietnamese-500-normal-_b1ojCbH.woff",
+      "sha256": "36786365f10dcd806be53c6ccda951ef9a37fc0cb6bf6897711fe197c0565188"
+    },
+    {
+      "file": "dist/client/assets/geist-vietnamese-600-normal-B5MZcNo4.woff",
+      "sha256": "7b435ac2b914001418853c9642135bbe69561ce84563bf6bdad6be27956a7dcf"
+    },
+    {
+      "file": "dist/client/assets/geist-vietnamese-600-normal-BFUgqsz8.woff2",
+      "sha256": "cd6e1b9ef0dbeb78753dd294cf803cc78cb6393d9fe09fc7be5c8b4d79cd8c2c"
+    },
+    {
+      "file": "dist/client/assets/index-Ch0HOula.js",
+      "sha256": "10f8d7caf51a338d75d6c94b011ba09aee68f46033fd30a121339eb6c16d2b9f"
+    },
+    {
+      "file": "dist/client/assets/index-aTZvNhpS.css",
+      "sha256": "716d291a70674de7cb4505e01f11748735dcc21c3a2df68e9870ed1e48afff64"
+    },
+    {
+      "file": "dist/client/index.html",
+      "sha256": "784ed0ca1e23a5df88e6d4a7bd3e2c5582902543543ae1795dc1e1240b52c632"
+    }
+  ]
+}

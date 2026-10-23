@@ -3,7 +3,7 @@
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
 - 当前版本：**1.9.0-beta.2**（菜单栏改进版，T7.9–T7.12 与 T4.7，2026-10-23 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
-- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D10）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D12）
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
 ## 1. 读取顺序
@@ -94,7 +94,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 
 ## 9. 测试规则
 
-- 证据三级：①合成契约测试；②打包原生 smoke（隔离样例）；③真实账户或真机验收。没做过 ③ 的，不得写成「已验证」。某个平台的真实观察不能证明其他平台（例如 Codex 的只读观察不证明 Claude 核账）。
+- 证据三级：①合成契约测试；②打包原生 smoke（隔离样例）；③真实账户或真机验收。没做过 ③ 的，不得写成「已验证」。Claude 用 computer use 在用户 Mac、真实账户上实测的结果也计为 ③，统一标注「③（Claude 代测）」；需要用户亲自操作的项（改系统设置、输入密码、外接屏、锁屏等）仍由用户做（D12 ②）。某个平台的真实观察不能证明其他平台（例如 Codex 的只读观察不证明 Claude 核账）。
 - 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
 - `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
 - Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。smoke 使用独立的 Keychain 条目（见第 5 节）；每次新构建签名都会变，打包版 smoke 首次运行可能弹出一次针对 smoke 条目的授权窗，处理这个窗口不会影响真实条目。
