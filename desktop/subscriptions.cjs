@@ -79,10 +79,17 @@ function normalizeClaude(raw, now = Date.now()) {
       }),
     );
   }
+  // T8.4: a quota read from a Claude Code version outside the verified range is marked as such.
+  const unverified =
+    typeof raw.unverifiedVersion === 'string' && /^\d+\.\d+\.\d+$/.test(raw.unverifiedVersion)
+      ? `${raw.unverifiedVersion.split('.').slice(0, 2).join('.')} 版本未经验证，按已知结构读取。`
+      : '';
   return {
     windows,
     planName: 'Claude 本机订阅观察',
-    note: '来自本地 Claude Code 状态栏；显示最近观察值。账户身份未由账单接口核验，网页聊天明细不在本机采集范围。',
+    note:
+      unverified +
+      '来自本地 Claude Code 状态栏；显示最近观察值。账户身份未由账单接口核验，网页聊天明细不在本机采集范围。',
   };
 }
 class SubscriptionClient {
