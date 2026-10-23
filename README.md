@@ -62,7 +62,7 @@ Mac 版大部分为 ②：菜单栏图标与面板做过部分真机验收（③
 
 ```bash
 pnpm install
-pnpm run test:desktop      # 桌面与分析测试（当前基线 343 通过 / 0 失败 / 3 跳过）
+pnpm run test:desktop      # 桌面与分析测试（当前基线 345 通过 / 0 失败 / 3 跳过）
 pnpm run lint              # ESLint
 pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）
