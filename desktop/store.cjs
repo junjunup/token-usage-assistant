@@ -67,18 +67,29 @@ class LocalStore {
   settings() {
     const raw = readJson(this.file('settings.json'), {});
     let settings = { ...DEFAULT_SETTINGS };
-    for (const [k, v] of Object.entries(raw.preferences || {})) {
+    // Preferences this build does not know (written by a newer version) are kept aside and written back unchanged
+    // on save, so running an older build no longer deletes them (T8.2). They are never read or validated here.
+    const unknown = {};
+    const stored =
+      raw.preferences && typeof raw.preferences === 'object' && !Array.isArray(raw.preferences) ? raw.preferences : {};
+    for (const [k, v] of Object.entries(stored)) {
+      if (!Object.hasOwn(DEFAULT_SETTINGS, k)) {
+        unknown[k] = v;
+        continue;
+      }
       try {
         settings = patchSettings(settings, { [k]: v });
       } catch {
-        // An invalid stored preference is skipped and the default kept, as before.
+        // An invalid stored value of a known preference is skipped and the default kept, as before.
         log.warn('store', 'invalid-preference-skipped');
       }
     }
+    this.unknownPreferences = unknown;
     return { preferences: settings, bounds: raw.bounds || {} };
   }
   saveSettings(preferences, bounds) {
-    atomicWrite(this.file('settings.json'), { preferences, bounds });
+    const unknown = this.unknownPreferences || {};
+    atomicWrite(this.file('settings.json'), { preferences: { ...unknown, ...preferences }, bounds });
   }
   credentials() {
     const raw = readJson(this.file('credentials.encrypted.json'));
