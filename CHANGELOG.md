@@ -11,6 +11,7 @@
 - Claude 本机采集端口：原来端口只在第一次连接时随机选一次，之后一直用它；端口被系统保留（Windows 上常见于装了 Hyper-V / WSL2 / Docker 的机器）或被占用时，Claude 数据就一直不可用。现在会自动换一个可用端口并保存；套餐额度会自动恢复，「工具明细」会提示「采集端口已更换 · 需重开会话」，重新打开 Claude Code 后提示消失（T8.5）。
 - 本机开发测试包（版本号带 `-dev.<提交号>`）也能收到新版本提示：之前检查更新认不出这种版本号，永远显示「已是最新」。日志新增账户列表的打开耗时，用来排查首次启动卡住的问题（只记耗时和账户数，不记账户内容）（T8.6）。
 - 两个平台的安装包都附带本应用的许可证（`LICENSE.txt`）、第三方组件说明（`THIRD_PARTY_NOTICES.md`）和第三方许可证全文（`THIRD_PARTY_LICENSES.txt`：React、React DOM、scheduler、Chart.js、@kurkle/color、Phosphor Icons、Geist 字体）；Windows 在安装目录的 `resources` 文件夹，Mac 在应用的 `Contents/Resources`（T8.7）。
+- 工程（不改变应用行为）：CI 安装固定版本的 Harness 运行时，原来一直跳过的 3 项 Harness 测试现在每次都在两个平台运行；公开发布说明附上 CHANGELOG 中本版的改动；新增本机发版存档脚本 `scripts/archive-release.cjs`（只读 GitHub，核对哈希与报告后存档，不覆盖）；Mac 打包校验记录 smoke 期间是否出现钥匙串授权窗，失败时保留证据，并且不再覆盖已提交的正式报告（T8.10）。
 
 ## 1.9.0-beta.2（2026-10-23，菜单栏改进）
 
