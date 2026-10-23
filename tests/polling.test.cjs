@@ -142,8 +142,56 @@ test('Codex accounts get the 120 s floor, lock and unlock are wired, and the UI 
     read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
   assert.match(read('desktop/accounts.cjs'), /minIntervalSeconds: entry\.provider === 'codex' \? 120 : 0/);
   const main = read('desktop/main.cjs');
-  assert.match(main, /powerMonitor\.on\('lock-screen', \(\) => accounts\.pauseAll\(\)\)/);
-  assert.match(main, /powerMonitor\.on\('unlock-screen', \(\) => accounts\.resumeAll\(\)\)/);
+  assert.match(main, /powerMonitor\.on\('lock-screen', \(\) => \{\s*accounts\.pauseAll\(\);/);
+  assert.match(main, /lockCheck = setInterval\(resumeIfUnlocked, 60000\)/);
+  assert.match(
+    main,
+    /powerMonitor\.on\('unlock-screen', \(\) => \{\s*clearInterval\(lockCheck\);\s*accounts\.resumeAll\(\);/,
+  );
+  // T8.3: manual refresh and system resume also end a pause the system never lifted.
+  assert.match(main, /handle\('assistant:refresh', async \(\) => \{\s*resumeIfUnlocked\(\);/);
+  assert.match(main, /powerMonitor\.on\('resume', \(\) => \{\s*if \(!resumeIfUnlocked\(\)\) accounts\.refreshAll\(\);/);
+  assert.match(main, /getSystemIdleState\(1\) === 'locked'/);
   assert.match(main, /refreshInterval: accounts\?\.active\?\.monitor\.intervalSeconds/);
   assert.match(read('src/DesktopApp.jsx'), /每 \$\{state\.refreshInterval \|\| settings\.refreshSeconds\} 秒刷新/);
+});
+
+test('T8.3: resumeIfUnlocked resumes only when paused and the screen is not locked', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 0 });
+  const { m, calls } = manager({ stepMs: 400, jitterMs: 800, random: () => 0 }, ['a', 'b']);
+  assert.equal(
+    m.resumeIfUnlocked(() => false),
+    null,
+    'not paused: nothing to do',
+  );
+  m.pauseAll();
+  assert.equal(
+    m.resumeIfUnlocked(() => true),
+    null,
+    'still locked: stay paused',
+  );
+  assert.equal(
+    m.resumeIfUnlocked(() => {
+      throw new Error('unknown');
+    }),
+    null,
+    'unknown state: stay paused',
+  );
+  assert.equal(m.paused, true);
+  assert.deepEqual(calls, [
+    ['a', 'pause'],
+    ['b', 'pause'],
+  ]);
+  const done = m.resumeIfUnlocked(() => false);
+  assert.ok(done, 'unlocked but never told: resume');
+  t.mock.timers.tick(400);
+  await flush();
+  await done;
+  assert.equal(m.paused, false);
+  assert.deepEqual(calls.slice(2), [
+    ['a', 'resume'],
+    ['b', 'resume'],
+    ['a', 0],
+    ['b', 400],
+  ]);
 });

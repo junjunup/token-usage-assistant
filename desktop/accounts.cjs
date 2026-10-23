@@ -324,6 +324,21 @@ class AccountManager extends EventEmitter {
     log.info('accounts', 'resumed', { count: this.runtimes.size });
     return this.refreshAll();
   }
+  // Fallback (T8.3): the system does not always pair lock-screen with unlock-screen (remote desktop, fast user
+  // switching). If paused but the screen is not locked, resume. Returns the staggered refresh, or null if nothing
+  // was done. isLocked() is powerMonitor.getSystemIdleState(...) === 'locked' in main.cjs.
+  resumeIfUnlocked(isLocked) {
+    if (!this.paused || this.disposed) return null;
+    let locked;
+    try {
+      locked = isLocked() === true;
+    } catch {
+      locked = true; // Unknown: stay paused rather than query while the screen may be locked.
+    }
+    if (locked) return null;
+    log.info('accounts', 'resume-fallback', { count: this.runtimes.size });
+    return this.resumeAll();
+  }
   dispose() {
     this.disposed = true;
     this.empty.monitor.dispose();
