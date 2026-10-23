@@ -2,6 +2,10 @@
 
 倒序排列。每个版本的详细说明、验证记录见对应的 `docs/` 专题文档和 `docs/verification-<版本>/`。证据等级：①合成契约测试 ②打包原生 smoke ③真实账户或真机验收。
 
+## 未发布（稳固版，计划作为 1.9.0-beta.3）
+
+- 安全更新：Electron 从 44.4.4 升到 44.9.3，修复 2026-10-22 发布的高危公告 GHSA-jr5w-w6x2-84p9（一组被攻破的中间证书可被用来冒充 HTTPS 服务；应用访问各平台接口时会携带 API Key）。只升 44 补丁线，行为不变（T8.1）。
+
 ## 1.9.0-beta.2（2026-10-23，菜单栏改进）
 
 - macOS 安装包附带 Electron 与 Chromium（及其组件）的许可证文件：应用内 `Contents/Resources/LICENSE.electron.txt`、`LICENSES.chromium.html`（Windows 安装包原本就有）。
