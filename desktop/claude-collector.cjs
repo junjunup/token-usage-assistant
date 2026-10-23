@@ -16,7 +16,8 @@ const count = (v) => {
   return Number.isSafeInteger(n) && n >= 0 ? n : null;
 };
 // Locally verified Claude Code versions (2.1.251+ within 2.1.x). OTLP events from other versions are accepted only
-// when their structure matches (T5.1) and are reported as unverified. The status-line quota path stays strict.
+// when their structure matches (T5.1) and are reported as unverified. Since T8.4 the status-line quota follows the
+// same rule: an unverified version must report at least one known window with valid fields, or it is rejected.
 const supported = (v) => typeof v === 'string' && /^2\.1\.\d+$/.test(v) && Number(v.split('.')[2]) >= 251;
 const VERSION = /^\d+\.\d+\.\d+$/;
 const ATTRIBUTES = new Set([
@@ -252,7 +253,16 @@ class ClaudeCollector {
     }
   }
   receiveQuota(input) {
-    if (!supported(input.version) || !clean(input.sessionId, 200)) throw new Error('version');
+    if (typeof input?.version !== 'string' || !VERSION.test(input.version) || !clean(input.sessionId, 200))
+      throw new Error('version');
+    const verified = supported(input.version);
+    if (!verified) {
+      // T8.4: renamed or missing windows are not guessed; field shapes are checked by normalizeClaude below.
+      const w = input.windows;
+      const known =
+        w && typeof w === 'object' && !Array.isArray(w) ? ['five_hour', 'seven_day'].filter((k) => w[k] != null) : [];
+      if (!known.length) throw new Error('version');
+    }
     const project = clean(input.project);
     this.sessions[input.sessionId] = { project, version: input.version };
     // Retain only a bounded metadata map for current sessions.
@@ -260,6 +270,7 @@ class ClaudeCollector {
     if (keys.length > 500) delete this.sessions[keys[0]];
     atomicWrite(path.join(this.home, 'sessions.json'), this.sessions);
     const raw = { schema: 'token-usage-assistant.claude-quota', schemaVersion: 1, observedAt: Date.now(), windows: {} };
+    if (!verified) raw.unverifiedVersion = input.version;
     for (const k of ['five_hour', 'seven_day']) {
       const w = input.windows?.[k];
       if (w != null) raw.windows[k] = { used_percentage: w.used_percentage, resets_at: w.resets_at };
@@ -270,7 +281,7 @@ class ClaudeCollector {
     // Status-line repaint is not a fresh platform query. Unchanged values keep their original timestamp.
     if (JSON.stringify(old?.windows) === JSON.stringify(raw.windows)) raw.observedAt = old.observedAt;
     atomicWrite(file, raw);
-    this.health('ready');
+    this.health('ready', verified ? null : input.version);
   }
   close() {
     this.server?.close();

@@ -557,3 +557,59 @@ test('the Claude collector records the unverified version and the source report 
   assert.equal(r.observedVersion, '2.2.0');
   assert.match(r.message, /2\.2 版本未经验证，按已知结构读取。/);
 });
+
+// T8.4: the status-line quota follows the same structural rule as the OTLP events (T5.1).
+test('T8.4: an unverified Claude Code version is accepted when a known window has the known fields, and marked', async (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  const resets = Math.floor(now / 1000) + 3600;
+  c.receiveQuota({
+    version: '2.2.0',
+    sessionId: 's',
+    windows: {
+      five_hour: { used_percentage: 13, resets_at: resets },
+      seven_day: { used_percentage: 83, resets_at: resets },
+    },
+  });
+  const raw = JSON.parse(fs.readFileSync(path.join(home, 'quota.json')));
+  assert.equal(raw.unverifiedVersion, '2.2.0');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(home, 'status.json'))).observedVersion, '2.2.0');
+  const usage = await new SubscriptionClient('claude', { now: () => now }).usage({ home });
+  assert.deepEqual(
+    usage.parts.credits.windows.map((w) => w.remainingPercent),
+    [87, 17],
+  );
+  assert.match(usage.parts.credits.note, /^2\.2 版本未经验证，按已知结构读取。/);
+  // A verified version writes no marker.
+  c.receiveQuota({
+    version: '2.1.251',
+    sessionId: 's',
+    windows: { five_hour: { used_percentage: 20, resets_at: resets } },
+  });
+  assert.equal(Object.hasOwn(JSON.parse(fs.readFileSync(path.join(home, 'quota.json'))), 'unverifiedVersion'), false);
+});
+
+test('T8.4: renamed, missing or malformed windows from an unverified version are rejected and leave the quota untouched', (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  const resets = Math.floor(now / 1000) + 3600,
+    file = path.join(home, 'quota.json');
+  c.receiveQuota({
+    version: '2.1.251',
+    sessionId: 's',
+    windows: { five_hour: { used_percentage: 20, resets_at: resets } },
+  });
+  const before = fs.readFileSync(file, 'utf8');
+  for (const input of [
+    { version: '2.2.0', sessionId: 's', windows: { fiveHour: { used_percentage: 20, resets_at: resets } } },
+    { version: '2.2.0', sessionId: 's', windows: {} },
+    { version: '2.2.0', sessionId: 's' },
+    { version: '2.2.0', sessionId: 's', windows: { five_hour: { usedPercentage: 20, resets_at: resets } } },
+    { version: '2.2', sessionId: 's', windows: { five_hour: { used_percentage: 20, resets_at: resets } } },
+    { version: '2.2.0', windows: { five_hour: { used_percentage: 20, resets_at: resets } } },
+  ])
+    assert.throws(() => c.receiveQuota(input));
+  assert.equal(fs.readFileSync(file, 'utf8'), before);
+});
