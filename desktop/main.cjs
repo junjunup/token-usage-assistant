@@ -105,9 +105,16 @@ let accounts,
   smokeRun,
   updates,
   diagnosticsText = '',
-  connectionBusy = false;
+  connectionBusy = false,
+  lockCheck = null;
 const notifications = new Set(),
   readySurfaces = new Set();
+// T8.3: resume paused monitors when the screen is in fact not locked (unlock-screen may never arrive).
+function resumeIfUnlocked() {
+  const resumed = accounts?.resumeIfUnlocked(() => powerMonitor.getSystemIdleState(1) === 'locked') || null;
+  if (resumed || !accounts?.paused) clearInterval(lockCheck);
+  return resumed;
+}
 function syncActive() {
   if (!accounts) return;
   const active = accounts.active;
@@ -408,7 +415,14 @@ function updateTray() {
       checked: settings.floating,
       click: (item) => applySettings({ ...settings, floating: item.checked }),
     },
-    { label: '刷新用量', enabled: !!monitor?.key && !monitor?.state.fetching, click: () => monitor.refresh() },
+    {
+      label: '刷新用量',
+      enabled: !!monitor?.key && !monitor?.state.fetching,
+      click: () => {
+        resumeIfUnlocked();
+        monitor.refresh();
+      },
+    },
     { type: 'separator' },
     {
       label: '开机启动',
@@ -692,6 +706,7 @@ function installIpc() {
     return state();
   });
   handle('assistant:refresh', async () => {
+    resumeIfUnlocked(); // T8.3: a manual refresh also ends a pause the system never lifted
     await monitor.refresh();
     return state();
   });
@@ -1022,11 +1037,20 @@ else {
       });
       setUpdateCheck();
       powerMonitor.on('resume', () => {
-        accounts.refreshAll();
+        if (!resumeIfUnlocked()) accounts.refreshAll();
       });
       // T4.4: no account queries while the screen is locked; unlocking resumes with a staggered refresh.
-      powerMonitor.on('lock-screen', () => accounts.pauseAll());
-      powerMonitor.on('unlock-screen', () => accounts.resumeAll());
+      // T8.3: while paused, check every minute whether the screen is still locked, in case unlock-screen never comes.
+      powerMonitor.on('lock-screen', () => {
+        accounts.pauseAll();
+        clearInterval(lockCheck);
+        lockCheck = setInterval(resumeIfUnlocked, 60000);
+        lockCheck.unref?.();
+      });
+      powerMonitor.on('unlock-screen', () => {
+        clearInterval(lockCheck);
+        accounts.resumeAll();
+      });
       broadcast();
     })
     .catch((e) => {
