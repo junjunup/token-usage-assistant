@@ -62,7 +62,7 @@ Mac 版大部分为 ②：菜单栏图标与面板做过部分真机验收（③
 
 ```bash
 pnpm install
-pnpm run test:desktop      # 桌面与分析测试（当前基线 345 通过 / 0 失败 / 3 跳过）
+pnpm run test:desktop      # 桌面与分析测试（当前基线 347 通过 / 0 失败 / 3 跳过）
 pnpm run lint              # ESLint
 pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）
@@ -91,6 +91,6 @@ pnpm run dev               # 浏览器预览模式（使用示例数据）
 
 ## 许可与声明
 
-- 本项目以 [MIT 许可证](LICENSE) 开源；安装包中包含的第三方组件及其许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- 本项目以 [MIT 许可证](LICENSE) 开源；安装包中包含的第三方组件及其许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)（依赖变化后用 `node scripts/third-party-licenses.mjs` 重新生成，测试会检查）。
 - 文中提到的平台和工具名称归各自所有者所有，本项目与它们没有隶属或授权关系，不是任何平台的官方客户端。
 - 安全问题请按 [SECURITY.md](SECURITY.md) 私下报告，不要在公开 issue 中贴出 API Key、令牌或账户信息。

@@ -10,6 +10,7 @@
 - Claude 订阅额度不再只认 Claude Code 2.1.x：以后的版本只要状态栏数据结构与已知格式一致（5 小时 / 每周窗口及其字段），就照常读取，并在账户说明里提示「x.y 版本未经验证，按已知结构读取」；字段改名或缺失仍然拒绝，不猜测（T8.4）。
 - Claude 本机采集端口：原来端口只在第一次连接时随机选一次，之后一直用它；端口被系统保留（Windows 上常见于装了 Hyper-V / WSL2 / Docker 的机器）或被占用时，Claude 数据就一直不可用。现在会自动换一个可用端口并保存；套餐额度会自动恢复，「工具明细」会提示「采集端口已更换 · 需重开会话」，重新打开 Claude Code 后提示消失（T8.5）。
 - 本机开发测试包（版本号带 `-dev.<提交号>`）也能收到新版本提示：之前检查更新认不出这种版本号，永远显示「已是最新」。日志新增账户列表的打开耗时，用来排查首次启动卡住的问题（只记耗时和账户数，不记账户内容）（T8.6）。
+- 两个平台的安装包都附带本应用的许可证（`LICENSE.txt`）、第三方组件说明（`THIRD_PARTY_NOTICES.md`）和第三方许可证全文（`THIRD_PARTY_LICENSES.txt`：React、React DOM、scheduler、Chart.js、@kurkle/color、Phosphor Icons、Geist 字体）；Windows 在安装目录的 `resources` 文件夹，Mac 在应用的 `Contents/Resources`（T8.7）。
 
 ## 1.9.0-beta.2（2026-10-23，菜单栏改进）
 
