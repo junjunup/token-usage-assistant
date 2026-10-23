@@ -1,6 +1,6 @@
 # 项目交接：当前状态快照
 
-> 更新：2026-10-18。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
+> 更新：2026-10-23。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
 > 规则见 [AGENTS.md](AGENTS.md)；进行中的工作见 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)；Mac 菜单栏状态与灵动岛设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)。
 
 ## 1. 当前版本与环境
@@ -8,8 +8,8 @@
 - 版本：`1.9.0-beta.2`（`package.json`）。包含 T7.9–T7.12、T4.7 与 Mac 安装包的 Electron / Chromium 许可证文件。2026-10-23 打标签 `v1.9.0-beta.2`（→ `237987f`）并发布：源码仓库 Release 与安装包仓库 Release 均为 prerelease。
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.2`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
-- 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。beta.8 的四种安装包由 CI 产出（`release-v1.8.0-beta.8/`，报告在 `docs/verification-1.8.0-beta.8/`），已在私有仓库发布为 prerelease，并于 2026-10-16 公开发布到 https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.8.0-beta.8；beta.7 的四种安装包（`release-v1.8.0-beta.7/`）在私有仓库中已发布为 prerelease，并于 2026-10-16 **公开发布**到 https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.8.0-beta.7（4 个安装包 + `SHA256SUMS.txt`）；beta.6 只在私有仓库发布为 prerelease，没有公开；beta.5 及更早的 Windows 双包在旧 Windows 机器上。T2.3 起，四种安装包可以由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库为 https://github.com/junjunup/TokenUsageAssistant（只放安装包），由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.8.0-beta.8（之前公开过 beta.7）。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/commandcode-companion` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 338 项，335 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余 13 处逐行禁用都注明了原因）。
+- 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.2（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
+- 测试基线：`pnpm run test:desktop` 共 338 项，335 通过 / 0 失败 / 3 跳过（Harness 运行时未安装）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -21,13 +21,13 @@
 | GLM / MiniMax / 火山 | ①② | 用户没有这些平台的订阅，只做了官方契约样例验证 |
 | DeepSeek 按量余额 | ①② | 未在真实账户上测试 |
 | OpenCode Go 额度 | ①② | 未在真实 Go 账户上测试 |
-| Codex 订阅额度 | ①②，部分 ③ | Windows 上做过真实 ChatGPT Pro 只读查询；Mac 上未测（beta.2 修复后待复测） |
-| Claude 订阅额度 / 组件 | ①② | 用户没有 Claude 账户 |
+| Codex 订阅额度 | ①②，部分 ③ | Windows 上做过真实 ChatGPT Pro 只读查询；Mac 上未测（1.8.0-beta.2 修复后待复测，验收清单第 7 项） |
+| Claude 订阅额度 / 组件 | ①②，部分 ③ | 2026-10-18 起在 Mac 上连接了真实 Claude 账户；2026-10-19 确认 5 小时 / 每周额度与用量文件都能正常同步；未与官网核账 |
 | Zcode 工具用量 | ①②，部分 ③ | Windows 上用真实数据库验证过元数据聚合 |
 | OpenCode / Harness / Codex rollout / Claude 导出 | ①② | Harness 官方运行时测试需单独安装（本机跳过） |
 | 账户关联与核对 | ①② | 未做真实账户核账；当前数据无法给出真实差值 |
 | Mac 打包版 | ② | `codesign` 通过，打包后 smoke ok，`spctl` rejected（预期）；真机验收未完成 |
-| Mac 菜单栏图标 / 弹出面板 / 设置（1.9.0-beta.1） | ① + 开发机 POC + ② | 原生 smoke 覆盖图标、面板与设置联动；2026-10-18 Claude 在本机做了部分 ③（第 12、14、15 项通过，第 16、17 项部分完成，见验收清单）；浅色 / 深色切换与告警色、系统截图 / 录屏 / 会议共享、锁屏、外接屏、多桌面空间、全屏中点图标待用户真机 |
+| Mac 菜单栏图标 / 弹出面板 / 设置（1.9.0-beta.x） | ①②，部分 ③（Claude 代测） | 原生 smoke 覆盖图标、面板与设置联动；2026-10-18 Claude 用 computer use 在用户 Mac、真实账户上代测（D12 ②）：第 12、14、15 项通过，第 16、17 项部分完成，见验收清单；浅色 / 深色切换与告警色、系统截图 / 录屏 / 会议共享、锁屏、外接屏、多桌面空间、全屏中点图标待用户真机 |
 | Windows 打包版 | ②（beta.5 时） | 实际 NSIS 覆盖安装、重启自启动未测 |
 
 可用于真实账户验收的平台：Codex（ChatGPT 订阅）、Command Code、Zcode；Claude、GLM、MiniMax、火山目前只有契约样例。
@@ -86,7 +86,7 @@
 ## 5. 未完成的验收项
 
 - 各平台的真实账户核账：GLM、MiniMax、火山、DeepSeek、OpenCode Go、Claude（需要用户开通并在应用内配置）。
-- Mac 真机验收（逐项清单见 [docs/MAC-ACCEPTANCE-CHECKLIST.md](docs/MAC-ACCEPTANCE-CHECKLIST.md)，由用户在真机执行）：DMG 安装与首次打开、Keychain 授权（包括覆盖升级后）、菜单栏托盘、悬浮窗（所有桌面空间、全屏之上）、睡眠唤醒刷新、登录项、真实 Codex 连接、Zcode / OpenCode 同步、通知权限、空闲资源占用、窗口位置保留。
+- Mac 真机验收（逐项清单见 [docs/MAC-ACCEPTANCE-CHECKLIST.md](docs/MAC-ACCEPTANCE-CHECKLIST.md)，由用户在真机执行，也可由 Claude 代测并标注「③（Claude 代测）」）：DMG 安装与首次打开、Keychain 授权（包括覆盖升级后）、菜单栏托盘、悬浮窗（所有桌面空间、全屏之上）、睡眠唤醒刷新、登录项、真实 Codex 连接、Zcode / OpenCode 同步、通知权限、空闲资源占用、窗口位置保留。
 - Windows：NSIS 覆盖安装升级、重启后自启动、真实工具的持续使用。
 - 两小时稳定性测试：未完成，用户已叫停，不再进行。
 
@@ -94,5 +94,6 @@
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 
-- 进行中：菜单栏首版（T7.3–T7.8，计划作为 1.9.0-beta.1，设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)）。T7.3–T7.8 已合并：Mac 菜单栏图标改为动态显示，左键弹出用量面板、右键为原菜单，设置里有「菜单栏图标与面板」子组；1.9.0-beta.1 已发布到 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.1)；真机验收：第 3 项已由用户填写；第 12、14、15 项已由 Claude 实测通过，第 13 项和第 16、17 项的剩余部分待用户。T7.9（同一账户内额度窗口优先、金额兜底）已合并，随下一个测试版发布，本机 Mac 测试包 `-dev.8964ec3`；T7.10（真机验收发现的 3 处小问题）已合并，本机 Mac 测试包 `-dev.22dab4c`；T7.11（面板账户标签与图标一致）已合并，本机 Mac 测试包 `-dev.2a0dbcf`（已装在本机并真机确认）；T7.12（图标绘制超时与回退）已合并，本机 Mac 测试包 `-dev.5b8db55`。以上与 T4.7 一起作为 1.9.0-beta.2 已发布到 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.2)。
+- 当前：阶段 8「稳固与收口」（2026-10-23 整体复盘后新增，D12，见 [docs/REVIEW-2026-10.md](docs/REVIEW-2026-10.md)）。顺序见计划第 3 节：T8.9 → T8.11 → T8.12 → T8.1–T8.7 → T8.10 → T8.8（1.9.0-beta.3）→ T6.1 → T6.2 / T6.3 → T8.14；T7.2、增量一、增量二推迟，刘海悬停面板搁置。
+- 菜单栏：首版（T7.3–T7.8）以 1.9.0-beta.1 发布，真机验收后的改进（T7.9–T7.12）与 T4.7 以 1.9.0-beta.2 发布，均在 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases)。真机验收：第 3 项由用户填写；第 12、14、15 项为 ③（Claude 代测）；第 13 项与第 16、17 项的剩余部分待用户。
 - GitHub Actions：源码仓库 2026-10-18 公开后恢复运行（此前私有仓库因计费限制无法启动作业）。Release 工作流的 Artifacts 只保留 7 天。T7.5–T7.7 的 Windows 安装包随 T7.8 的 Release 补齐。

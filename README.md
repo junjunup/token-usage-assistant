@@ -18,14 +18,14 @@
 | 平台额度 | 火山个人 Agent Plan（北京） | 官方 AFP 额度接口 | ①② |
 | 按量余额 | DeepSeek 官方 | `GET /user/balance` | ①② |
 | 平台额度 | OpenCode Go | `GET /zen/go/v1/usage`（三个周期的百分比） | ①② |
-| 订阅额度 | ChatGPT · Codex | 本机 Codex 只读 app-server | ①②；Windows 上做过真实 Pro 只读查询；Mac 待验收 |
-| 订阅额度 | Claude · Claude Code | statusLine + 本机 OTLP 组件 | ①②（无真实 Claude 账户） |
+| 订阅额度 | ChatGPT · Codex | 本机 Codex 只读 app-server | ①②；Windows 上做过真实 Pro 只读查询；Mac 上待验收 |
+| 订阅额度 | Claude · Claude Code | statusLine + 本机 OTLP 组件 | ①②；Mac 上用真实账户确认过额度与用量能正常同步，未与官网核账 |
 | 工具用量 | Zcode | 只读 SQLite 元数据 | ①②；Windows 上用真实数据库验证过聚合 |
 | 工具用量 | OpenCode | 只读 SQLite 元数据 | ①② |
 | 工具用量 | DeepSeek Harness | 可选本机插件导出（锁定 `0.1.7-rc.1`） | ①②；官方运行时测试需单独安装 |
 | 工具用量 | Codex rollout、Claude 导出 | 本机文件元数据 | ①② |
 
-Mac 版整体为 ②：真机上的安装、Keychain、托盘、睡眠唤醒、登录项等验收尚未完成。
+Mac 版大部分为 ②：菜单栏图标与面板做过部分真机验收（③，由 Claude 在用户的 Mac 上用真实账户代测）；安装、Keychain、睡眠唤醒、登录项等真机验收尚未完成。Windows 版自 1.8.0-beta.5 起只有 CI 打包 smoke（②），NSIS 覆盖安装、开机自启动等未在真机上验证。
 
 ## 安装
 
@@ -64,6 +64,7 @@ Mac 版整体为 ②：真机上的安装、Keychain、托盘、睡眠唤醒、�
 pnpm install
 pnpm run test:desktop      # 桌面与分析测试（当前基线 335 通过 / 0 失败 / 3 跳过）
 pnpm run lint              # ESLint
+pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）
 pnpm run build             # 构建 dist/client（改动界面后必须重新构建）
 pnpm run dev               # 浏览器预览模式（使用示例数据）
