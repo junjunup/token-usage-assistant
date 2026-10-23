@@ -19,7 +19,7 @@
 2. 打标签并推送：`git tag -a v<版本> -m "<版本>"`，然后 `git push origin v<版本>`。
 3. 等待 Release 工作流完成。成功后，源码仓库中会出现一个 **draft prerelease**（草稿只有维护者看得到），附带 4 个安装包和完整性 JSON。
 4. 下载产物，把 `package-integrity.json`、`smoke-result-windows.json`、`mac-app-integrity.json` 放进 `docs/verification-<版本>/`，提交。
-5. 安装包另存一份到 `~/Documents/TokenUsageAssistant-releases/release-v<版本>/`（不覆盖、不删除旧版本）。
+5. 安装包另存一份到 `~/Documents/TokenUsageAssistant-releases/release-v<版本>/`（不覆盖、不删除旧版本）。本机构建的测试包如果带有展开的 `.app`，把它移到同一目录下的 `apps.noindex/<原目录名>/mac-arm64/`，只保留 DMG / ZIP 和报告在版本目录里（T8.12）。
 6. 对外分发（D8）：发布到公开安装包仓库 [junjunup/TokenUsageAssistant](https://github.com/junjunup/TokenUsageAssistant)，只放安装包，不放源码。它是推荐的下载入口，已发布客户端的「检查更新」也只读这个仓库。
    1. 审核源码仓库中的 draft prerelease；没问题后点「Publish release」。**源码仓库公开后（2026-10-18 用户决定），这一步发布的 Release 在源码仓库中也是公开的**（含 4 个安装包和完整性 JSON，后者只有 CI runner 路径）。Publish 工作流只读取已发布的 Release。
    2. **人工审核关口**：在 Actions 页面手动运行 **Publish** 工作流，`tag` 填 `v<版本>`，`dry_run` 保持勾选：只演练，在 job summary 中列出将要发布到安装包仓库的 4 个安装包和 `SHA256SUMS.txt`。核对无误后才进行下一步。
