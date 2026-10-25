@@ -190,6 +190,53 @@
   gap: 6px;
   font-size: 11px;
 }
+.coverage-subhead {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 18px 0 4px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+}
+.reconciliation-result + .reconciliation-coverage,
+.reconciliation-coverage + .reconciliation-coverage {
+  margin-top: 18px;
+}
+.coverage-source-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.coverage-source-head > span {
+  font-family: 'Geist Mono', monospace;
+  color: var(--muted);
+}
+.coverage-source ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.coverage-associations dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 8px;
+}
+.coverage-associations dl > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+.coverage-associations dt {
+  color: var(--muted);
+}
+.coverage-associations dd {
+  margin: 0;
+  font-family: 'Geist Mono', monospace;
+  font-size: 18px;
+}
 .reconciliation-empty {
   padding: 35px;
   text-align: center;

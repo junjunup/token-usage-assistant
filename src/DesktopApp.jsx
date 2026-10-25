@@ -494,7 +494,7 @@ export function DesktopApp() {
               <SquaresFour size={21} />
             </IconButton>
             <IconButton
-              label="账户核对"
+              label="覆盖范围报告"
               className={view === 'reconciliation' ? 'active' : ''}
               onClick={() => setView('reconciliation')}
             >
@@ -528,7 +528,7 @@ export function DesktopApp() {
                   : view === 'analytics'
                     ? 'Analytics'
                     : view === 'reconciliation'
-                      ? 'Reconciliation'
+                      ? 'Coverage'
                       : 'Settings'}
               </span>
               <span className="desktop-badge">DESKTOP</span>
@@ -561,7 +561,7 @@ export function DesktopApp() {
                     : view === 'analytics'
                       ? '用量分析'
                       : view === 'reconciliation'
-                        ? '账户核对'
+                        ? '覆盖范围报告'
                         : '账户与设置'}
                 </h1>
                 <p>
@@ -570,7 +570,7 @@ export function DesktopApp() {
                     : view === 'analytics'
                       ? '看清消耗的变化，也看清每一份用量的去向。'
                       : view === 'reconciliation'
-                        ? '查看关联依据与覆盖范围，按可比口径核对数据。'
+                        ? '看清本机记录覆盖了哪些时段、缺了什么，以及哪些记录已归入账户。'
                         : '本机连接账户，让助手按你的节奏工作。'}
                 </p>
               </div>
