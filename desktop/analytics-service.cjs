@@ -89,7 +89,7 @@ class AnalyticsService {
   }
   async get(query = {}) {
     if (query.source === 'reconciliation') {
-      if (!this.associations) throw new Error('账户核对尚未就绪');
+      if (!this.associations) throw new Error('覆盖范围报告尚未就绪');
       return this.associations.reconcile(query, this.prices);
     }
     if (this.tools && query.source === 'tools') return this.tools.query(query, this.prices);

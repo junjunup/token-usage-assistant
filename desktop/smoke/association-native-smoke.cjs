@@ -52,7 +52,9 @@ async function runAssociationSmoke({
     apiKey: 'synthetic-shared-balance-key',
   });
   const second = accounts.entries.find((e) => e.label === '备用 Key 样例');
-  await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户核对"]\').click()');
+  await mainWindow.webContents.executeJavaScript(
+    'document.querySelector(\'button[aria-label="覆盖范围报告"]\').click()',
+  );
   await until(mainWindow, "!!document.querySelector('.reconciliation-empty')");
   checks.emptyState = true;
   await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户与设置"]\').click()');
@@ -127,10 +129,12 @@ async function runAssociationSmoke({
   );
   assert.equal((await analytics.get({ source: 'tools', billingGroupId: g.id })).summary.total, 120);
   checks.activeSelectionDoesNotReattribute = true;
-  await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户核对"]\').click()');
+  await mainWindow.webContents.executeJavaScript(
+    'document.querySelector(\'button[aria-label="覆盖范围报告"]\').click()',
+  );
   await until(
     mainWindow,
-    "document.querySelector('.reconciliation-result h2')?.textContent==='无法核对' && document.querySelector('.reconciliation-coverage')?.textContent.includes('人工确认')",
+    "document.querySelector('.reconciliation-result h2')?.textContent.includes(' 个来源 · ') && document.querySelector('.reconciliation-result')?.textContent.includes('暂不能计算差值') && document.querySelector('.coverage-associations')?.textContent.includes('人工确认')",
   );
   const report = await analytics.get({ source: 'reconciliation', groupId: g.id });
   assert.equal(report.platform.memberCount, 2);
@@ -138,6 +142,11 @@ async function runAssociationSmoke({
   assert.equal(report.errorRate, null);
   assert.equal(report.sumOfPlatformAndTools, null);
   checks.singlePrimaryNoSummation = true;
+  // T6.2: while the comparison is unavailable the page has no difference block at all.
+  assert.equal(
+    await mainWindow.webContents.executeJavaScript("!!document.querySelector('.reconciliation-difference')"),
+    false,
+  );
   checks.noFakeDifference = true;
   await mainWindow.webContents.executeJavaScript("document.querySelector('.main-content').scrollTo({top:0})");
   await capture(mainWindow, store.file('reconciliation-light.png'));
