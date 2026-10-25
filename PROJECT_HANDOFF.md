@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.4`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.4（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1–beta.3；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 357 项，本机 354 通过 / 0 失败 / 3 跳过（CI 装有固定版本 Harness 运行时，357 / 0 / 0）（Harness 运行时未安装）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 364 项，本机 358 通过 / 0 失败 / 6 跳过（CI 装有两个已验证版本的 Harness 运行时，364 / 0 / 0）（本机未装 Harness 运行时）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -96,6 +96,7 @@
 - ~~用浏览器下载 DMG 实测首次打开~~（2026-10-25 完成，H3）：macOS 15.7.9 上弹窗里没有「打开」按钮，要到「系统设置 → 隐私与安全性」点「仍要打开」；README、验收清单第 1 项、AGENTS（D4）、RELEASING、打包脚本提示和公开发布说明模板已改。已发布的 1.9.0-beta.1–beta.4 Release 说明和安装包仓库的 README 也已按你的决定改为新写法（只改这一句）。
 - ~~换装正式版~~（2026-10-25 完成）：「应用程序」里已是 1.9.0-beta.4（原来是 1.9.0-beta.1-dev），2 个账户正常加载、没有弹钥匙串授权。**可选**：现在应用从系统的临时「隔离副本」路径运行（执行模型是用命令复制安装的，没经过访达拖拽）。数据目录不受影响；想消除的话，自己在访达里把应用拖出「应用程序」再拖回去（系统可能要你输入登录密码）。
 - ~~告诉执行模型你在用的 Harness 版本~~（2026-10-25 执行模型只读查到）：DeepSeek Harness **0.2.1-rc.2**（另装有 DSH Desktop Beta 2.0.17-beta.1），而本项目的 Harness 支持锁定在 0.1.7-rc.1。T8.13 据此再定去留。
+- **在 DeepSeek Harness 里安装用量导出插件 1.5.0**（T8.13 完成后，可选）：插件已放在 `~/.token-usage-assistant/harness-plugin`。退出 DeepSeek Harness 后在终端运行 `npx --yes @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile desktop add "$HOME/.token-usage-assistant/harness-plugin"`，重新打开 Harness；再在助手「账户与设置 → 工具数据源」添加 DeepSeek Harness，选 `~/.token-usage-assistant/harness/usage.jsonl`。只统计安装之后的用量，不补历史。
 - **真机验收剩余项**（2026-10-25 Claude 已代测能做的部分，见验收清单第 13、16、17 项）：切换「系统设置 → 外观」看图标变化；用尽时的红色；录屏、会议共享、锁屏、快速切换用户；外接屏、多桌面、全屏应用中点图标；锁屏暂停与恢复（T4.4、T8.3）。
 - **`PUBLIC_RELEASE_TOKEN` 于 2027-01-13 到期**：到期前重新生成并设置。
 
