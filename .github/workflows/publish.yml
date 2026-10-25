@@ -60,7 +60,7 @@ jobs:
           Token 用量助手 $VERSION（测试版）
 
           - Windows x64：Setup（安装版）或 Portable（免安装版），未签名。
-          - macOS Apple Silicon（13+）：DMG 或 ZIP。ad-hoc 签名、未公证：首次打开请在「应用程序」中右键 → 打开。
+          - macOS Apple Silicon（13+）：DMG 或 ZIP。ad-hoc 签名、未公证：首次打开会提示「无法验证开发者」，弹窗里没有「打开」按钮；请关掉提示，到「系统设置 → 隐私与安全性」点「仍要打开」（每个版本一次）。
           - 校验：SHA256SUMS.txt。
           - 证据等级：CI 打包原生 smoke（隔离样例）；不代表真实账户或真机验收。
 
