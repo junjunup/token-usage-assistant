@@ -374,8 +374,8 @@ if (new URLSearchParams(location.search).get('desktop-preview') === 'unverified-
       lastSuccessAt: now,
       contract: 'unverified-version',
       observedVersion: '0.160.0',
-      message:
-        '0.160 版本未经验证，按已知结构读取。Codex 0.155.x 本机已报告用量快照；不等同请求次数，缺少终态的记录不参与成功率。历史继承与重复快照不累计。',
+      message: '0.160 版本未经验证，按已知结构读取。Codex 本机用量快照，不等于请求次数',
+      messageDetail: '0.155.x 格式。缺少终态的记录不参与成功率；历史继承与重复快照不累计。',
     },
   ];
 export const previewBridge = {
@@ -428,10 +428,15 @@ export const previewBridge = {
                 status: 'unavailable',
                 source: 'account',
                 range: { id: query.range },
-                message:
-                  state.provider === 'deepseek'
-                    ? '此连接仅提供余额；Token 与账单汇总暂不可获取。'
-                    : '此连接提供套餐额度；Token 与账单汇总暂不可获取。',
+                ...(state.provider === 'deepseek'
+                  ? {
+                      message: '此连接只有余额，没有 Token 或账单汇总',
+                      messageDetail: '余额变化不是实际消费。请在总览查看余额，或切换到独立工具分析。',
+                    }
+                  : {
+                      message: '此连接只有套餐额度，没有 Token 或账单汇总',
+                      messageDetail: '请在总览查看额度，或切换到独立工具分析。',
+                    }),
                 summary: null,
               }
             : demoAnalytics(query, state),

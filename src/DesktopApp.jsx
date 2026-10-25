@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Disclosure } from './Disclosure.jsx';
 import {
   ChartBar,
   ArrowsClockwise,
@@ -119,8 +120,10 @@ function MenubarSettings({ state, settings, pref }) {
         <div>
           <h2>图标形态</h2>
           <p>
-            菜单栏图标显示最紧急的账户窗口。① 约 34pt 宽；② 约 60–95pt、③ 约
-            75–100pt，随数值长短变化；放不下时系统会把图标藏到刘海后面。
+            <Disclosure
+              summary="图标显示最紧急的账户窗口"
+              detail="① 约 34pt 宽；② 约 60–95pt、③ 约 75–100pt，随数值长短变化；放不下时系统会把图标藏到刘海后面。"
+            />
           </p>
         </div>
         <Select
@@ -642,7 +645,11 @@ export function DesktopApp() {
                   {state.hasCredential && (analysis.error || analysis.report?.message) && (
                     <div className="inline-warning" role="status">
                       <WarningCircle size={16} />
-                      <span>{analysis.error || analysis.report.message}</span>
+                      <span>
+                        {analysis.error || (
+                          <Disclosure summary={analysis.report.message} detail={analysis.report.messageDetail} />
+                        )}
+                      </span>
                     </div>
                   )}
                   <div className="account-line">
@@ -1052,7 +1059,10 @@ export function DesktopApp() {
                             </button>
                           </>
                         ) : (
-                          '启动时和每 24 小时向 GitHub 请求一次公开版本列表，不发送账户或设备信息；只提示，不自动下载或安装。'
+                          <Disclosure
+                            summary="每 24 小时检查一次，只提示不下载"
+                            detail="启动时和每 24 小时向 GitHub 请求公开版本列表，不发送账户或设备信息。"
+                          />
                         ),
                       key: 'updateCheck',
                       label: '开启检查更新',

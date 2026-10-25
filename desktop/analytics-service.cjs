@@ -139,10 +139,15 @@ class AnalyticsService {
         prediction: null,
         status: 'unavailable',
         summary: null,
-        message:
-          this.client.capabilities?.balance && !this.client.capabilities?.quota
-            ? '此连接仅提供账户余额，未提供 Token 或账单汇总。余额变化不是实际消费，请在总览查看余额或切换到独立工具分析。'
-            : '此连接提供套餐额度；未提供此时段的 Token 或账单汇总。请在总览查看额度，或切换到独立工具分析。',
+        ...(this.client.capabilities?.balance && !this.client.capabilities?.quota
+          ? {
+              message: '此连接只有余额，没有 Token 或账单汇总',
+              messageDetail: '余额变化不是实际消费。请在总览查看余额，或切换到独立工具分析。',
+            }
+          : {
+              message: '此连接只有套餐额度，没有 Token 或账单汇总',
+              messageDetail: '请在总览查看额度，或切换到独立工具分析。',
+            }),
       };
     if (!range.start) return { ...common, status: 'unavailable', message: range.reason };
     const generation = this.revision,

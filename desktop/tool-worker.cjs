@@ -58,6 +58,7 @@ function execute(
         label: source.label,
         status: result.status,
         message: result.message || '',
+        ...(result.messageDetail ? { messageDetail: result.messageDetail } : {}),
         harnessVersion: result.harnessVersion || null,
         coverage: {
           start: times.length ? times.reduce((a, b) => Math.min(a, b), Infinity) : null,

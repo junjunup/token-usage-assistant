@@ -1,0 +1,30 @@
+.disclosure-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  vertical-align: -3px;
+  cursor: pointer;
+}
+.disclosure-toggle:hover,
+.disclosure-toggle.open {
+  color: var(--fg);
+}
+.disclosure-toggle:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 1px;
+}
+.disclosure-detail {
+  display: block;
+  margin-top: 4px;
+}
+.disclosure-detail[hidden] {
+  display: none;
+}

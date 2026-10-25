@@ -134,3 +134,11 @@ test('Go throttling and schema failures retain last success with fresh status an
   assert.ok(m.state.nextRefreshAt >= NOW + 120000);
   assert.deepEqual(m.state.parts.credits, previous);
 });
+
+test('T6.3: the Go note is a one-line conclusion; the money / Zen caveats stay in the details', () => {
+  const c = normalizeOpenCodeGo(fixtureBody('opencode-go', NOW));
+  assert.ok([...c.note].length <= 40);
+  assert.match(c.note, /不能相加/);
+  assert.match(c.noteDetail, /不换算为金额或 Token/);
+  assert.match(c.noteDetail, /Zen 余额/);
+});

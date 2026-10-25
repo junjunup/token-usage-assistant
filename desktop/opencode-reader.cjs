@@ -101,8 +101,7 @@ function readOpenCodeRows(file, range, sourceId) {
       }
       rows.push(normalizeOpenCodeRecord(r, sourceId));
     }
-    const note =
-      '统计 OpenCode 已保存的助手步骤/用量记录，不等于完整 HTTP 请求数；失败状态与未落盘重试不可核对。本机统计不代表套餐账单。';
+    const note = 'OpenCode 已保存的用量记录，不等于请求数';
     return {
       rows,
       status: 'ready',
@@ -111,6 +110,7 @@ function readOpenCodeRows(file, range, sourceId) {
         note +
         (inherited ? ` 已排除 ${inherited} 条早于本会话创建的复制历史。` : '') +
         (truncated ? ' 本次仅读取最近 100000 条记录。' : ''),
+      messageDetail: '统计助手步骤 / 用量记录；失败状态与未落盘的重试不可核对。本机统计不代表套餐账单。',
       inherited,
       formatVersion: v1 && v2 ? 'v1/v2' : v2 ? 'v2' : 'v1',
     };

@@ -259,7 +259,8 @@ function scanCodex(db, source, range) {
     message:
       (rejected ? `${rejected} 个日志的版本或用量格式不受支持，已排除。` : '') +
       (observedVersion ? unverifiedNote(observedVersion) : '') +
-      'Codex 0.155.x 本机已报告用量快照；不等同请求次数，缺少终态的记录不参与成功率。历史继承与重复快照不累计。',
+      'Codex 本机用量快照，不等于请求次数',
+    messageDetail: '0.155.x 格式。缺少终态的记录不参与成功率；历史继承与重复快照不累计。',
   };
 }
 module.exports = { readFile, readRollout, scanCodex, selection, lines, VERIFIED_VERSIONS, newest, unverifiedNote };
