@@ -1,0 +1,54 @@
+name: 问题反馈 / Bug report
+description: 应用出错、数据不对或显示异常 / Something is wrong, data looks off, or the display is broken
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **请不要贴 API Key、令牌、账户名或对话内容。** 截图请先打码。安全问题请按 [SECURITY.md](https://github.com/junjunup/token-usage-assistant/blob/main/SECURITY.md) 私下报告。
+        **Do not paste API keys, tokens, account names or conversation content.** Mask screenshots first. Report security problems privately, see SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: 版本 / Version
+      description: 「账户与设置」页面右上角，例如 1.9.0-beta.4 / Top right of the settings page
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: 系统 / OS
+      options:
+        - macOS (Apple Silicon)
+        - Windows x64
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: 涉及的平台或工具 / Platform or tool involved
+      description: 例如 Command Code、DeepSeek、Codex、Claude Code、Zcode / e.g. Command Code, DeepSeek, Codex
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么，你期望什么 / What happened, and what did you expect
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断信息（可选）/ Diagnostics (optional)
+      description: |
+        「账户与设置 → 导出诊断信息」会先完整预览，不含密钥和对话内容；确认后再附上。
+        Settings → 导出诊断信息 (export diagnostics) shows a full preview and contains no keys or conversation content; check it before attaching.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 确认 / Confirm
+      options:
+        - label: 我没有贴出密钥、令牌、账户名或对话内容 / I have not included keys, tokens, account names or conversation content
+          required: true
