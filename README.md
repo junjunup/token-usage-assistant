@@ -22,7 +22,7 @@
 | 订阅额度 | Claude · Claude Code | statusLine + 本机 OTLP 组件 | ①②；Mac 上用真实账户确认过额度与用量能正常同步，未与官网核账 |
 | 工具用量 | Zcode | 只读 SQLite 元数据 | ①②；Windows 上用真实数据库验证过聚合 |
 | 工具用量 | OpenCode | 只读 SQLite 元数据 | ①② |
-| 工具用量 | DeepSeek Harness | 可选本机插件导出（锁定 `0.1.7-rc.1`） | ①②；官方运行时测试需单独安装 |
+| 工具用量 | DeepSeek Harness | 可选本机插件导出（已验证 `0.1.7-rc.1`、`0.2.1-rc.2`；其他版本按结构校验读取并标未验证） | ①②；官方运行时测试需单独安装 |
 | 工具用量 | Codex rollout、Claude 导出 | 本机文件元数据 | ①② |
 
 Mac 版大部分为 ②：菜单栏图标与面板做过部分真机验收（③，由 Claude 在用户的 Mac 上用真实账户代测）；安装、Keychain、睡眠唤醒、登录项等真机验收尚未完成。Windows 版自 1.8.0-beta.5 起只有 CI 打包 smoke（②），NSIS 覆盖安装、开机自启动等未在真机上验证。

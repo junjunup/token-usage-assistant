@@ -1,19 +1,19 @@
-# DeepSeek Harness 本地用量导出插件 1.4.0
+# DeepSeek Harness 本地用量导出插件 1.5.0
 
 此插件把 **启用后观察到的请求用量元数据** 写入本机专用目录，供 Token 用量助手读取。它不调用模型，不代理请求，不查询账户余额，也不读取已有会话文件。它是可选的 Harness 插件，卸载不会影响助手中的其他数据源。
 
 ## 支持范围
 
-- 已锁定 Harness / `@deepseek-ai/dsh-session` **0.1.7-rc.1**，会话格式 **4**。
-- 已复核上游源码提交 `46a7f68b0922371ce7144b668b90e377d8e799f4`；运行时检查安装包版本及会话格式。npm 发布包没有可核验的 `gitHead` 字段，因此 `harnessCommit` 表示本次复核的源码基准，不表示运行时对二进制提交的认证。
-- Windows 首版；不宣称其他 Harness 版本、非官方同名应用或真实付费请求已验收。
+- **已验证** Harness / `@deepseek-ai/dsh-session` **0.1.7-rc.1** 与 **0.2.1-rc.2**（T8.13，2026-10-26），会话格式 **4**。复核的上游源码提交（发布标签）：0.1.7-rc.1 为 `46a7f68b0922371ce7144b668b90e377d8e799f4`，0.2.1-rc.2 为 `687f282e8625c6b8d11ff58211a90524be2e4317`。npm 发布包没有可核验的 `gitHead` 字段，因此 `harnessCommit` 表示复核的源码基准，不表示运行时对二进制提交的认证。
+- **其他版本**（例如以后的 0.2.1-rc.3）：插件照常导出，但每个事件仍按已知结构严格校验；字段改名、缺失或出现未知结束原因时立即停止导出（`unsupported-format`），不猜测。记录里写明实际版本，助手把该来源标为「版本未经验证，按已知结构读取」。版本号本身不合格式（缺失、`latest` 等）仍拒绝（`unsupported-runtime`）。
+- Windows 首版；macOS 上 0.2.1-rc.2 的官方 CLI 安装与启动在隔离目录中验证过。不宣称非官方同名应用或真实付费请求已验收。
 - 已使用官方发布的 SessionStore 与 Cordis 实际事件派发进行无模型调用的集成验证，并用样例验证重试、取消、分叉、重复事件及隐私边界。
 - 已使用官方 `dsh` CLI 实测独立 profile 中的本地目录安装、默认配置组合及卸载；另在只包含 SessionStore、插件和样例事件发生器的最小 profile 中完成实际启动、链接依赖解析及退出写盘验证。没有启动用户的现有 profile，也没有发起真实模型请求。
-- 新增版本应先复核事件协议并运行测试；请勿通过手工修改 `source.json` 绕过版本检查。
+- 把新版本加入「已验证」之前，应先复核事件协议并用该版本的官方运行时跑测试；请勿手工修改 `source.json`。
 
 ## 安装与连接
 
-普通使用只需已经正常运行的官方 **dsh 0.1.7-rc.1**，无需安装下文的开发测试运行时，也无需在插件目录单独执行 `npm install`。官方 `dsh plugin` 安装命令需要可用的 pnpm，可先运行 `pnpm --version` 检查。
+普通使用只需已经正常运行的官方 Harness（**0.1.7-rc.1 或 0.2.1-rc.2**；其他版本见上文），无需安装下文的开发测试运行时，也无需在插件目录单独执行 `npm install`。官方 `dsh plugin` 安装命令需要可用的 pnpm，可先运行 `pnpm --version` 检查。
 
 先将插件 ZIP 完整解压到一个准备长期保留的位置，找到**直接包含 `package.json` 和 `index.js` 的那一层目录**；该目录同时还应有 `exporter.js`、`cordis.patch.yml`、`README.md` 和 `upstream-contract.json`，共 6 个文件。不要选择 ZIP 文件本身，也不要只复制 `index.js`。示例路径为 `D:\TokenUsageAssistant\integrations\deepseek-harness`，你的实际解压位置可以不同。
 
@@ -58,6 +58,17 @@ dsh plugin --profile my-profile remove dsh-token-usage-assistant
 
 助手端对数据源的“停用”或“移除”只停止助手读取；它不会卸载 Harness 插件，也不会删除导出记录。需要停止文件继续增长时，应按上面的步骤停用导出插件。
 
+**macOS 桌面版（DeepSeek Harness.app）**：桌面版不带 `dsh` 命令，用 `npx` 调用同版本的官方 CLI；桌面版使用的 profile 名为 `desktop`。先退出 DeepSeek Harness，在终端运行（把路径换成插件目录）：
+
+```bash
+npx --yes @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile desktop add "$HOME/.token-usage-assistant/harness-plugin"
+npx --yes @deepseek-ai/dsh@0.2.1-rc.2 --profile desktop --dump-config | grep token-usage-assistant
+```
+
+然后重新打开 DeepSeek Harness。导出文件在 `~/.token-usage-assistant/harness/usage.jsonl`。
+
+**更新到 1.5.0**（2026-10-26，T8.13）：支持 0.2.1-rc.2 及以后按结构校验的版本。已有导出目录和 `source.json` 的来源身份保持不变（1.4.0 建立的来源继续使用）。更新方法同下：退出 Harness，`remove` 后再 `plugin add`，然后启动同一 profile。
+
 **更新插件**（2026-10-19，T4.7）：Windows 上多个 Harness 进程同时导出到同一目录时，旧版插件偶尔会因为锁文件或 `status.json` 被另一个进程占用而停止导出（助手显示该来源 `io-error`）。新版会在短时间内重试，导出格式与 `source.json` 身份都不变（导出器版本仍为 1.4.0）。更新方法：先退出该 profile 的 Harness，按上面的步骤 `remove` 再 `plugin add` 重新安装插件，然后启动同一 profile；已有导出目录和来源身份保持不变。
 
 ## 采集和计数规则
@@ -83,7 +94,7 @@ dsh plugin --profile my-profile remove dsh-token-usage-assistant
 |---|---|
 | `schema` / `schemaVersion` | `token-usage-assistant.harness` / `1` |
 | `sourceId` / `tool` | 稳定来源身份 / `deepseek-harness` |
-| `harnessVersion` / `exporterVersion` | `0.1.7-rc.1` / `1.4.0` |
+| `harnessVersion` / `exporterVersion` | 实际运行的 Harness 版本（例如 `0.2.1-rc.2`）/ `1.5.0`（旧记录为 `1.4.0`） |
 | `sessionId` / `requestId` / `attemptId` | 会话 / 会话与 turn、step / 再加本次尝试起点事件序号 |
 | `revision` | 本次更新对应的会话事件序号；同尝试取最大值 |
 | `timestamp` / `updatedAt` | 尝试起点 / 本次事件时间，Unix 毫秒 |
@@ -106,7 +117,7 @@ dsh plugin --profile my-profile remove dsh-token-usage-assistant
 node --test tests/harness-plugin.test.cjs
 ```
 
-安装**隔离的开发测试运行时**并运行真实 SessionStore 契约测试（仅安装包，不触发模型请求；不要安装到用户现有 Harness profile）：
+安装**隔离的开发测试运行时**并运行真实 SessionStore 契约测试（仅安装包，不触发模型请求；不要安装到用户现有 Harness profile）。0.2.1-rc.2 用同样的方法另装一份（`@deepseek-ai/dsh-session@0.2.1-rc.2 @deepseek-ai/cordis@4.0.5`、`@deepseek-ai/dsh@0.2.1-rc.2`），并设置 `TUA_HARNESS_CONTRACT_RUNTIME_0_2`、`TUA_HARNESS_CLI_RUNTIME_0_2`：
 
 ```powershell
 npm install --prefix work/harness-runtime-1.4 --ignore-scripts --no-audit --no-fund --save-exact @deepseek-ai/dsh-session@0.1.7-rc.1 @deepseek-ai/cordis@4.0.4
@@ -124,7 +135,7 @@ $env:TUA_HARNESS_CLI_RUNTIME = (Resolve-Path work/harness-cli-validation-1.4).Pa
 node --test tests/harness-plugin.test.cjs
 ```
 
-此项测试自动在临时目录设置独立 `DSH_HOME`，执行 `plugin add`、`--dump-config`、最小 profile 启动、`plugin remove` 后清理，绝不修改用户现有 Harness 配置。两个测试环境变量均设置时，本文件的 16 项测试全部执行；未设置的外部运行时检查会明确跳过。助手的 CI 自 T8.10 起按本节方法安装这两个运行时，这些测试在 CI 上每次都运行。
+此项测试自动在临时目录设置独立 `DSH_HOME`，执行 `plugin add`、`--dump-config`、最小 profile 启动、`plugin remove` 后清理，绝不修改用户现有 Harness 配置。四个测试环境变量均设置时，本文件的 24 项测试全部执行；未设置的外部运行时检查会明确跳过。助手的 CI 自 T8.10 起按本节方法安装这两个运行时，这些测试在 CI 上每次都运行。
 
 ## 上游依据
 

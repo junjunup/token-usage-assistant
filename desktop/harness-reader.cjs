@@ -1,8 +1,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const VERSION = '0.1.7-rc.1';
-const COMMIT = '46a7f68b0922371ce7144b668b90e377d8e799f4';
+const { newest, unverifiedNote } = require('./codex-reader.cjs');
+// T8.13: reviewed runtimes and their upstream tag commits (same list as the shipped exporter). Other runtimes are
+// read when every line passes the strict record checks and are reported as 'unverified-version'.
+const VERIFIED = Object.freeze({
+  '0.1.7-rc.1': '46a7f68b0922371ce7144b668b90e377d8e799f4',
+  '0.2.1-rc.2': '687f282e8625c6b8d11ff58211a90524be2e4317',
+});
+const VERSION = '0.2.1-rc.2';
+const COMMIT = VERIFIED[VERSION];
+const RUNTIME = /^\d{1,4}\.\d{1,4}\.\d{1,4}(?:-[0-9A-Za-z.-]{1,40})?$/;
+const EXPORTERS = new Set(['1.4.0', '1.5.0']);
+const verified = (version) => Object.hasOwn(VERIFIED, version);
 function unsupported() {
   return Object.assign(new Error('Harness 导出版本或格式不受支持，请按随附说明配置统计插件。'), {
     publicMessage: 'Harness 导出版本或格式不受支持，请按随附说明配置统计插件。',
@@ -19,9 +29,10 @@ function readManifest(file) {
       v.schema !== 'token-usage-assistant.harness-source' ||
       v.schemaVersion !== 1 ||
       v.tool !== 'deepseek-harness' ||
-      v.harnessVersion !== VERSION ||
-      v.exporterVersion !== '1.4.0' ||
-      v.harnessCommit !== COMMIT ||
+      typeof v.harnessVersion !== 'string' ||
+      !RUNTIME.test(v.harnessVersion) ||
+      !EXPORTERS.has(v.exporterVersion) ||
+      v.harnessCommit !== (verified(v.harnessVersion) ? VERIFIED[v.harnessVersion] : null) ||
       v.sessionFormatVersion !== 4 ||
       typeof v.sourceId !== 'string' ||
       !/^[\w-]{1,100}$/.test(v.sourceId) ||
@@ -118,7 +129,7 @@ function scanHarness(db, source, range, normalize) {
           }
           if (
             wire.sourceId !== manifest.sourceId ||
-            wire.exporterVersion !== '1.4.0' ||
+            !EXPORTERS.has(wire.exporterVersion) ||
             wire.tool !== 'deepseek-harness' ||
             !Number.isSafeInteger(wire.revision) ||
             wire.revision < 0
@@ -164,14 +175,23 @@ function scanHarness(db, source, range, normalize) {
       .all(source.id, range.start - (range.end - range.start), range.end);
     const truncated = stored.length > 100000;
     if (truncated) stored.pop();
+    const rows = stored.map((row) => JSON.parse(row.record));
+    // Records indexed before T8.13 carry no version; they came from the verified 0.1.7-rc.1 exporter.
+    const unverified = new Set(
+      rows.map((row) => row.harnessVersion).filter((v) => typeof v === 'string' && !verified(v)),
+    );
+    const observedVersion = unverified.size ? newest(unverified) : null;
     return {
-      rows: stored.map((row) => JSON.parse(row.record)),
+      rows,
       status: unhealthy ? 'stale' : 'ready',
-      message: unhealthy
-        ? '插件状态未确认、已停止或存在采集缺口；仅统计文件中已有的记录。'
-        : carry.length
-          ? '导出文件末尾尚未写完，将在下次同步继续读取。'
-          : '',
+      message:
+        (observedVersion ? unverifiedNote(observedVersion) : '') +
+        (unhealthy
+          ? '插件状态未确认、已停止或存在采集缺口；仅统计文件中已有的记录。'
+          : carry.length
+            ? '导出文件末尾尚未写完，将在下次同步继续读取。'
+            : ''),
+      ...(observedVersion ? { contract: 'unverified-version', observedVersion } : {}),
       truncated,
       partialLine: carry.length > 0,
       imported,
@@ -197,4 +217,4 @@ function scanHarness(db, source, range, normalize) {
     if (fd !== undefined) fs.closeSync(fd);
   }
 }
-module.exports = { VERSION, COMMIT, readManifest, initIndex, scanHarness };
+module.exports = { VERSION, COMMIT, VERIFIED, readManifest, initIndex, scanHarness };

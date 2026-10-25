@@ -10,7 +10,7 @@ function harnessWire(now = Date.now(), patch = {}) {
     sourceId: 'fixture-installation',
     tool: 'deepseek-harness',
     harnessVersion: VERSION,
-    exporterVersion: '1.4.0',
+    exporterVersion: '1.5.0',
     sessionId: 'session-h',
     requestId: 'session-h:turn-1:step-1',
     attemptId: 'session-h:turn-1:step-1:3',
@@ -49,7 +49,7 @@ function createHarness(root, rows = [harnessWire()], sourceId = 'fixture-install
       harnessVersion: VERSION,
       harnessCommit: COMMIT,
       sessionFormatVersion: 4,
-      exporterVersion: '1.4.0',
+      exporterVersion: '1.5.0',
       createdAt: Date.now(),
     }),
   );

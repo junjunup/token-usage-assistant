@@ -252,20 +252,100 @@ test('Harness metadata export never reads bodies, tool output, failure text or c
     );
 });
 
-test('Harness unknown runtime and session formats explicitly fail closed without throwing into host', async (t) => {
-  const unsupported = await setup(t, { runtimeVersion: '9.9.9' });
-  unsupported.exporter.observe(session(), event(0, 'step/start', { turn: 1, step: 1 }));
-  assert.equal((await unsupported.rows()).length, 0);
-  assert.equal(
-    JSON.parse(await fs.readFile(path.join(unsupported.directory, 'status.json'), 'utf8')).code,
-    'unsupported-runtime',
-  );
+test('Harness missing or malformed runtime versions and unknown session formats fail closed without throwing into host', async (t) => {
+  // T8.13: an unknown but well-formed version is no longer refused by version alone (see the next test).
+  for (const runtimeVersion of [undefined, null, '', 'latest', '0.2', '1.2.3 ; rm']) {
+    const unsupported = await setup(t, { runtimeVersion });
+    unsupported.exporter.observe(session(), event(0, 'step/start', { turn: 1, step: 1 }));
+    assert.equal((await unsupported.rows()).length, 0);
+    assert.equal(
+      JSON.parse(await fs.readFile(path.join(unsupported.directory, 'status.json'), 'utf8')).code,
+      'unsupported-runtime',
+    );
+  }
   const bad = await setup(t);
   const s = session();
   s.header.version = 999;
   assert.doesNotThrow(() => bad.exporter.observe(s, event(0, 'step/start', { turn: 1, step: 1 })));
   assert.equal((await bad.rows()).length, 0);
   assert.equal(bad.exporter.error, 'unsupported-format');
+});
+
+test('T8.13: both verified runtimes export with their version and upstream commit in a new source marker', async (t) => {
+  const { VERIFIED_RUNTIMES } = await plugin;
+  assert.deepEqual(Object.keys(VERIFIED_RUNTIMES), ['0.1.7-rc.1', '0.2.1-rc.2']);
+  for (const [runtimeVersion, commit] of Object.entries(VERIFIED_RUNTIMES)) {
+    const { exporter, directory, rows } = await setup(t, { runtimeVersion });
+    const s = session();
+    exporter.observe(s, event(0, 'step/start', { turn: 1, step: 1 }));
+    settle(exporter, s, 1);
+    const [row] = latest(await rows());
+    assert.equal(row.harnessVersion, runtimeVersion);
+    assert.equal(row.exporterVersion, '1.5.0');
+    assert.equal(row.usage.totalTokens, 52);
+    const marker = JSON.parse(await fs.readFile(path.join(directory, 'source.json'), 'utf8'));
+    assert.equal(marker.harnessVersion, runtimeVersion);
+    assert.equal(marker.harnessCommit, commit);
+  }
+});
+
+test('T8.13: an unverified runtime exports only while every event keeps the known structure', async (t) => {
+  const { exporter, directory, rows } = await setup(t, { runtimeVersion: '0.2.2-rc.1' });
+  const s = session();
+  exporter.observe(s, event(0, 'step/start', { turn: 1, step: 1 }));
+  settle(exporter, s, 1);
+  const [row] = latest(await rows());
+  assert.equal(row.harnessVersion, '0.2.2-rc.1');
+  assert.equal(row.status, 'completed');
+  const marker = JSON.parse(await fs.readFile(path.join(directory, 'source.json'), 'utf8'));
+  assert.equal(marker.harnessVersion, '0.2.2-rc.1');
+  assert.equal(marker.harnessCommit, null);
+  // A renamed field (turn -> turnIndex) is not guessed: the export stops with a fixed code.
+  exporter.observe(s, event(2, 'step/start', { turnIndex: 2, step: 1 }));
+  assert.equal(exporter.error, 'unsupported-format');
+  // A new end reason is refused too, on another exporter of the same unverified runtime.
+  const other = await setup(t, { runtimeVersion: '0.2.2-rc.1' });
+  other.exporter.observe(s, event(0, 'step/start', { turn: 1, step: 1 }));
+  other.exporter.observe(s, event(1, 'turn/end', { turn: 1, reason: { kind: 'paused-by-new-feature' } }));
+  assert.equal(other.exporter.error, 'unsupported-format');
+});
+
+test('T8.13: updating the plugin or Harness keeps the source created by the 1.4.0 exporter; a foreign marker still conflicts', async (t) => {
+  const { UsageExporter } = await plugin;
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'tua-harness-test-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const old = {
+    schema: 'token-usage-assistant.harness-source',
+    schemaVersion: 1,
+    sourceId: 'kept-source',
+    tool: 'deepseek-harness',
+    harnessVersion: '0.1.7-rc.1',
+    harnessCommit: '46a7f68b0922371ce7144b668b90e377d8e799f4',
+    sessionFormatVersion: 4,
+    exporterVersion: '1.4.0',
+    createdAt: BASE - 1000,
+  };
+  await fs.writeFile(path.join(directory, 'source.json'), JSON.stringify(old));
+  const upgraded = new UsageExporter({ outputDirectory: directory, runtimeVersion: '0.2.1-rc.2', now: () => BASE });
+  await upgraded.ready;
+  assert.equal(upgraded.error, null);
+  assert.equal(upgraded.sourceId, 'kept-source');
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(directory, 'source.json'), 'utf8')), old);
+  await upgraded.close();
+  for (const patch of [
+    { tool: 'other' },
+    { exporterVersion: '9.0.0' },
+    { sessionFormatVersion: 5 },
+    { harnessCommit: 'x' },
+  ]) {
+    const foreign = await fs.mkdtemp(path.join(os.tmpdir(), 'tua-harness-test-'));
+    t.after(() => fs.rm(foreign, { recursive: true, force: true }));
+    await fs.writeFile(path.join(foreign, 'source.json'), JSON.stringify({ ...old, ...patch }));
+    const conflicted = new UsageExporter({ outputDirectory: foreign, runtimeVersion: '0.2.1-rc.2', now: () => BASE });
+    await conflicted.ready;
+    assert.equal(conflicted.error, 'source-conflict', JSON.stringify(patch));
+    await conflicted.close();
+  }
 });
 
 test('Harness missing attempt boundary is disclosed instead of inventing history', async (t) => {
@@ -462,173 +542,178 @@ test('Harness multi-step turns and concurrent sessions keep retry status and mod
   );
 });
 
-test(
-  'Pinned installed Harness Cordis SessionStore publishes the exact plugin contract',
-  { skip: !process.env.TUA_HARNESS_CONTRACT_RUNTIME },
-  async (t) => {
-    const runtimeRequire = createRequire(
-      path.join(path.resolve(process.env.TUA_HARNESS_CONTRACT_RUNTIME), 'package.json'),
-    );
-    const { Context } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/cordis')));
-    const { default: SessionStore } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-session')));
-    assert.equal(runtimeRequire('@deepseek-ai/dsh-session/package.json').version, '0.1.7-rc.1');
-    const { exporter, rows } = await setup(t, { now: Date.now });
-    const ctx = new Context();
-    const fiber = await ctx.plugin(SessionStore);
-    ctx.on('session/event', (s, e) => exporter.observe(s, e));
-    const s = ctx.sessions.create();
-    s.append('turn/start', { turn: 1 });
-    s.append('step/start', { turn: 1, step: 1 });
-    s.append('assistant/attempt', { turn: 1, step: 1, stream: stream(sample) });
-    s.append('llm/retry', {
-      retryId: 'retry-1',
-      turn: 1,
-      step: 1,
-      provider: 'mock',
-      mode: 'always',
-      policyKey: 'fixture',
-      retry: 1,
-      delayMs: 0,
-      failure: { code: 'NETWORK', message: 'never exported' },
-    });
-    s.append('llm/retry-started', { retryId: 'retry-1', turn: 1, step: 1, retry: 1 });
-    s.append(
-      'assistant/message',
-      {
+// T8.13: each verified runtime is installed separately (CI: both; locally: see the plugin README).
+const RUNTIMES = [
+  { version: '0.1.7-rc.1', contract: 'TUA_HARNESS_CONTRACT_RUNTIME', cli: 'TUA_HARNESS_CLI_RUNTIME' },
+  { version: '0.2.1-rc.2', contract: 'TUA_HARNESS_CONTRACT_RUNTIME_0_2', cli: 'TUA_HARNESS_CLI_RUNTIME_0_2' },
+];
+for (const { version, contract: contractEnv, cli: cliEnv } of RUNTIMES) {
+  test(
+    `Pinned installed Harness ${version} Cordis SessionStore publishes the exact plugin contract`,
+    { skip: !process.env[contractEnv] },
+    async (t) => {
+      const runtimeRequire = createRequire(path.join(path.resolve(process.env[contractEnv]), 'package.json'));
+      const { Context } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/cordis')));
+      const { default: SessionStore } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-session')));
+      assert.equal(runtimeRequire('@deepseek-ai/dsh-session/package.json').version, version);
+      const { exporter, rows } = await setup(t, { now: Date.now, runtimeVersion: version });
+      const ctx = new Context();
+      const fiber = await ctx.plugin(SessionStore);
+      ctx.on('session/event', (s, e) => exporter.observe(s, e));
+      const s = ctx.sessions.create();
+      s.append('turn/start', { turn: 1 });
+      s.append('step/start', { turn: 1, step: 1 });
+      s.append('assistant/attempt', { turn: 1, step: 1, stream: stream(sample) });
+      s.append('llm/retry', {
+        retryId: 'retry-1',
         turn: 1,
         step: 1,
-        usage: sample,
-        stream: stream(sample),
-        message: {
-          id: 'fixture-message',
-          role: 'assistant',
-          content: [],
-          source: { kind: 'model', provider: 'mock', model: 'fixture' },
-        },
-      },
-      { surfaceOp: 'append' },
-    );
-    s.append('step/end', { turn: 1, step: 1 });
-    s.append('turn/end', { turn: 1, reason: { kind: 'completed' } });
-    const final = latest(await rows());
-    assert.equal(final.length, 2);
-    assert.deepEqual(
-      final.map((r) => r.status),
-      ['failed', 'completed'],
-    );
-    assert.equal(final[1].usage.totalTokens, 52);
-    await exporter.close();
-    await fiber.dispose();
-  },
-);
-
-test(
-  'Pinned Cordis loads the shipped plugin entrypoint and unload flushes its local export',
-  { skip: !process.env.TUA_HARNESS_CONTRACT_RUNTIME },
-  async (t) => {
-    const runtime = path.resolve(process.env.TUA_HARNESS_CONTRACT_RUNTIME);
-    const runtimeRequire = createRequire(path.join(runtime, 'package.json'));
-    const { Context } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/cordis')));
-    const { default: SessionStore } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-session')));
-    const copy = await fs.mkdtemp(path.join(runtime, 'fixture-plugin-'));
-    t.after(async () => {
-      if (path.dirname(copy) === runtime && path.basename(copy).startsWith('fixture-plugin-'))
-        await fs.rm(copy, { recursive: true, force: true });
-    });
-    await fs.cp(path.dirname(pluginPath), copy, { recursive: true });
-    const entrypoint = await import(pathToFileURL(path.join(copy, 'index.js')));
-    const { exporter, directory } = await setup(t, { now: Date.now });
-    await exporter.close();
-    const ctx = new Context();
-    const sessionFiber = await ctx.plugin(SessionStore);
-    const pluginFiber = await ctx.plugin(entrypoint, { outputDirectory: directory });
-    const s = ctx.sessions.create();
-    s.append('step/start', { turn: 1, step: 1 });
-    s.append(
-      'assistant/message',
-      {
-        turn: 1,
-        step: 1,
-        usage: sample,
-        stream: stream(sample),
-        message: {
-          id: 'fixture-entrypoint',
-          role: 'assistant',
-          content: [],
-          source: { kind: 'model', provider: 'mock', model: 'fixture' },
-        },
-      },
-      { surfaceOp: 'append' },
-    );
-    await pluginFiber.dispose();
-    const rows = (await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
-    assert.equal(latest(rows).length, 1);
-    assert.equal(latest(rows)[0].usage.totalTokens, 52);
-    const before = rows.length;
-    s.append('step/start', { turn: 2, step: 1 });
-    assert.equal((await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8')).trim().split('\n').length, before);
-    assert.equal(JSON.parse(await fs.readFile(path.join(directory, 'status.json'), 'utf8')).state, 'stopped');
-    await sessionFiber.dispose();
-  },
-);
-
-test(
-  'Official dsh CLI installs, composes, boots a linked plugin and removes it in an isolated profile',
-  { skip: !process.env.TUA_HARNESS_CLI_RUNTIME },
-  async (t) => {
-    const cli = path.join(
-      path.resolve(process.env.TUA_HARNESS_CLI_RUNTIME),
-      'node_modules/@deepseek-ai/dsh/lib/bin.js',
-    );
-    const { exporter, directory } = await setup(t, { now: Date.now });
-    await exporter.close();
-    const fixtureHome = path.join(directory, 'isolated-dsh-home');
-    const env = { ...process.env, DSH_HOME: fixtureHome, DSH_TELEMETRY_DISABLED: '1' };
-    const run = (args) => {
-      const result = spawnSync(process.execPath, [cli, ...args], {
-        cwd: directory,
-        env,
-        encoding: 'utf8',
-        timeout: 30000,
-        windowsHide: true,
+        provider: 'mock',
+        mode: 'always',
+        policyKey: 'fixture',
+        retry: 1,
+        delayMs: 0,
+        failure: { code: 'NETWORK', message: 'never exported' },
       });
-      assert.equal(result.status, 0, `CLI failed ${args[0]}: ${result.error?.code ?? result.stderr ?? ''}`);
-      return result.stdout;
-    };
-    assert.equal(run(['--version']).trim(), '0.1.7-rc.1');
-    run(['plugin', '--profile', 'usage-fixture', 'add', path.dirname(pluginPath), '--ignore-scripts']);
-    const composed = run(['--profile', 'usage-fixture', '--dump-config']);
-    assert.match(composed, /id: token-usage-assistant/);
-    assert.match(composed, /name: dsh-token-usage-assistant/);
-    // Boot only SessionStore + the shipped plugin + a synthetic event producer.
-    // The ordinary add/dump above used the official default profile composition.
-    const profileDir = path.join(fixtureHome, 'profiles/usage-fixture');
-    const manifestFile = path.join(profileDir, 'package.json');
-    const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'));
-    manifest.dsh.profile.bundles = ['dsh-token-usage-assistant'];
-    await fs.writeFile(manifestFile, JSON.stringify(manifest));
-    await fs.writeFile(
-      path.join(profileDir, 'fixture.mjs'),
-      `export const inject = ['sessions'];\nexport function apply(ctx) { ctx.effect(() => ctx.get('appReady').onReady(() => { const s = ctx.sessions.create(); s.append('step/start',{turn:1,step:1}); s.append('assistant/message',{turn:1,step:1,stream:[],usage:{inputTokens:10,outputTokens:5,cacheReadTokens:2,cacheWriteTokens:0,totalTokens:17},message:{id:'cli-fixture',role:'assistant',content:[],source:{kind:'model',provider:'mock',model:'fixture'}}},{surfaceOp:'append'}); ctx.get('appExit')(0); })); }\n`,
-    );
-    const yamlPath = (value) => `'${value.replace(/'/g, "''")}'`;
-    await fs.writeFile(
-      path.join(profileDir, 'cordis.patch.yml'),
-      `- id: token-usage-assistant\n  config:\n    outputDirectory: ${yamlPath(directory)}\n- insert:\n    - id: fixture-sessions\n      name: '@deepseek-ai/dsh-session'\n    - id: fixture-producer\n      name: './fixture.mjs'\n`,
-    );
-    run(['--profile', 'usage-fixture']);
-    const rows = (await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8'))
-      .trim()
-      .split('\n')
-      .filter(Boolean)
-      .map(JSON.parse);
-    assert.equal(latest(rows).length, 1);
-    assert.equal(latest(rows)[0].status, 'completed');
-    assert.equal(latest(rows)[0].usage.totalTokens, 17);
-    assert.equal(JSON.parse(await fs.readFile(path.join(directory, 'status.json'), 'utf8')).state, 'stopped');
-    run(['plugin', '--profile', 'usage-fixture', 'remove', 'dsh-token-usage-assistant']);
-    const removed = JSON.parse(await fs.readFile(manifestFile, 'utf8'));
-    assert.ok(!removed.dependencies?.['dsh-token-usage-assistant']);
-    assert.ok(!removed.dsh.profile.bundles.includes('dsh-token-usage-assistant'));
-  },
-);
+      s.append('llm/retry-started', { retryId: 'retry-1', turn: 1, step: 1, retry: 1 });
+      s.append(
+        'assistant/message',
+        {
+          turn: 1,
+          step: 1,
+          usage: sample,
+          stream: stream(sample),
+          message: {
+            id: 'fixture-message',
+            role: 'assistant',
+            content: [],
+            source: { kind: 'model', provider: 'mock', model: 'fixture' },
+          },
+        },
+        { surfaceOp: 'append' },
+      );
+      s.append('step/end', { turn: 1, step: 1 });
+      s.append('turn/end', { turn: 1, reason: { kind: 'completed' } });
+      const final = latest(await rows());
+      assert.equal(final.length, 2);
+      assert.deepEqual(
+        final.map((r) => r.status),
+        ['failed', 'completed'],
+      );
+      assert.equal(final[1].usage.totalTokens, 52);
+      assert.equal(final[1].harnessVersion, version);
+      await exporter.close();
+      await fiber.dispose();
+    },
+  );
+
+  test(
+    `Pinned Cordis ${version} loads the shipped plugin entrypoint and unload flushes its local export`,
+    { skip: !process.env[contractEnv] },
+    async (t) => {
+      const runtime = path.resolve(process.env[contractEnv]);
+      const runtimeRequire = createRequire(path.join(runtime, 'package.json'));
+      const { Context } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/cordis')));
+      const { default: SessionStore } = await import(pathToFileURL(runtimeRequire.resolve('@deepseek-ai/dsh-session')));
+      const copy = await fs.mkdtemp(path.join(runtime, 'fixture-plugin-'));
+      t.after(async () => {
+        if (path.dirname(copy) === runtime && path.basename(copy).startsWith('fixture-plugin-'))
+          await fs.rm(copy, { recursive: true, force: true });
+      });
+      await fs.cp(path.dirname(pluginPath), copy, { recursive: true });
+      const entrypoint = await import(pathToFileURL(path.join(copy, 'index.js')));
+      const { exporter, directory } = await setup(t, { now: Date.now });
+      await exporter.close();
+      const ctx = new Context();
+      const sessionFiber = await ctx.plugin(SessionStore);
+      const pluginFiber = await ctx.plugin(entrypoint, { outputDirectory: directory });
+      const s = ctx.sessions.create();
+      s.append('step/start', { turn: 1, step: 1 });
+      s.append(
+        'assistant/message',
+        {
+          turn: 1,
+          step: 1,
+          usage: sample,
+          stream: stream(sample),
+          message: {
+            id: 'fixture-entrypoint',
+            role: 'assistant',
+            content: [],
+            source: { kind: 'model', provider: 'mock', model: 'fixture' },
+          },
+        },
+        { surfaceOp: 'append' },
+      );
+      await pluginFiber.dispose();
+      const rows = (await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+      assert.equal(latest(rows).length, 1);
+      assert.equal(latest(rows)[0].usage.totalTokens, 52);
+      // The shipped entrypoint reads the version of the runtime it is loaded into.
+      assert.equal(latest(rows)[0].harnessVersion, version);
+      const before = rows.length;
+      s.append('step/start', { turn: 2, step: 1 });
+      assert.equal((await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8')).trim().split('\n').length, before);
+      assert.equal(JSON.parse(await fs.readFile(path.join(directory, 'status.json'), 'utf8')).state, 'stopped');
+      await sessionFiber.dispose();
+    },
+  );
+
+  test(
+    `Official dsh ${version} CLI installs, composes, boots a linked plugin and removes it in an isolated profile`,
+    { skip: !process.env[cliEnv] },
+    async (t) => {
+      const cli = path.join(path.resolve(process.env[cliEnv]), 'node_modules/@deepseek-ai/dsh/lib/bin.js');
+      const { exporter, directory } = await setup(t, { now: Date.now });
+      await exporter.close();
+      const fixtureHome = path.join(directory, 'isolated-dsh-home');
+      const env = { ...process.env, DSH_HOME: fixtureHome, DSH_TELEMETRY_DISABLED: '1' };
+      const run = (args) => {
+        const result = spawnSync(process.execPath, [cli, ...args], {
+          cwd: directory,
+          env,
+          encoding: 'utf8',
+          timeout: 30000,
+          windowsHide: true,
+        });
+        assert.equal(result.status, 0, `CLI failed ${args[0]}: ${result.error?.code ?? result.stderr ?? ''}`);
+        return result.stdout;
+      };
+      assert.equal(run(['--version']).trim(), version);
+      run(['plugin', '--profile', 'usage-fixture', 'add', path.dirname(pluginPath), '--ignore-scripts']);
+      const composed = run(['--profile', 'usage-fixture', '--dump-config']);
+      assert.match(composed, /id: token-usage-assistant/);
+      assert.match(composed, /name: dsh-token-usage-assistant/);
+      // Boot only SessionStore + the shipped plugin + a synthetic event producer.
+      // The ordinary add/dump above used the official default profile composition.
+      const profileDir = path.join(fixtureHome, 'profiles/usage-fixture');
+      const manifestFile = path.join(profileDir, 'package.json');
+      const manifest = JSON.parse(await fs.readFile(manifestFile, 'utf8'));
+      manifest.dsh.profile.bundles = ['dsh-token-usage-assistant'];
+      await fs.writeFile(manifestFile, JSON.stringify(manifest));
+      await fs.writeFile(
+        path.join(profileDir, 'fixture.mjs'),
+        `export const inject = ['sessions'];\nexport function apply(ctx) { ctx.effect(() => ctx.get('appReady').onReady(() => { const s = ctx.sessions.create(); s.append('step/start',{turn:1,step:1}); s.append('assistant/message',{turn:1,step:1,stream:[],usage:{inputTokens:10,outputTokens:5,cacheReadTokens:2,cacheWriteTokens:0,totalTokens:17},message:{id:'cli-fixture',role:'assistant',content:[],source:{kind:'model',provider:'mock',model:'fixture'}}},{surfaceOp:'append'}); ctx.get('appExit')(0); })); }\n`,
+      );
+      const yamlPath = (value) => `'${value.replace(/'/g, "''")}'`;
+      await fs.writeFile(
+        path.join(profileDir, 'cordis.patch.yml'),
+        `- id: token-usage-assistant\n  config:\n    outputDirectory: ${yamlPath(directory)}\n- insert:\n    - id: fixture-sessions\n      name: '@deepseek-ai/dsh-session'\n    - id: fixture-producer\n      name: './fixture.mjs'\n`,
+      );
+      run(['--profile', 'usage-fixture']);
+      const rows = (await fs.readFile(path.join(directory, 'usage.jsonl'), 'utf8'))
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map(JSON.parse);
+      assert.equal(latest(rows).length, 1);
+      assert.equal(latest(rows)[0].status, 'completed');
+      assert.equal(latest(rows)[0].usage.totalTokens, 17);
+      assert.equal(JSON.parse(await fs.readFile(path.join(directory, 'status.json'), 'utf8')).state, 'stopped');
+      run(['plugin', '--profile', 'usage-fixture', 'remove', 'dsh-token-usage-assistant']);
+      const removed = JSON.parse(await fs.readFile(manifestFile, 'utf8'));
+      assert.ok(!removed.dependencies?.['dsh-token-usage-assistant']);
+      assert.ok(!removed.dsh.profile.bundles.includes('dsh-token-usage-assistant'));
+    },
+  );
+}

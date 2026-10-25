@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { UsageExporter, HARNESS_VERSION } from './exporter.js';
+import { UsageExporter, HARNESS_VERSION, VERIFIED_RUNTIMES } from './exporter.js';
 
 export const name = 'token-usage-assistant';
 export const inject = ['sessions'];
@@ -19,4 +19,4 @@ export function apply(ctx, config = {}) {
   ctx.effect(() => () => exporter.close());
 }
 
-export { HARNESS_VERSION };
+export { HARNESS_VERSION, VERIFIED_RUNTIMES };
