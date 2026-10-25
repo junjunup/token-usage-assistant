@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 安全问题（私下报告）/ Security problem (private)
+    url: https://github.com/junjunup/token-usage-assistant/security/advisories/new
+    about: 请不要公开描述安全问题 / Please do not describe security problems in public
