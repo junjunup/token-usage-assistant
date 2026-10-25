@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Plus, ArrowsLeftRight, Info, ArrowClockwise } from '@phosphor-icons/react';
+import { Link, Plus, Info, ArrowClockwise, ListChecks } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import { useAnalytics } from './useAnalytics.js';
 import { RangeControl } from './AnalyticsPage.jsx';
 import { formatAmount } from './generated/balance-domain.js';
 import { providerInfo } from './generated/provider-catalog.js';
+import { coverageReport } from './generated/coverage-report.js';
 import './account-links.css';
 const stamp = (v) => (Number.isFinite(v) ? new Date(v).toLocaleString('zh-CN') : '未确认');
 const localDate = (v) => {
@@ -343,12 +344,14 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
     r = analysis.report,
     p = r?.platform,
     t = r?.tools,
-    s = t?.summary;
+    s = t?.summary,
+    view = coverageReport(r),
+    span = (start, end) => (start === null ? '—' : `${stamp(start)} — ${end === null ? '—' : stamp(end)}`);
   return (
     <div className="reconciliation-page">
       <div className="reconciliation-toolbar">
         <Select
-          label="核对计费账户"
+          label="计费账户"
           value={groupId}
           onChange={(id) => {
             setGroupId(id);
@@ -368,7 +371,7 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
         />
         <button className="button" disabled={analysis.loading || !groupId} onClick={analysis.refresh}>
           <ArrowClockwise size={14} />
-          {analysis.loading ? '核对中' : '刷新核对'}
+          {analysis.loading ? '读取中' : '刷新报告'}
         </button>
         <button className="text-button" onClick={onSettings}>
           管理账户关联
@@ -378,7 +381,7 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
         <div className="panel reconciliation-empty">
           <Link size={24} />
           <h2>先建立计费账户关联</h2>
-          <p>手动确认同账户的连接和工具记录范围后，再查看核对依据。</p>
+          <p>手动确认同账户的连接和工具记录范围后，再查看覆盖范围。</p>
           <button className="button" onClick={onSettings}>
             前往设置
           </button>
@@ -387,28 +390,90 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
         <>
           <section className="panel reconciliation-result">
             <div className="section-title">
-              <ArrowsLeftRight size={16} />
-              ACCOUNT RECONCILIATION
+              <ListChecks size={16} />
+              COVERAGE REPORT
             </div>
-            <h2>{analysis.loading ? '正在读取核对依据' : r?.available ? '可核对' : '无法核对'}</h2>
+            <h2>
+              {analysis.loading
+                ? '正在读取覆盖范围'
+                : !r
+                  ? '尚无报告'
+                  : view.gapCount
+                    ? `${view.sources.length} 个来源 · ${view.gapCount} 处覆盖缺口`
+                    : `${view.sources.length} 个来源 · 未发现来源缺口`}
+            </h2>
             <p>
-              {r?.range?.start ? `${stamp(r.range.start)} — ${stamp(r.range.end)}` : '请选择核对范围'} ·
-              人工关联不代表已完成真实账单核验
+              {view.range.start !== null ? span(view.range.start, view.range.end) : '请选择报告范围'} ·
+              覆盖范围是本机观察到的范围，不是完整账单
             </p>
             {analysis.error && <p role="alert">{analysis.error}</p>}
+            {view.available ? (
+              <div className="reconciliation-difference">
+                <span>
+                  差值 <b>{number(view.comparison.difference)}</b>
+                </span>
+                <span>
+                  误差率 <b>{view.comparison.errorRate !== null ? number(view.comparison.errorRate) + '%' : '—'}</b>
+                </span>
+              </div>
+            ) : (
+              r && <h3 className="coverage-subhead">暂不能计算差值：</h3>
+            )}
             <ul>
-              {r?.reasons?.map((reason) => (
+              {view.reasons.map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}
             </ul>
-            <div className="reconciliation-difference">
-              <span>
-                差值 <b>{r?.available ? number(r.difference) : '—'}</b>
-              </span>
-              <span>
-                误差率 <b>{r?.available && r.errorRate !== null ? number(r.errorRate) + '%' : '—'}</b>
-              </span>
-            </div>
+          </section>
+          <section className="panel reconciliation-coverage">
+            <h2>工具来源覆盖</h2>
+            {view.sources.map((source) => (
+              <div key={source.id} className="coverage-source">
+                <div className="coverage-source-head">
+                  <strong>{source.label}</strong>
+                  <span>{span(source.start, source.end)}</span>
+                </div>
+                {source.gaps.length ? (
+                  <ul>
+                    {source.gaps.map((gap) => (
+                      <li key={gap}>{gap}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <small>所选范围内未发现此来源的缺口；仍不能证明覆盖了其他设备或工具。</small>
+                )}
+              </div>
+            ))}
+            {!view.sources.length && <p>尚无可用于当前范围的工具来源。</p>}
+          </section>
+          <section className="panel reconciliation-coverage coverage-associations">
+            <h2>关联状态</h2>
+            <dl>
+              <div>
+                <dt>已关联</dt>
+                <dd>{view.association ? number(view.association.linked) : '—'}</dd>
+              </div>
+              <div>
+                <dt>未关联</dt>
+                <dd>{view.association ? number(view.association.unlinked) : '—'}</dd>
+              </div>
+              <div>
+                <dt>有歧义</dt>
+                <dd>{view.association ? number(view.association.ambiguous) : '—'}</dd>
+              </div>
+              <div>
+                <dt>已失效</dt>
+                <dd>{view.association ? number(view.association.invalid) : '—'}</dd>
+              </div>
+            </dl>
+            <p>记录条数。只有用户确认过的关联规则才会把工具记录归入此账户；有歧义或已失效的记录不归入任何账户。</p>
+            {r?.rules?.map((rule) => (
+              <p key={rule.id}>
+                {state.toolSources?.find((s) => s.id === rule.sourceId)?.label || '已移除来源'} ·{' '}
+                {rule.provider || '全部供应商'} / {rule.model || '全部模型'} · {stamp(rule.from)} 至{' '}
+                {rule.to ? stamp(rule.to) : '持续生效'} · {rule.valid ? '人工确认' : rule.message}
+              </p>
+            ))}
           </section>
           <div className="reconciliation-grid">
             <section className="panel">
@@ -478,37 +543,11 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
               <small>工具同步时间：{stamp(t?.updatedAt)}</small>
             </section>
           </div>
-          <section className="panel reconciliation-coverage">
-            <h2>关联依据与覆盖缺口</h2>
-            <p>
-              依据：用户确认的数据源、供应商 / 模型条件及生效时间。只读观察到的记录不能证明覆盖了账户的全部设备或工具。
-            </p>
-            {r?.rules?.map((rule) => (
-              <p key={rule.id}>
-                {state.toolSources?.find((s) => s.id === rule.sourceId)?.label || '已移除来源'} ·{' '}
-                {rule.provider || '全部供应商'} / {rule.model || '全部模型'} · {stamp(rule.from)} 至{' '}
-                {rule.to ? stamp(rule.to) : '持续生效'} · {rule.valid ? '人工确认' : rule.message}
-              </p>
-            ))}
-            {t?.sourceReports?.map((source) => (
-              <div key={source.id}>
-                <strong>{source.label}</strong>
-                <span>
-                  {stamp(source.associationCoverage?.start)} — {stamp(source.associationCoverage?.end)}
-                </span>
-                <small>
-                  {source.message || '关联范围内已观察记录'} ·{' '}
-                  {source.coverage?.complete ? '完整覆盖' : '覆盖完整性未确认'} · {source.status}
-                </small>
-              </div>
-            ))}
-            {!t?.sourceReports?.length && <p>尚无可用于当前范围的有效关联记录。</p>}
-          </section>
         </>
       )}
       <p className="association-note">
         <Info size={14} /> 余额、额度百分比、工具 Token
-        与估算费用采用不同口径。数据不足时保持“无法核对”，不计算虚假误差率。
+        与估算费用采用不同口径。只有账户、区间、单位、口径、覆盖和新鲜度全部对齐时才显示差值，不计算虚假误差率。
       </p>
     </div>
   );

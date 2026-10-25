@@ -6,6 +6,7 @@ const test = require('node:test'),
 const { Associations } = require('../desktop/associations.cjs');
 const { associateRows, compareEvidence } = require('../desktop/association-rules.cjs');
 const { ToolSources } = require('../desktop/tool-sources.cjs');
+const { coverageReport, sourceGaps } = require('../desktop/coverage-report.cjs');
 const { LocalStore } = require('../desktop/store.cjs');
 const { createZcode, createHarness, harnessWire } = require('../desktop/smoke/tool-fixture.cjs');
 const now = new Date(2026, 8, 24, 12).getTime();
@@ -255,6 +256,52 @@ test('quota and unmatched summary/coverage explain unavailable reconciliation', 
   d.parts.credits = { windows: [] };
   r = await s.links.reconcile({ groupId: g }, {});
   assert.ok(r.reasons.some((v) => v.includes('额度窗口')));
+});
+test('T6.2: the coverage report carries no difference fields while the comparison is unavailable', async (t) => {
+  const s = setup(t),
+    g = s.group();
+  s.rule(g);
+  const r = await s.links.reconcile({ groupId: g }, {});
+  assert.equal(r.available, false);
+  const view = coverageReport(r),
+    json = JSON.stringify(view);
+  assert.equal('comparison' in view, false);
+  assert.equal(/difference|errorRate/.test(json), false);
+  assert.deepEqual(view.reasons, r.reasons);
+  assert.equal(view.sources.length, r.tools.sourceReports.length);
+  const zcode = view.sources[0];
+  assert.equal(zcode.start, r.tools.sourceReports[0].associationCoverage.start);
+  assert.equal(zcode.end, r.tools.sourceReports[0].associationCoverage.end);
+  assert.deepEqual(view.association, {
+    linked: r.association.linkedRecords,
+    unlinked: r.association.unlinkedRecords,
+    ambiguous: r.association.ambiguousRecords,
+    invalid: r.association.invalidRecords,
+  });
+  // A certified comparison (not produced by today's collectors) passes the numbers through unchanged.
+  const ok = coverageReport({ ...r, available: true, difference: 5, errorRate: 2.5 });
+  assert.deepEqual(ok.comparison, { difference: 5, errorRate: 2.5 });
+  assert.equal(coverageReport(null).sources.length, 0);
+});
+test('T6.2: source gaps name truncation, stale data, missing usage, unverified versions and empty spans', () => {
+  const covered = { associationCoverage: { start: now - 60000, end: now } };
+  assert.deepEqual(sourceGaps({ status: 'ready', missingUsage: 0, ...covered }), []);
+  const gaps = sourceGaps({
+    status: 'stale',
+    truncated: true,
+    partialLine: true,
+    missingUsage: 3,
+    contract: 'unverified-version',
+    observedVersion: '0.160',
+    associationCoverage: { start: null, end: null },
+  });
+  assert.equal(gaps.length, 6);
+  assert.ok(gaps[0].includes('延迟'));
+  assert.ok(gaps.some((g) => g.includes('读取上限')));
+  assert.ok(gaps.some((g) => g.includes('3 条记录缺少用量')));
+  assert.ok(gaps.some((g) => g.includes('0.160 版本未经验证')));
+  assert.ok(gaps.some((g) => g.includes('没有归入此账户')));
+  assert.deepEqual(sourceGaps({ status: 'error', message: '文件无法读取。', ...covered }), ['文件无法读取。']);
 });
 test('changes during query invalidate results before attribution is returned', async (t) => {
   const s = setup(t),
