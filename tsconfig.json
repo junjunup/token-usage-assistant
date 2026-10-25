@@ -19,6 +19,7 @@
     "desktop/tool-analytics.cjs",
     "desktop/association-rules.cjs",
     "desktop/menubar-status.cjs",
-    "desktop/menubar-panel.cjs"
+    "desktop/menubar-panel.cjs",
+    "desktop/coverage-report.cjs"
   ]
 }

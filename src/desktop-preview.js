@@ -150,6 +150,96 @@ if (new URLSearchParams(location.search).get('desktop-preview') === 'panel-unsyn
 }
 if (new URLSearchParams(location.search).get('platform') === 'darwin') state.platform = 'darwin';
 state.associations = { groups: [], rules: [], issue: '' };
+// T6.2: ?desktop-preview=coverage shows the coverage report with one grouped account and gaps.
+const coveragePreview = new URLSearchParams(location.search).get('desktop-preview') === 'coverage';
+if (coveragePreview)
+  state.associations = {
+    issue: '',
+    groups: [
+      {
+        id: 'preview-group',
+        label: 'Command Code · 示例账户',
+        valid: true,
+        message: '',
+        memberIds: ['commandcode'],
+        primaryId: 'commandcode',
+        period: null,
+      },
+    ],
+    rules: [
+      {
+        id: 'preview-rule-zcode',
+        groupId: 'preview-group',
+        sourceId: 'preview-zcode',
+        provider: '',
+        model: '',
+        from: now - 6 * 3600000,
+        to: null,
+        valid: true,
+      },
+      {
+        id: 'preview-rule-harness',
+        groupId: 'preview-group',
+        sourceId: 'preview-harness',
+        provider: 'deepseek',
+        model: '',
+        from: now - 3 * 3600000,
+        to: null,
+        valid: false,
+        message: '来源文件已替换，需要重新确认',
+      },
+    ],
+  };
+function coverageDemo(query) {
+  const start = new Date(new Date(now).setHours(0, 0, 0, 0)).getTime();
+  return {
+    source: 'reconciliation',
+    available: false,
+    difference: null,
+    errorRate: null,
+    range: { id: query.range, start, end: now },
+    reasons: [
+      '部分关联需要重新确认，相关记录不会归入账户。',
+      '平台汇总与工具记录的起止时间未严格对齐，当前汇总仅供参考。',
+      '平台汇总的请求统计口径与本机已报告用量口径尚未确认一致。',
+      '本机采集不能证明覆盖该账户在所有设备和工具上的完整用量。',
+      '工具记录为空或部分记录缺少用量，缺失值不能计为零。',
+      '工具费用来自本机单价估算，不作为平台实际账单核对。',
+    ],
+    platform: {
+      connectionLabel: 'Command Code · 示例',
+      memberCount: 1,
+      status: 'connected',
+      updatedAt: now,
+      kind: 'summary',
+      summary: { total: 12800000, cost: 24.6, period: { start: start - 86400000 * 3, end: now } },
+    },
+    tools: {
+      updatedAt: now,
+      summary: { knownTokens: 3420000, missingTokenRequests: 3, costsByCurrency: { USD: { knownCost: 6.82 } } },
+      association: { linkedRecords: 184, unlinkedRecords: 41, ambiguousRecords: 0, invalidRecords: 12 },
+      sourceReports: [
+        {
+          id: 'preview-zcode',
+          label: 'Zcode · 示例',
+          status: 'ready',
+          missingUsage: 3,
+          associationCoverage: { start: now - 5.6 * 3600000, end: now - 120000 },
+        },
+        {
+          id: 'preview-harness',
+          label: 'Harness · 示例',
+          status: 'stale',
+          missingUsage: 0,
+          partialLine: true,
+          associationCoverage: { start: null, end: null },
+        },
+      ],
+    },
+    association: { linkedRecords: 184, unlinkedRecords: 41, ambiguousRecords: 0, invalidRecords: 12 },
+    rules: state.associations.rules,
+  };
+}
 state.toolSources =
   new URLSearchParams(location.search).get('desktop-preview') === 'empty'
     ? []
@@ -329,20 +419,22 @@ export const previewBridge = {
   },
   analytics: async (query) =>
     ok(
-      query.source === 'tools'
-        ? demoTools(query, state, demoPrices)
-        : state.provider !== 'commandcode' && query.source === 'account'
-          ? {
-              status: 'unavailable',
-              source: 'account',
-              range: { id: query.range },
-              message:
-                state.provider === 'deepseek'
-                  ? '此连接仅提供余额；Token 与账单汇总暂不可获取。'
-                  : '此连接提供套餐额度；Token 与账单汇总暂不可获取。',
-              summary: null,
-            }
-          : demoAnalytics(query, state),
+      query.source === 'reconciliation' && coveragePreview
+        ? coverageDemo(query)
+        : query.source === 'tools'
+          ? demoTools(query, state, demoPrices)
+          : state.provider !== 'commandcode' && query.source === 'account'
+            ? {
+                status: 'unavailable',
+                source: 'account',
+                range: { id: query.range },
+                message:
+                  state.provider === 'deepseek'
+                    ? '此连接仅提供余额；Token 与账单汇总暂不可获取。'
+                    : '此连接提供套餐额度；Token 与账单汇总暂不可获取。',
+                summary: null,
+              }
+            : demoAnalytics(query, state),
     ),
   chooseLocalDatabase: async () => ({ ok: false, error: '请在 Windows 桌面应用中选择本机数据库。' }),
   saveModelPrice: async (value) => {
