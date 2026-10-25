@@ -2,7 +2,7 @@
 
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
-- 当前版本：**1.9.0-beta.3**（稳固版，T8.1–T8.7 与 T8.10，2026-10-25 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
+- 当前版本：**1.9.0-beta.4**（T6.1–T6.3：平台验证等级、覆盖范围报告、说明渐进披露；待发布，上一个发布为 1.9.0-beta.3，2026-10-25。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
 - 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D13）
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
@@ -74,7 +74,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 ## 7. 交付与验证（过渡期：D1 / D3 / D4）
 
 - 不改变应用行为的任务不出包。改变行为的任务在本机出 Mac 包（DMG + ZIP，文件名加 `-dev.<短 commit>`）；Windows 双包在执行记录中标「待 CI 补齐」，不得写成已交付。T2.3 完成后，三种包统一由 CI 产出。
-- 版本：阶段 1–2 保持 1.8.0-beta.5；阶段 3–5 依次为 1.8.0-beta.6–beta.8；菜单栏首版（T7.3–T7.8）为 1.9.0-beta.1，菜单栏真机验收后的改进（T7.9–T7.12、T4.7）为 1.9.0-beta.2，整体复盘后的稳固版（T8.1–T8.8）为 1.9.0-beta.3，之后顺延为 1.9.0-beta.x（D3，2026-10-18 调整）。版本号只在一组任务的最后一个任务合并时修改。
+- 版本：阶段 1–2 保持 1.8.0-beta.5；阶段 3–5 依次为 1.8.0-beta.6–beta.8；菜单栏首版（T7.3–T7.8）为 1.9.0-beta.1，菜单栏真机验收后的改进（T7.9–T7.12、T4.7）为 1.9.0-beta.2，整体复盘后的稳固版（T8.1–T8.8）为 1.9.0-beta.3，T6.1–T6.3 为 1.9.0-beta.4，之后顺延为 1.9.0-beta.x（D3，2026-10-18 调整）。版本号只在一组任务的最后一个任务合并时修改。
 - Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。签名一律 ad-hoc（2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回）。装新版本时正式条目弹一次授权属于 D4 的已知限制。`codesign --verify --deep --strict` 必须通过，打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
 - D4（暂不购买 Apple Developer 账号）带来的限制：首次打开需要右键 → 打开；只能消除「已损坏」提示，不能消除「无法验证开发者」提示；覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。不引导用户关闭 Gatekeeper。
 - 出包时核对包内版本和代码与源码一致。只改了源码，不得称为已交付。
