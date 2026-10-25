@@ -119,19 +119,29 @@ if (process.argv.includes('--payloads')) {
   });
   fs.rmSync(scratch, { recursive: true, force: true });
 }
-const report = {
-  ok: true,
-  version: packaged.version,
-  sourceVersion: version,
-  at: new Date().toISOString(),
-  asarSha256,
-  payloads,
-  licenses,
-  verifiedFiles: checks.length,
-  desktopFiles: checks.filter((p) => p.file.startsWith('desktop/')).length,
-  files,
-  checks,
-};
-fs.mkdirSync(path.dirname(reportFile), { recursive: true });
-fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
-console.log(JSON.stringify({ ...report, checks: undefined }));
+// T9.2: Electron fuses as configured in electron-builder.yml, read back from the built executable.
+const { readFuses, mismatches } = require('./fuses.cjs');
+(async () => {
+  const fuses = await readFuses(path.join(out, 'win-unpacked', 'TokenUsageAssistant.exe'));
+  assert.deepEqual(mismatches(fuses), [], 'Electron fuses differ from electron-builder.yml');
+  const report = {
+    ok: true,
+    version: packaged.version,
+    sourceVersion: version,
+    at: new Date().toISOString(),
+    asarSha256,
+    payloads,
+    licenses,
+    fuses,
+    verifiedFiles: checks.length,
+    desktopFiles: checks.filter((p) => p.file.startsWith('desktop/')).length,
+    files,
+    checks,
+  };
+  fs.mkdirSync(path.dirname(reportFile), { recursive: true });
+  fs.writeFileSync(reportFile, JSON.stringify(report, null, 2) + '\n');
+  console.log(JSON.stringify({ ...report, checks: undefined }));
+})().catch((e) => {
+  console.error(String(e?.message || e));
+  process.exit(1);
+});

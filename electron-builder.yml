@@ -12,6 +12,14 @@ files:
   - '!desktop/menubar-poc/**' # T7.3 POC: development only
 asar: true
 npmRebuild: false
+# T9.2 (M7): Electron fuses, flipped just before signing. scripts/fuses.cjs holds the same expectations and both
+# package checks read them back from the built binary.
+electronFuses:
+  runAsNode: true # must stay on: the Claude statusLine helper and launcher run the app with ELECTRON_RUN_AS_NODE
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: true # must stay on: the menu bar icon renderer loads a local page (loadFile)
 # T8.7: the app's MIT license and the third-party notices / full license texts, next to app.asar on both platforms.
 extraResources:
   - from: LICENSE
