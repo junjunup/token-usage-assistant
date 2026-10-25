@@ -47,7 +47,7 @@ fi
 
 # 2. Nested-bundle seal present; signature is ad-hoc or the local self-signed certificate (never Developer ID).
 if [ -f "$APP/Contents/_CodeSignature/CodeResources" ]; then
-  SIGN_INFO="$(codesign -dv "$APP" 2>&1)"
+  SIGN_INFO="$(codesign -dvv "$APP" 2>&1)"
   if echo "$SIGN_INFO" | grep -q 'Signature=adhoc'; then
     SIGNATURE_KIND='ad-hoc（本机临时签名，未做 Developer ID 签名与公证）'
     record 'codeResourcesAndAdhoc' 1 "CodeResources 存在；$(echo "$SIGN_INFO" | grep -E 'Signature=|Flags=' | tr '\n\t' '  ' | sed 's/  */ /g' | sed 's/ *$//')"

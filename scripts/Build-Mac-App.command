@@ -22,7 +22,8 @@ pnpm run build
 LOCAL_IDENTITY="${TUA_MAC_IDENTITY:-TokenUsageAssistant Local Signing}"
 if [ "$LOCAL_IDENTITY" != "-" ] && security find-identity -v -p codesigning | grep -q "\"$LOCAL_IDENTITY\""; then
   echo "使用本机代码签名证书：$LOCAL_IDENTITY"
-  pnpm run package:mac -- "--config.mac.identity=$LOCAL_IDENTITY"
+  # A self-signed local build needs no trusted timestamp (and the timestamp server is often unreachable).
+  pnpm run package:mac "--config.mac.identity=$LOCAL_IDENTITY" "--config.mac.timestamp=none"
 else
   pnpm run package:mac
 fi

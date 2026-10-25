@@ -75,7 +75,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 
 - 不改变应用行为的任务不出包。改变行为的任务在本机出 Mac 包（DMG + ZIP，文件名加 `-dev.<短 commit>`）；Windows 双包在执行记录中标「待 CI 补齐」，不得写成已交付。T2.3 完成后，三种包统一由 CI 产出。
 - 版本：阶段 1–2 保持 1.8.0-beta.5；阶段 3–5 依次为 1.8.0-beta.6–beta.8；菜单栏首版（T7.3–T7.8）为 1.9.0-beta.1，菜单栏真机验收后的改进（T7.9–T7.12、T4.7）为 1.9.0-beta.2，整体复盘后的稳固版（T8.1–T8.8）为 1.9.0-beta.3，之后顺延为 1.9.0-beta.x（D3，2026-10-18 调整）。版本号只在一组任务的最后一个任务合并时修改。
-- Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、ad-hoc 签名、hardened runtime、entitlements、不公证）。`codesign --verify --deep --strict` 必须通过，打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
+- Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。签名：本机有用户的自签名证书「TokenUsageAssistant Local Signing」时用它签名（2026-10-25 起，签名在多次构建之间不变，钥匙串「始终允许」不再每次失效），否则 ad-hoc；CI 产出的正式包目前仍是 ad-hoc。`codesign --verify --deep --strict` 必须通过，打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
 - D4（暂不购买 Apple Developer 账号）带来的限制：首次打开需要右键 → 打开；只能消除「已损坏」提示，不能消除「无法验证开发者」提示；覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。不引导用户关闭 Gatekeeper。
 - 出包时核对包内版本和代码与源码一致。只改了源码，不得称为已交付。
 - 每个任务按改进计划第 0.2 节执行：独立分支、`--no-ff` 合并、追加执行记录。
