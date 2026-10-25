@@ -75,7 +75,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 
 - 不改变应用行为的任务不出包。改变行为的任务在本机出 Mac 包（DMG + ZIP，文件名加 `-dev.<短 commit>`）；Windows 双包在执行记录中标「待 CI 补齐」，不得写成已交付。T2.3 完成后，三种包统一由 CI 产出。
 - 版本：阶段 1–2 保持 1.8.0-beta.5；阶段 3–5 依次为 1.8.0-beta.6–beta.8；菜单栏首版（T7.3–T7.8）为 1.9.0-beta.1，菜单栏真机验收后的改进（T7.9–T7.12、T4.7）为 1.9.0-beta.2，整体复盘后的稳固版（T8.1–T8.8）为 1.9.0-beta.3，T6.1–T6.3 为 1.9.0-beta.4，阶段 9「开源与增长」（T9.1–T9.11）攒成 1.9.0-beta.5（D14），之后顺延为 1.9.0-beta.x，达到 1.9.0 正式版门槛后去掉 beta（D3，2026-10-18 调整）。版本号只在一组任务的最后一个任务合并时修改。
-- Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。签名一律 ad-hoc（2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回）。装新版本时正式条目弹一次授权属于 D4 的已知限制。`codesign --verify --deep --strict` 必须通过，打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
+- Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。签名一律 ad-hoc（2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回）。装新版本时正式条目弹一次授权属于 D4 的已知限制。`codesign --verify --deep --strict` 必须通过，Electron fuses 必须与 `electron-builder.yml` 一致（T9.2，`scripts/fuses.cjs`；`RunAsNode` 不能关），打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
 - D4（暂不购买 Apple Developer 账号）带来的限制：首次打开要到「系统设置 → 隐私与安全性」点「仍要打开」（2026-10-25 在 macOS 15.7.9 实测：弹窗里没有「打开」按钮，「右键 → 打开」不能放行，H3）；只能消除「已损坏」提示，不能消除「无法验证开发者」提示；覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。不引导用户关闭 Gatekeeper。
 - 出包时核对包内版本和代码与源码一致。只改了源码，不得称为已交付。
 - 每个任务按改进计划第 0.2 节执行：独立分支、`--no-ff` 合并、追加执行记录。
@@ -100,6 +100,6 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
 - `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
 - Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。smoke 使用模拟钥匙串（见第 5 节），不会弹钥匙串授权窗；代价是 smoke 不再测到真实钥匙串读写，这部分由真机使用覆盖。
-- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：本机 362 通过 / 0 失败 / 6 跳过（共 368）；CI 安装了两个已验证版本的 Harness 运行时（T8.10、T8.13），为 368 通过 / 0 失败 / 0 跳过。本机要跑这 6 项，按插件 README 安装两套运行时并设置四个环境变量。
+- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：本机 365 通过 / 0 失败 / 6 跳过（共 371）；CI 安装了两个已验证版本的 Harness 运行时（T8.10、T8.13），为 371 通过 / 0 失败 / 0 跳过。本机要跑这 6 项，按插件 README 安装两套运行时并设置四个环境变量。
 - `pnpm run typecheck`（T5.5 起：8 个纯领域模块的严格 JSDoc 类型检查，T7.4 / T7.6 加入 `menubar-status.cjs`、`menubar-panel.cjs`，T6.2 加入 `coverage-report.cjs`；已接入 CI）必须通过。修改这些模块时同步维护注解；可能缺失的数值写成 `number|null`，不要用 0 代替。
 - 本地服务和预览由执行模型自己启动，并在可用的浏览器中查看，不让用户手动启动。
