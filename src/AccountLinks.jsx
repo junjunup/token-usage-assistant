@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Disclosure } from './Disclosure.jsx';
 import { Link, Plus, Info, ArrowClockwise, ListChecks } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import { useAnalytics } from './useAnalytics.js';
@@ -61,7 +62,10 @@ export function AccountLinks({ state, run }) {
       </div>
       <h2>计费账户与工具关联</h2>
       <p className="association-note">
-        先将同一计费账户的连接归组，再明确关联工具记录。此处的选择不会修改原始日志；切换总览账户不会更改关联。
+        <Disclosure
+          summary="先归组连接，再关联工具记录"
+          detail="这里的选择不会修改原始日志；切换总览账户不会更改关联。"
+        />
       </p>
       {data.issue && (
         <p className="inline-warning" role="alert">
@@ -324,7 +328,10 @@ export function AccountLinks({ state, run }) {
         </div>
       </form>
       <p className="association-note">
-        新增关联默认从当前时间开始；关联历史记录需明确修改开始时间。文件替换、密钥变化、归组成员调整会要求重新确认，不能仅凭模型名自动识别计费账户。
+        <Disclosure
+          summary="新增关联从当前时间开始"
+          detail="要关联历史记录，请明确修改开始时间。文件替换、密钥变化、归组成员调整会要求重新确认；不能只凭模型名自动识别计费账户。"
+        />
       </p>
     </section>
   );
@@ -466,7 +473,12 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
                 <dd>{view.association ? number(view.association.invalid) : '—'}</dd>
               </div>
             </dl>
-            <p>记录条数。只有用户确认过的关联规则才会把工具记录归入此账户；有歧义或已失效的记录不归入任何账户。</p>
+            <p>
+              <Disclosure
+                summary="只有确认过的规则才会归入此账户"
+                detail="数字是记录条数。有歧义或已失效的记录不归入任何账户。"
+              />
+            </p>
             {r?.rules?.map((rule) => (
               <p key={rule.id}>
                 {state.toolSources?.find((s) => s.id === rule.sourceId)?.label || '已移除来源'} ·{' '}
@@ -546,8 +558,11 @@ export function ReconciliationPage({ state, bridge, onSettings }) {
         </>
       )}
       <p className="association-note">
-        <Info size={14} /> 余额、额度百分比、工具 Token
-        与估算费用采用不同口径。只有账户、区间、单位、口径、覆盖和新鲜度全部对齐时才显示差值，不计算虚假误差率。
+        <Info size={14} />
+        <Disclosure
+          summary="不同口径的数据不相加、不比较"
+          detail="余额、额度百分比、工具 Token 与估算费用口径不同。只有账户、区间、单位、口径、覆盖和新鲜度全部对齐时才显示差值。"
+        />
       </p>
     </div>
   );

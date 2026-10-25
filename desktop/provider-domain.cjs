@@ -278,7 +278,9 @@ function normalizeOpenCodeGo(raw) {
   return {
     windows,
     planName: 'OpenCode Go',
-    note: '三个周期共同约束 Go 共享额度，不能相加；按官方百分比显示，不换算为金额或 Token。若已在官方平台开启 Use balance，Go 用尽后仍可能使用 Zen 余额；本接口不返回余额及开关状态。',
+    note: '三个周期共同约束 Go 共享额度，不能相加',
+    noteDetail:
+      '按官方百分比显示，不换算为金额或 Token。若已在官方平台开启 Use balance，Go 用尽后仍可能使用 Zen 余额；本接口不返回余额及开关状态。',
   };
 }
 module.exports = { quota, normalizeGlm, normalizeMiniMax, normalizeVolcengine, normalizeOpenCodeGo, miniCounts };

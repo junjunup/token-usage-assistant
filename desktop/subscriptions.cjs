@@ -47,7 +47,8 @@ function normalizeCodex(raw, plan) {
   return {
     windows,
     planName: 'ChatGPT ' + String(plan || '未知套餐').slice(0, 50),
-    note: '官方 Codex 订阅额度；各池与窗口不相加，不代表 ChatGPT 网页聊天的全部权益。Token 明细仅覆盖所选本机来源。',
+    note: '官方 Codex 订阅额度，各池与窗口不相加',
+    noteDetail: '不代表 ChatGPT 网页聊天的全部权益。Token 明细仅覆盖所选本机来源。',
   };
 }
 function normalizeClaude(raw, now = Date.now()) {
@@ -87,9 +88,8 @@ function normalizeClaude(raw, now = Date.now()) {
   return {
     windows,
     planName: 'Claude 本机订阅观察',
-    note:
-      unverified +
-      '来自本地 Claude Code 状态栏；显示最近观察值。账户身份未由账单接口核验，网页聊天明细不在本机采集范围。',
+    note: unverified + '本地 Claude Code 状态栏的最近观察值',
+    noteDetail: '账户身份未由账单接口核验，网页聊天明细不在本机采集范围。',
   };
 }
 class SubscriptionClient {

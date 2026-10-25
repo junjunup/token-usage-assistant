@@ -116,6 +116,8 @@ const json =
   (body, status = 200) =>
   () =>
     new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+// T6.3 changed only the OpenCode Go note (split into note + noteDetail); joining them with '；' reproduces
+// the previous snapshot hash f6a6db9b…, checked when the hash was updated.
 test('every quota and balance client behaves exactly as before the registry refactor', async () => {
   const expected = JSON.parse(
     fs.readFileSync(path.join(__dirname, 'fixtures', 'provider-behaviour-snapshot.json'), 'utf8'),

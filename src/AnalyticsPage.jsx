@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Disclosure } from './Disclosure.jsx';
 import Chart from 'chart.js/auto';
 import {
   ChartLineUp,
@@ -186,9 +187,14 @@ function Health({ s, local }) {
         </div>
       </div>
       <p className="analysis-note">
-        {local
-          ? '成功率按已完成 /（已完成 + 失败）计算，取消与进行中单列。平均值仅统计已完成请求；上方用量总计包含失败、取消请求已报告的用量。'
-          : '成功率按接口返回的完成数 / 总请求数计算，字段缺失时不推算。'}
+        {local ? (
+          <Disclosure
+            summary="成功率 = 已完成 /（已完成 + 失败）"
+            detail="取消与进行中单列。平均值只统计已完成请求；上方用量总计包含失败、取消请求已报告的用量。"
+          />
+        ) : (
+          '成功率按接口返回的完成数 / 总请求数计算，字段缺失时不推算。'
+        )}
       </p>
     </section>
   );
@@ -339,8 +345,10 @@ function Trend({ report, dark }) {
       )}
       {report?.sampled && (
         <p className="analysis-note">
-          图表只统计连续采样覆盖的增量，可能小于上方接口总量；跨分组边界、离线和账期切换的间隔不分摊。首次采样：
-          {stamp(report.historyStart)}。
+          <Disclosure
+            summary="只统计连续采样的增量，可能小于接口总量"
+            detail={'跨分组边界、离线和账期切换的间隔不分摊。首次采样：' + stamp(report.historyStart) + '。'}
+          />
         </p>
       )}
     </section>
@@ -386,8 +394,15 @@ function Prediction({ value: p }) {
             ))}
           </div>
           <p className="analysis-note">
-            基于最近 {Math.round(p.minutes)} 分钟的账户采样，假设消耗速度保持不变；不随上方时间筛选改变。
-            {p.purchasedAvailable ? '购买额度仍有余额，窗口触顶后可能转用购买额度。' : ''}
+            <Disclosure
+              summary={
+                '按最近 ' +
+                Math.round(p.minutes) +
+                ' 分钟的速度推算' +
+                (p.purchasedAvailable ? '；购买额度仍有余额，窗口触顶后可能转用购买额度' : '')
+              }
+              detail="基于账户采样，假设消耗速度保持不变；不随上方时间筛选改变。"
+            />
           </p>
         </>
       ) : (
@@ -429,7 +444,10 @@ function Funding({ report }) {
         </div>
       )}
       <p className="analysis-note">
-        余额为当前值，消耗为所选时段的接口汇总。购买额度不受套餐短周期窗口限制；窗口触顶不等于账户完全不可用。缺失的消耗字段显示“—”。
+        <Disclosure
+          summary="余额是当前值，消耗是所选时段汇总"
+          detail="购买额度不受套餐短周期窗口限制；窗口触顶不等于账户完全不可用。缺失的消耗字段显示“—”。"
+        />
       </p>
       <p className="analysis-note">
         余额更新于 {stamp(report?.creditUpdatedAt)} · 消耗更新于 {stamp(report?.updatedAt)}
@@ -489,7 +507,10 @@ function Cache({ summary: s, reported = false }) {
       </div>
       <p className="analysis-note">
         缓存数据覆盖 {number(c?.requests)} 次{reported ? '已报告用量的' : '已完成'}请求（{percent(c?.coverage)}）；
-        {number(c?.missing)} 次缺少完整缓存字段。输入总量包含缓存读写，拆分后不会重复累计。
+        <Disclosure
+          summary={number(c?.missing) + ' 次缺少完整缓存字段'}
+          detail="输入总量包含缓存读写，拆分后不会重复累计。"
+        />
       </p>
       {!c?.requests && (
         <div className="analysis-callout">
@@ -514,7 +535,10 @@ function ToolCoverage({ report, sources }) {
       </summary>
       <div className="tool-coverage-body">
         <p>
-          Token 采用工具已报告的用量，包含失败、取消请求中明确返回的数值。估算费用按本机模型单价计算，缺失字段保持未知。
+          <Disclosure
+            summary="Token 为已报告用量，费用为本机估算"
+            detail="包含失败、取消请求中明确返回的数值。费用按本机模型单价计算，缺失字段保持未知。"
+          />
         </p>
         {coverage?.reason && <p>{coverage.reason}</p>}
         {rows.length > 0 && (
@@ -532,13 +556,18 @@ function ToolCoverage({ report, sources }) {
                   </strong>
                   <span>{start && end ? `${stamp(start)} — ${stamp(end)}` : '尚无可确认的时间范围'}</span>
                   <small>
-                    {row.status === 'ready'
-                      ? row.message || '同步成功'
-                      : row.status === 'partial'
-                        ? '部分数据'
-                        : row.message || '等待可用数据'}
-                    {row.truncated ? ' · 已达到读取上限' : ''}
-                    {row.coverage?.complete ? ' · 完整覆盖' : ' · 不保证覆盖全部请求'}
+                    <Disclosure
+                      summary={
+                        (row.status === 'ready'
+                          ? row.message || '同步成功'
+                          : row.status === 'partial'
+                            ? '部分数据'
+                            : row.message || '等待可用数据') +
+                        (row.truncated ? ' · 已达到读取上限' : '') +
+                        (row.coverage?.complete ? ' · 完整覆盖' : ' · 不保证覆盖全部请求')
+                      }
+                      detail={row.status === 'ready' || row.status === 'stale' ? row.messageDetail : null}
+                    />
                   </small>
                 </li>
               );
@@ -834,7 +863,14 @@ export function AnalyticsPage({
       {(error || report?.message || report?.truncated) && (
         <div className="analysis-callout" role="status">
           <WarningCircle size={17} />
-          {error || report.message || '记录超过单次读取上限，仅统计最近 100,000 条；请缩小时间范围。'}
+          {error || (
+            <span>
+              <Disclosure
+                summary={report.message || '记录超过单次读取上限，仅统计最近 100,000 条；请缩小时间范围。'}
+                detail={report.message ? report.messageDetail : null}
+              />
+            </span>
+          )}
         </div>
       )}
       {local && report?.sourceReports?.some((row) => row.kind === 'codex') && (
@@ -1006,8 +1042,10 @@ export function AnalyticsPage({
                 </div>
                 {!report.models?.length && <Empty text="这个时间范围没有模型记录" />}
                 <p className="analysis-note">
-                  费用按模型单价及其币种估算，不同供应商的同名模型单独计价，币种之间不换算、不相加。未定价或缺少完整
-                  Token 分类的请求不会记为免费。
+                  <Disclosure
+                    summary="费用按单价估算，币种之间不相加"
+                    detail="不同供应商的同名模型单独计价，币种之间不换算。未定价或缺少完整 Token 分类的请求不会记为免费。"
+                  />
                 </p>
               </section>
             ))}
@@ -1084,7 +1122,10 @@ export function AnalyticsPage({
                 </div>
                 {!report[group]?.length && <Empty text="当前筛选下没有记录" />}
                 <p className="analysis-note">
-                  点击项目进入其会话列表，点击会话查看该会话的趋势与缓存。仅读取用量计数与项目目录，不读取对话正文。
+                  <Disclosure
+                    summary="点击项目看会话，点击会话看趋势"
+                    detail="只读取用量计数与项目目录，不读取对话正文。"
+                  />
                 </p>
               </section>
             ))}

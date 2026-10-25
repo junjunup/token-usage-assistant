@@ -1,4 +1,5 @@
 import React from 'react';
+import { Disclosure } from './Disclosure.jsx';
 import { Coins, Info, WarningCircle, ArrowUpRight } from '@phosphor-icons/react';
 import { formatAmount } from './generated/balance-domain.js';
 import { quotaStatus } from './generated/domain.js';
@@ -95,15 +96,19 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
         </p>
         <div className="quota-footer">
           <Info size={14} />
-          <span>余额变化可能包含充值和赠金，不作为实际消费或账单。缺失金额显示“—”，不默认换汇。</span>
+          <span>
+            <Disclosure summary="余额变化不等于消费" detail="可能包含充值和赠金。缺失金额显示“—”，不默认换汇。" />
+          </span>
         </div>
       </section>
       <section className="panel balance-tools">
         <div>
           <h2>工具 Token 与估算费用</h2>
           <p>
-            本机工具数据独立统计，可按人工确认的计费账户关联范围查看。费用来自已配置的模型单价估算，不是 DeepSeek
-            官方账单。
+            <Disclosure
+              summary="本机工具独立统计，费用为估算"
+              detail="可按人工确认的计费账户关联范围查看。费用来自已配置的模型单价，不是 DeepSeek 官方账单。"
+            />
           </p>
         </div>
         <button className="button" onClick={onTools}>
@@ -114,8 +119,10 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
       <div className="provider-data-note">
         <Info size={16} />
         <p>
-          当前接入仅查询余额，不提供完整历史账单、Token 汇总或套餐额度百分比。同一账户的不同 Key
-          可能共享余额，各连接不相加。
+          <Disclosure
+            summary="只查询余额"
+            detail="不提供完整历史账单、Token 汇总或套餐额度百分比。同一账户的不同 Key 可能共享余额，各连接不相加。"
+          />
         </p>
       </div>
     </div>

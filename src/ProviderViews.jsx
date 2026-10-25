@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Disclosure } from './Disclosure.jsx';
 import { ShieldCheck, Clock, Info, Key, Plug, SignOut, ArrowUpRight, WarningCircle } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import { Live } from './Live.jsx';
@@ -207,12 +208,19 @@ export function ProviderDashboard({ state, onSettings }) {
         </p>
         <div className="quota-footer">
           <Info size={14} />
-          <span>{c?.note || info?.note}</span>
+          <span>
+            <Disclosure summary={c?.note || info?.note} detail={c?.note ? c.noteDetail : null} />
+          </span>
         </div>
       </section>
       <div className="provider-data-note">
         <Info size={16} />
-        <p>此连接显示官方套餐额度。Token 明细与实际费用未通过此额度接口提供；工具分析是独立来源。</p>
+        <p>
+          <Disclosure
+            summary="只有套餐额度，没有 Token 明细与费用"
+            detail="额度来自官方接口；Token 与实际费用不在此接口中。工具分析是独立来源。"
+          />
+        </p>
       </div>
     </div>
   );
@@ -460,11 +468,21 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove }
           <div className="analysis-callout">
             <Info size={17} />
             <span>
-              {provider === 'codex'
-                ? '自动识别已保存配置、CODEX_HOME 与本机默认目录，通过官方客户端读取当前登录订阅。多个配置时可选择；也可手动指定目录。套餐额度与工具明细分别显示状态。'
-                : '点击连接后生成本地启动配置和 Claude Code 数据源。请在项目目录运行生成的 ' +
-                  (state.platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1') +
-                  '；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。'}
+              {provider === 'codex' ? (
+                <Disclosure
+                  summary="自动识别本机的 Codex 配置"
+                  detail="通过官方客户端读取当前登录订阅。有多个配置时可选择，也可手动指定目录。套餐额度与工具明细分别显示状态。"
+                />
+              ) : (
+                <Disclosure
+                  summary={
+                    '连接后用生成的 ' +
+                    (state.platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1') +
+                    ' 启动 Claude Code'
+                  }
+                  detail="在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。"
+                />
+              )}
             </span>
           </div>
         ) : info.credential === 'aksk' ? (

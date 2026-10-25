@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Disclosure } from './Disclosure.jsx';
 import { Database, Folder, Plus, ArrowClockwise, WarningCircle, Trash, Check, Info } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import './tool-sources.css';
@@ -88,7 +89,9 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
       {source.message && source.enabled !== false && (
         <p className="tool-source-message" role="status">
           <WarningCircle size={14} />
-          {source.message}
+          <span>
+            <Disclosure summary={source.message} detail={source.messageDetail} />
+          </span>
         </p>
       )}
       <div className="tool-source-actions">
@@ -239,11 +242,17 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
       <div className="tool-source-privacy">
         <Info size={15} />
         <div>
-          <p>仅采集请求标识、时间、模型、项目、会话及 Token 等用量元数据，不采集对话正文、工具结果或凭据。</p>
           <p>
-            Claude Code 从上方连接入口生成本地启动配置；Codex 读取 0.155.x 用量元数据。Harness
-            需要启用随附的本地统计插件，从启用后开始记录，不补采原始历史会话。OpenCode 选择
-            opencode.db，仅统计已保存的助手用量记录，不能据此核对完整请求成功率。移除数据源不会修改或删除工具原文件。
+            <Disclosure
+              summary="只采集用量元数据，不采集对话正文"
+              detail="包括请求标识、时间、模型、项目、会话及 Token；不采集工具结果或凭据。"
+            />
+          </p>
+          <p>
+            <Disclosure
+              summary="各工具的采集方式不同，移除来源不会改动原文件"
+              detail="Claude Code 从上方连接入口生成本地启动配置；Codex 读取 0.155.x 用量元数据。Harness 需要启用随附的本地统计插件，从启用后开始记录，不补采原始历史会话。OpenCode 选择 opencode.db，仅统计已保存的助手用量记录，不能据此核对完整请求成功率。移除数据源不会修改或删除工具原文件。"
+            />
           </p>
         </div>
       </div>

@@ -456,7 +456,8 @@ function scanClaude(db, source, range) {
     message:
       (health?.gaps?.length ? '存在未识别事件，采集有缺口。' : '') +
       (observedVersion ? unverifiedNote(observedVersion) : '') +
-      '仅覆盖本机组件启用且助手运行时收到的官方用量事件；未报告的中间重试、离线及网页聊天不在完整覆盖范围。',
+      '只覆盖助手运行期间收到的用量事件',
+    messageDetail: '需本机组件已启用。未报告的中间重试、离线及网页聊天不在覆盖范围内。',
   };
 }
 module.exports = { ClaudeCollector, parseOtel, supported, scanClaude, readClaudeManifest };

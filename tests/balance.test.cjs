@@ -287,6 +287,8 @@ test('balance account has no fabricated account analytics or borrowed tool attri
   assert.equal(r.summary, null);
   assert.equal(r.prediction, null);
   assert.equal(r.credits, null);
-  assert.match(r.message, /余额变化不是实际消费/);
+  // T6.3: one-line conclusion plus details; both must be present.
+  assert.match(r.message, /只有余额，没有 Token 或账单汇总/);
+  assert.match(r.messageDetail, /余额变化不是实际消费/);
   assert.equal(active.history.records.length, 0);
 });
