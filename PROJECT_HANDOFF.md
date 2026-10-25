@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.3`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.3（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1、beta.2；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 354 项，本机 351 通过 / 0 失败 / 3 跳过（CI 装有固定版本 Harness 运行时，354 / 0 / 0）（Harness 运行时未安装）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 356 项，本机 353 通过 / 0 失败 / 3 跳过（CI 装有固定版本 Harness 运行时，356 / 0 / 0）（Harness 运行时未安装）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
