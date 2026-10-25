@@ -1,0 +1,389 @@
+{
+  "ok": true,
+  "version": "1.9.0-beta.4",
+  "generatedAt": "2026-10-25T08:14:11.684Z",
+  "appPath": "release-out/mac-arm64/Token 用量助手.app",
+  "signature": "ad-hoc（本机临时签名，未做 Developer ID 签名与公证）",
+  "checks": {
+    "codesignDeepStrict": {
+      "ok": true,
+      "detail": "--prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/ReactiveObjC.framework/Versions/Current/. --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/ReactiveObjC.framework/Versions/Current/. --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper (Renderer).app --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper (Renderer).app --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Squirrel.framework/Versions/Current/. --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Squirrel.framework/Versions/Current/. --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper (GPU).app --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper (GPU).app --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Mantle.framework/Versions/Current/. --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Mantle.framework/Versions/Current/. --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper (Plugin).app --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper (Plugin).app --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper.app --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Token 用量助手 Helper.app --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/. --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/Helpers/app_shim_loader --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/Helpers/app_shim_loader --prepared:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/Helpers/chrome_crashpad_handler --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/Helpers/chrome_crashpad_handler --validated:/Users/runner/work/token-usage-assistant/token-usage-assistant/release-out/mac-arm64/Token 用量助手.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/. release-out/mac-arm64/Token 用量助手.app: valid on disk release-out/mac-arm64/Token 用量助手.app: satisfies its Designated Requirement"
+    },
+    "codeResourcesAndAdhoc": {
+      "ok": true,
+      "detail": "CodeResources 存在；Signature=adhoc"
+    },
+    "entitlements": {
+      "ok": true,
+      "detail": "allow-jit 与 disable-library-validation 均存在"
+    },
+    "infoPlist": {
+      "ok": true,
+      "detail": "CFBundleIdentifier=local.commandcode.tokenusageassistant, CFBundleIconFile=icon.icns, CFBundleShortVersionString=1.9.0-beta.4"
+    },
+    "licenseFiles": {
+      "ok": true,
+      "detail": "Contents/Resources 含 LICENSE.electron.txt、LICENSES.chromium.html，以及与仓库一致的 LICENSE.txt、THIRD_PARTY_NOTICES.md、THIRD_PARTY_LICENSES.txt"
+    },
+    "nativeSmokeTest": {
+      "ok": true,
+      "detail": "exit=0, ok=true, version=1.9.0-beta.4 (隔离目录运行，未读取真实账户数据)"
+    },
+    "defaultUserDataPath": {
+      "ok": true,
+      "detail": "asar 内源码确认：打包版 userData 为 ~/Library/Application Support/TokenUsageAssistant（macDataName(app.isPackaged)），开发版另用 TokenUsageAssistant-Dev"
+    }
+  },
+  "spctl": {
+    "result": "rejected",
+    "expected": "rejected（未公证，如实记录，不判通过）",
+    "output": "release-out/mac-arm64/Token 用量助手.app: rejected",
+    "gate": false
+  },
+  "artifacts": {
+    "dmg": {
+      "file": "TokenUsageAssistant-Mac-arm64-1.9.0-beta.4.dmg",
+      "bytes": 130985069,
+      "sha256": "3aa2f05824027cebaf46afbe8d71449f7e0c0fa666939b570084c6c5d36efc69"
+    },
+    "zip": {
+      "file": "TokenUsageAssistant-Mac-arm64-1.9.0-beta.4.zip",
+      "bytes": 130981583,
+      "sha256": "379e9860d82c1bfb72059cfea344845eb595b7a6da9a41d47afcc58c7c7ff3a3"
+    },
+    "asar": {
+      "file": "mac-arm64/Token 用量助手.app/Contents/Resources/app.asar",
+      "bytes": 1759887,
+      "sha256": "c5392bd05db9b19a1ef25cfa1a12f62ed5b67c410597114e5650fafc6c0785fa"
+    }
+  },
+  "nativeMacTest": true,
+  "smokeEvidence": {
+    "ok": true,
+    "version": "1.9.0-beta.4",
+    "platform": "darwin",
+    "arch": "arm64",
+    "compactHeight": 366,
+    "expandedHeight": 552,
+    "restoredHeight": 366,
+    "compactContentHeight": 366,
+    "expandedContentHeight": 552,
+    "analyticsLocal": "ready",
+    "analyticsAccount": "ready",
+    "modelGroups": 3,
+    "cacheHitRate": 64.13737668518742,
+    "readySurfaces": [
+      "main",
+      "widget"
+    ],
+    "trayCreated": true,
+    "notificationSupported": true,
+    "encryptionRoundTrip": true,
+    "keychainName": "TokenUsageAssistant-Smoke",
+    "mainSandbox": true,
+    "mainIsolation": true,
+    "widgetAlwaysOnTop": true,
+    "widgetMovable": false,
+    "status": "connected",
+    "hasCredits": true,
+    "hasSummary": true,
+    "providers": {
+      "ok": true,
+      "checks": [
+        {
+          "provider": "glm",
+          "windows": 3,
+          "renderer": true,
+          "widget": true,
+          "status": "connected"
+        },
+        {
+          "provider": "minimax",
+          "windows": 4,
+          "renderer": true,
+          "widget": true,
+          "status": "connected"
+        },
+        {
+          "provider": "volcengine",
+          "windows": 4,
+          "renderer": true,
+          "widget": true,
+          "status": "connected"
+        }
+      ],
+      "encryptedVault": true,
+      "reload": true,
+      "independentTimers": true,
+      "removeIsolation": true,
+      "darkTheme": true,
+      "expandedWidget": true
+    },
+    "tools": {
+      "ok": true,
+      "twoSources": true,
+      "legacyCompatibility": true,
+      "reportedTotals": true,
+      "replayDeduplicated": true,
+      "accountIsolation": true,
+      "billingDisabled": true,
+      "sourceReload": true,
+      "nativeWorkerSqlite": true,
+      "sourceManagementRendered": true,
+      "lightDark": true,
+      "harnessVersion": "0.1.7-rc.1",
+      "realToolCalls": false
+    },
+    "subscriptions": {
+      "ok": true,
+      "checks": {
+        "programPreflightInvoked": true,
+        "autoConnectWithoutPicker": true,
+        "codexQuotaAndWidget": true,
+        "claudeWaitingBeforeFirstQuota": true,
+        "actualMacComponent": true,
+        "claudeQuota": true,
+        "nativeWorkerTotals": true,
+        "replayDeduplication": true,
+        "independentAccount": true,
+        "fourToolSelector": true,
+        "noApiKeyField": true,
+        "lightDark": true,
+        "manualCancellation": true,
+        "profileChoiceAndKeyboard": true,
+        "noHistoryQuotaSuccess": true,
+        "metadataPrivacy": true
+      },
+      "synthetic": true,
+      "realClaudeAccount": false,
+      "modelCalls": false
+    },
+    "balance": {
+      "ok": true,
+      "checks": {
+        "realFormToBalance": true,
+        "precisionAndCurrencyIsolation": true,
+        "themesAndWidget": true,
+        "zeroIsSuccessfulQuery": true,
+        "failedQueryRetainsDatedBalance": true,
+        "emptyIsUnknown": true,
+        "nativeEncryptedReload": true,
+        "noFabricatedBilling": true,
+        "independentToolNavigation": true
+      },
+      "syntheticOnly": true,
+      "requests": 5,
+      "realDeepSeekAccount": false,
+      "modelCalls": false
+    },
+    "associations": {
+      "ok": true,
+      "checks": {
+        "emptyState": true,
+        "nativeManualGrouping": true,
+        "nativeManualRule": true,
+        "keyboardGroupFilter": true,
+        "nativeWorkerAssociation": true,
+        "activeSelectionDoesNotReattribute": true,
+        "singlePrimaryNoSummation": true,
+        "noFakeDifference": true,
+        "lightDarkRendered": true,
+        "noHorizontalOverflow": true,
+        "nativeRestartPreservesRules": true,
+        "privateKeysExcluded": true
+      },
+      "syntheticOnly": true,
+      "liveAccountReconciliation": false,
+      "modelCalls": false
+    },
+    "opencode": {
+      "ok": true,
+      "quotaWindows": 3,
+      "lowestFirst": true,
+      "expandedWidget": true,
+      "lightDark": true,
+      "lastSuccessRetained": true,
+      "encryptedReload": true,
+      "sqliteReadOnly": true,
+      "toolTokens": 240,
+      "forkAndMirrorExcluded": true,
+      "metadataOnly": true,
+      "realAccountTest": false,
+      "realToolTest": false
+    },
+    "menubar": {
+      "ok": true,
+      "empty": {
+        "ok": true,
+        "phase": "empty",
+        "mode": "static",
+        "size": null,
+        "centre": null
+      },
+      "accounts": {
+        "ok": true,
+        "phase": "accounts",
+        "mode": "dynamic",
+        "text": "37%",
+        "tone": "normal",
+        "template": true,
+        "size": {
+          "width": 50,
+          "height": 22
+        },
+        "centre": {
+          "x": 18,
+          "y": 22
+        }
+      }
+    },
+    "panel": {
+      "ok": true,
+      "ready": true,
+      "visible": true,
+      "sandbox": true,
+      "contextIsolation": true,
+      "contentProtected": true,
+      "account": true,
+      "deniedOutsideAllowList": true,
+      "bounds": {
+        "x": 1490,
+        "y": 25,
+        "width": 360,
+        "height": 556
+      },
+      "light": {
+        "width": 360,
+        "height": 556
+      },
+      "dark": {
+        "width": 360,
+        "height": 556
+      },
+      "hidden": true
+    },
+    "menubarSettings": {
+      "ok": true,
+      "usageOff": "static",
+      "usageOn": "dynamic",
+      "ringWidth": 18,
+      "twoWidth": 57,
+      "unprotected": true,
+      "protectedAgain": true,
+      "restored": "dynamic"
+    },
+    "branding": {
+      "ok": true,
+      "version": "1.9.0-beta.4",
+      "alignment": [
+        {
+          "width": 1260,
+          "theme": "light",
+          "button": {
+            "x": 16.5,
+            "y": 19,
+            "width": 34,
+            "height": 34
+          },
+          "svg": {
+            "x": 20,
+            "y": 22.5,
+            "width": 27,
+            "height": 27
+          },
+          "centerOffset": {
+            "x": 0,
+            "y": 0
+          },
+          "visibleOffset": {
+            "x": -0.007796287536621094,
+            "y": -0.0370330810546875
+          },
+          "padding": "0px",
+          "dpr": 1
+        },
+        {
+          "width": 1260,
+          "theme": "dark",
+          "button": {
+            "x": 16.5,
+            "y": 19,
+            "width": 34,
+            "height": 34
+          },
+          "svg": {
+            "x": 20,
+            "y": 22.5,
+            "width": 27,
+            "height": 27
+          },
+          "centerOffset": {
+            "x": 0,
+            "y": 0
+          },
+          "visibleOffset": {
+            "x": -0.007796287536621094,
+            "y": -0.0370330810546875
+          },
+          "padding": "0px",
+          "dpr": 1
+        },
+        {
+          "width": 780,
+          "theme": "light",
+          "button": {
+            "x": 11,
+            "y": 19,
+            "width": 30,
+            "height": 30
+          },
+          "svg": {
+            "x": 12.5,
+            "y": 20.5,
+            "width": 27,
+            "height": 27
+          },
+          "centerOffset": {
+            "x": 0,
+            "y": 0
+          },
+          "visibleOffset": {
+            "x": -0.007796287536621094,
+            "y": -0.0370330810546875
+          },
+          "padding": "0px",
+          "dpr": 1
+        },
+        {
+          "width": 780,
+          "theme": "dark",
+          "button": {
+            "x": 11,
+            "y": 19,
+            "width": 30,
+            "height": 30
+          },
+          "svg": {
+            "x": 12.5,
+            "y": 20.5,
+            "width": 27,
+            "height": 27
+          },
+          "centerOffset": {
+            "x": 0,
+            "y": 0
+          },
+          "visibleOffset": {
+            "x": -0.007796287536621094,
+            "y": -0.0370330810546875
+          },
+          "padding": "0px",
+          "dpr": 1
+        }
+      ],
+      "windowsIcon": {
+        "skipped": true
+      }
+    }
+  }
+}

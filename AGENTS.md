@@ -2,7 +2,7 @@
 
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
-- 当前版本：**1.9.0-beta.4**（T6.1–T6.3：平台验证等级、覆盖范围报告、说明渐进披露；待发布，上一个发布为 1.9.0-beta.3，2026-10-25。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
+- 当前版本：**1.9.0-beta.4**（T6.1–T6.3：平台验证等级、覆盖范围报告、说明渐进披露；2026-10-25 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
 - 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D13）
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
