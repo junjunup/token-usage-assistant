@@ -85,6 +85,23 @@ if (scenario === 'monthly-empty') {
   };
   state.data.parts.summary.funding = { monthly: 200, purchased: 0, free: 0 };
 }
+// T9.3: an idle window (resetAt=0) that already reports usage, and a nearly used-up weekly window.
+if (scenario === 'idle-used') {
+  state.data.parts.credits.five = {
+    ...state.data.parts.credits.five,
+    used: 3,
+    usedPercent: 3,
+    remainingPercent: 97,
+    resetAt: null,
+    resetState: 'idle',
+  };
+  state.data.parts.credits.week = {
+    ...state.data.parts.credits.week,
+    used: 99.6,
+    usedPercent: 99.6,
+    remainingPercent: 0.4,
+  };
+}
 if (scenario === 'reset-missing')
   state.data.parts.credits.five = { ...state.data.parts.credits.five, resetAt: null, resetState: 'unknown' };
 const snapshots = { commandcode: structuredClone(state.data) };

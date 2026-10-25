@@ -270,6 +270,13 @@ function quotaStatus(state) {
   return ['额度数据暂缺', 'neutral'];
 }
 /**
+ * Remaining percentage for text: below 0.5% but above zero is "<1%", never a rounded "0%" (T7.4, T9.3 L3).
+ * @param {number|null|undefined} p
+ */
+function percentText(p) {
+  return typeof p !== 'number' || !Number.isFinite(p) ? '—' : p > 0 && p < 0.5 ? '<1%' : Math.round(p) + '%';
+}
+/**
  * @param {any} window
  * @param {number} [now]
  */
@@ -277,7 +284,11 @@ function resetDescription(window, now = Date.now()) {
   if (window?.unlimited) return '当前不设窗口限制';
   if (window?.resetState === 'unconfirmed') return '已用不足 1% · 窗口起点待确认';
   const at = window?.resetAt;
-  if (!at) return window?.resetState === 'idle' && window?.used === 0 ? '待首次使用后开始计时' : '重置时间暂未返回';
+  // T9.3 (L2): resetAt=0 is "未启用" on every surface, also when usage is already reported; only a missing field
+  // reads as missing data.
+  if (window?.resetState === 'idle')
+    return window?.used === 0 ? '未启用 · 首次使用后开始计时' : '未启用 · 计时起点待平台返回';
+  if (!at) return '重置时间暂未返回';
   const seconds = Math.ceil((at - now) / 1000);
   if (seconds <= 0) return '本窗口已到期 · 等待用量同步';
   const days = Math.floor(seconds / 86400),
@@ -413,6 +424,7 @@ module.exports = {
   monthlyQuota,
   quotaStatus,
   resetDescription,
+  percentText,
   retryAfter,
   nextDelay,
   patchSettings,

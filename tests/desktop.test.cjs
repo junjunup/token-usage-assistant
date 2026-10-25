@@ -350,10 +350,15 @@ test('missing monthly figures remain unknown; low monthly balance affects global
 test('explicit inactive reset differs from missing, active and expired timestamps', () => {
   const idle = domain.normalizeWindow({ used: 0, cap: 14, resetAt: 0 });
   assert.equal(idle.resetState, 'idle');
-  assert.equal(resetDescription(idle, 10000), '待首次使用后开始计时');
+  // T9.3 (L2): resetAt=0 reads "未启用" like the menu bar, also when usage is already reported.
+  assert.equal(resetDescription(idle, 10000), '未启用 · 首次使用后开始计时');
+  const idleUsed = domain.normalizeWindow({ used: 3, cap: 14, resetAt: 0 });
+  assert.equal(resetDescription(idleUsed, 10000), '未启用 · 计时起点待平台返回');
   const missing = domain.normalizeWindow({ used: 0, cap: 14 });
   assert.equal(missing.resetState, 'unknown');
   assert.equal(resetDescription(missing, 10000), '重置时间暂未返回');
+  const missingUsed = domain.normalizeWindow({ used: 3, cap: 14 });
+  assert.equal(resetDescription(missingUsed, 10000), '重置时间暂未返回');
   assert.equal(resetDescription({ resetAt: 1790003600000 }, 1790000000000), '01:00:00 后重置');
   assert.match(resetDescription({ resetAt: 1790000000000 }, 1790000010000), /已到期/);
   assert.equal(resetDescription({ unlimited: true }, 10000), '当前不设窗口限制');
@@ -434,4 +439,16 @@ test('T8.2: a settings file whose preferences are not an object keeps nothing un
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('T9.3 (L3): remaining percentages use one text — "<1%" above zero, never a rounded 0%', () => {
+  const { percentText } = domain;
+  assert.equal(percentText(0.4), '<1%');
+  assert.equal(percentText(0.49), '<1%');
+  assert.equal(percentText(0.5), '1%');
+  assert.equal(percentText(0), '0%');
+  assert.equal(percentText(17.4), '17%');
+  assert.equal(percentText(null), '—');
+  assert.equal(percentText(undefined), '—');
+  assert.equal(percentText(Number.NaN), '—');
 });
