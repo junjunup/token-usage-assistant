@@ -45,11 +45,15 @@ else
   record 'codesignDeepStrict' 0 "$(tr '\n' ' ' <"$TMP/codesign-verify.log" | sed 's/  */ /g')"
 fi
 
-# 2. Nested-bundle seal present and signature is ad-hoc.
+# 2. Nested-bundle seal present; signature is ad-hoc or the local self-signed certificate (never Developer ID).
 if [ -f "$APP/Contents/_CodeSignature/CodeResources" ]; then
   SIGN_INFO="$(codesign -dv "$APP" 2>&1)"
   if echo "$SIGN_INFO" | grep -q 'Signature=adhoc'; then
+    SIGNATURE_KIND='ad-hoc（本机临时签名，未做 Developer ID 签名与公证）'
     record 'codeResourcesAndAdhoc' 1 "CodeResources 存在；$(echo "$SIGN_INFO" | grep -E 'Signature=|Flags=' | tr '\n\t' '  ' | sed 's/  */ /g' | sed 's/ *$//')"
+  elif echo "$SIGN_INFO" | grep -q '^Authority=TokenUsageAssistant Local Signing$'; then
+    SIGNATURE_KIND='本机自签名证书 TokenUsageAssistant Local Signing（不是 Developer ID，未公证）'
+    record 'codeResourcesAndAdhoc' 1 "CodeResources 存在；本机自签名证书；$(echo "$SIGN_INFO" | grep -E 'Authority=|Flags=' | tr '\n\t' '  ' | sed 's/  */ /g' | sed 's/ *$//')"
   else
     record 'codeResourcesAndAdhoc' 0 "CodeResources 存在但未显示 ad-hoc 签名：$(echo "$SIGN_INFO" | tr '\n\t' '  ')"
   fi
@@ -185,7 +189,7 @@ if(fs.existsSync(asar))artifacts.asar={file:"mac-arm64/Token 用量助手.app/Co
 fs.writeFileSync(process.env.ARTIFACTS_JSON,JSON.stringify(artifacts));
 '
 
-REPORT_DIR="$REPORT_DIR" VERSION="$VERSION" APP="$APP" PASS="$PASS" SPCTL="$SPCTL" \
+REPORT_DIR="$REPORT_DIR" VERSION="$VERSION" APP="$APP" PASS="$PASS" SPCTL="$SPCTL" SIGNATURE_KIND="${SIGNATURE_KIND:-}" \
 SPCTL_OUTPUT="$SPCTL_OUTPUT" ARTIFACTS_FILE="$ARTIFACTS_JSON" TMPDIR_CHECKS="$TMP" ORDER="$ORDER" node -e '
 const fs=require("fs"),path=require("path");
 const env=process.env,checksDir=env.TMPDIR_CHECKS+"/checks";
@@ -202,7 +206,7 @@ const report={
   version:env.VERSION,
   generatedAt:new Date().toISOString(),
   appPath:env.APP,
-  signature:"ad-hoc（本机临时签名，未做 Developer ID 签名与公证）",
+  signature:env.SIGNATURE_KIND||"ad-hoc（本机临时签名，未做 Developer ID 签名与公证）",
   checks,
   spctl:{result:env.SPCTL,expected:"rejected（未公证，如实记录，不判通过）",output:env.SPCTL_OUTPUT,gate:false},
   artifacts:JSON.parse(fs.readFileSync(env.ARTIFACTS_FILE,"utf8")),
