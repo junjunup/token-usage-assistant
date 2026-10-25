@@ -152,7 +152,7 @@ async function runBalanceSmoke({ accounts, analytics, store, mainWindow, widgetW
     assert.equal(report.prediction, null);
     assert.equal(accounts.active.history.records.length, 0);
     checks.noFabricatedBilling = true;
-    await mainWindow.webContents.executeJavaScript("document.querySelector('.balance-tools button').click()");
+    await mainWindow.webContents.executeJavaScript("document.querySelector('.balance-tools > button').click()");
     await until(mainWindow, "!!document.querySelector('.analytics-page .analysis-source-picker')");
     checks.independentToolNavigation = true;
     return { ok: true, checks, syntheticOnly: true, requests, realDeepSeekAccount: false, modelCalls: false };
