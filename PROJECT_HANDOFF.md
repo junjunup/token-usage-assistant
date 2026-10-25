@@ -1,14 +1,14 @@
 # 项目交接：当前状态快照
 
-> 更新：2026-10-23。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
+> 更新：2026-10-25。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
 > 规则见 [AGENTS.md](AGENTS.md)；进行中的工作见 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)；Mac 菜单栏状态与灵动岛设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)。
 
 ## 1. 当前版本与环境
 
-- 版本：`1.9.0-beta.3`（`package.json`，2026-10-24 升版，尚未打标签发布）。稳固版：T8.1 Electron 44.9.3、T8.2 设置向前兼容、T8.3 锁屏兜底、T8.4 Claude 额度结构校验、T8.5 Claude 采集端口自动更换、T8.6 开发包检查更新与账户加载耗时、T8.7 许可证随包，以及 T8.10 发版流程加固。上一个发布：2026-10-23 打标签 `v1.9.0-beta.2`（→ `237987f`），源码仓库 Release 与安装包仓库 Release 均为 prerelease。
+- 版本：`1.9.0-beta.3`（`package.json`）。2026-10-25 打标签 `v1.9.0-beta.3`（→ `ce60aa7`）并发布到源码仓库与 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.3)（均为 prerelease）。稳固版：T8.1 Electron 44.9.3、T8.2 设置向前兼容、T8.3 锁屏兜底、T8.4 Claude 额度结构校验、T8.5 Claude 采集端口自动更换、T8.6 开发包检查更新与账户加载耗时、T8.7 许可证随包，以及 T8.10 发版流程加固。上一个发布：2026-10-23 打标签 `v1.9.0-beta.2`（→ `237987f`），源码仓库 Release 与安装包仓库 Release 均为 prerelease。
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
-- 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.2`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
-- 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.2（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
+- 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.3`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
+- 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.3（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1、beta.2；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
 - 测试基线：`pnpm run test:desktop` 共 352 项，本机 349 通过 / 0 失败 / 3 跳过（CI 装有固定版本 Harness 运行时，352 / 0 / 0）（Harness 运行时未安装）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
@@ -90,7 +90,16 @@
 - Windows：NSIS 覆盖安装升级、重启后自启动、真实工具的持续使用。
 - 两小时稳定性测试：未完成，用户已叫停，不再进行。
 
-## 6. 下一步
+## 6. 需要你亲手做的事（D13 第三档，在版本节点一次交给你）
+
+- **创建本项目的自签名代码签名证书**（钥匙串方案，2026-10-25）：步骤在会话里给出；创建后由执行模型改打包配置并验证不再弹钥匙串授权窗。
+- **用浏览器下载 DMG 实测首次打开**（复盘 H3）：从安装包仓库下载 1.9.0-beta.3 的 DMG，在 macOS 15 上按验收清单第 1 项操作，告诉执行模型实际看到的提示，用来更正「右键 → 打开」的说明。
+- **换装正式版**：把「应用程序」里的开发测试包换成正式的 1.9.0-beta.3（覆盖安装后可能弹一次钥匙串授权）。
+- **告诉执行模型你在用的 Harness（dsh）版本**（T8.13）；如果在用，T4.7 的插件修复要在 Harness 里重新安装插件才生效。
+- **真机验收剩余项**：验收清单第 13 项（切换系统外观、告警颜色），第 16 项（录屏、会议共享、锁屏、快速切换用户），第 17 项（外接屏、全屏应用中点图标）；锁屏暂停与恢复（T4.4、T8.3）。
+- **`PUBLIC_RELEASE_TOKEN` 于 2027-01-13 到期**：到期前重新生成并设置。
+
+## 7. 下一步
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 

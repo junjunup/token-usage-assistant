@@ -2,8 +2,8 @@
 
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
-- 当前版本：**1.9.0-beta.3**（稳固版，T8.1–T8.7 与 T8.10，待发布；上一个发布为 1.9.0-beta.2，2026-10-23。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
-- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D12）
+- 当前版本：**1.9.0-beta.3**（稳固版，T8.1–T8.7 与 T8.10，2026-10-25 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D13）
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
 ## 1. 读取顺序
@@ -79,6 +79,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - D4（暂不购买 Apple Developer 账号）带来的限制：首次打开需要右键 → 打开；只能消除「已损坏」提示，不能消除「无法验证开发者」提示；覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。不引导用户关闭 Gatekeeper。
 - 出包时核对包内版本和代码与源码一致。只改了源码，不得称为已交付。
 - 每个任务按改进计划第 0.2 节执行：独立分支、`--no-ff` 合并、追加执行记录。
+- 确认分三档（D13，2026-10-25）：内部可撤回的步骤直接做完并接着做下一个任务；界面截图与公开发版攒到节点一次确认（每个版本只确认一次，确认后由执行模型完成打标签之后的全部步骤）；只能用户亲手做的事记进 PROJECT_HANDOFF「需要你亲手做的事」，在节点一次交出。遇到红线冲突、范围变化、计划外失败时仍立即停下来问。
 - 有意义的决策变化要同步更新 `PROJECT_HANDOFF.md`（只写当前快照）和 `CHANGELOG.md`。
 
 ## 8. UI 规则
