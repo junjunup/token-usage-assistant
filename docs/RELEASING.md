@@ -40,5 +40,5 @@
 
 ## 本机构建（备用）
 
-- Mac：`scripts/Build-Mac-App.command`，然后运行 `scripts/Verify-Mac-Native.command`。登录钥匙串里有代码签名证书「TokenUsageAssistant Local Signing」时，本机构建用它签名（不加可信时间戳），签名在多次构建之间保持不变，钥匙串授权只需「始终允许」一次；设置 `TUA_MAC_IDENTITY=-` 可强制 ad-hoc。校验脚本两种签名都接受，并在报告的 `signature` 里写明是哪一种。默认输出到 `release-v<版本>/`，报告写入 `docs/verification-<版本>/`；可以用环境变量 `TUA_RELEASE_DIR`、`TUA_REPORT_DIR` 改变位置。本机构建会默认使用 npmmirror 下载 Electron（国内网络）；CI 不使用镜像。
+- Mac：`scripts/Build-Mac-App.command`，然后运行 `scripts/Verify-Mac-Native.command`。本机构建为 ad-hoc 签名；打包后的 smoke 使用模拟钥匙串，不会弹钥匙串授权窗（2026-10-25）。默认输出到 `release-v<版本>/`，报告写入 `docs/verification-<版本>/`；可以用环境变量 `TUA_RELEASE_DIR`、`TUA_REPORT_DIR` 改变位置。本机构建会默认使用 npmmirror 下载 Electron（国内网络）；CI 不使用镜像。
 - 按 D1，阶段中间改变行为的任务在本机出 Mac 包时，文件名加 `-dev.<短 commit>`，不升版本号。
