@@ -161,7 +161,10 @@ export function Select({ label, value, options, onChange, disabled = false, clas
                 onClick={() => choose(i)}
               >
                 <div>
-                  <span>{o.label}</span>
+                  <span>
+                    {o.label}
+                    {o.badge && <em className={'ui-select-badge ' + (o.badge.tone || '')}>{o.badge.text}</em>}
+                  </span>
                   {o.description && <small>{o.description}</small>}
                 </div>
                 {i === selected && <Check size={14} />}

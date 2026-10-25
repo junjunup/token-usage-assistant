@@ -83,6 +83,29 @@
   margin-top: 2px;
   overflow-wrap: anywhere;
 }
+.ui-select-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--muted);
+  font:
+    normal 9px 'Geist Mono',
+    monospace;
+  line-height: 16px;
+  vertical-align: 1px;
+}
+.ui-select-badge.live {
+  color: var(--green);
+  border-color: var(--green-pale);
+  background: var(--green-pale);
+}
+.ui-select-badge.experimental {
+  color: var(--amber);
+  border-color: var(--amber-pale);
+  background: var(--amber-pale);
+}
 .ui-select-option.active {
   background: var(--soft);
 }

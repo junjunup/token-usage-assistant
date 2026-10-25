@@ -3,13 +3,14 @@
 // (scripts/prepare-analytics-preview.mjs), so only plain data is exposed here.
 const { REGISTRY } = require('./providers/index.cjs');
 const PROVIDERS = Object.freeze(
-  REGISTRY.map(({ id, capabilities, name, regions, credential, note }) => ({
+  REGISTRY.map(({ id, capabilities, name, regions, credential, note, verification }) => ({
     id,
     capabilities,
     name,
     regions,
     credential,
     note,
+    verification,
   })),
 );
 function providerInfo(id) {

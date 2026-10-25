@@ -21,7 +21,7 @@ test('the registry holds exactly the original platforms, in order, and feeds PRO
     IDS,
   );
   for (const p of PROVIDERS)
-    assert.deepEqual(Object.keys(p), ['id', 'capabilities', 'name', 'regions', 'credential', 'note']);
+    assert.deepEqual(Object.keys(p), ['id', 'capabilities', 'name', 'regions', 'credential', 'note', 'verification']);
   assert.deepEqual(Object.keys(ORIGINS), ['opencode-go', 'deepseek', 'glm', 'minimax', 'volcengine']);
   const kinds = Object.fromEntries(REGISTRY.map((p) => [p.id, p.clientKind]));
   assert.deepEqual(kinds, {

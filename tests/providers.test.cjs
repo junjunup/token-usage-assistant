@@ -551,3 +551,17 @@ test('T8.6: account loading logs its duration and count, success or failure, wit
   assert.ok(failed);
   assert.deepEqual(Object.keys(failed[3]), ['durationMs']);
 });
+
+// T6.1: every platform states how far it has been checked; only a real read-only observation counts as live.
+test('T6.1: every platform has a verification level, date and note, exposed to the renderer', () => {
+  const { PROVIDERS } = require('../desktop/provider-catalog.cjs');
+  for (const p of PROVIDERS) {
+    assert.ok(['live', 'contract', 'experimental'].includes(p.verification?.level), p.id);
+    assert.match(p.verification.date, /^\d{4}-\d{2}-\d{2}$/, p.id);
+    assert.ok(p.verification.note.length > 4, p.id);
+  }
+  const live = PROVIDERS.filter((p) => p.verification.level === 'live')
+    .map((p) => p.id)
+    .sort();
+  assert.deepEqual(live, ['claude', 'codex', 'commandcode']);
+});
