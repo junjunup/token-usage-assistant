@@ -97,6 +97,13 @@ else
   record 'licenseFiles' 0 "Contents/Resources 缺少：${LICENSE_MISSING}"
 fi
 
+# 4c. T9.2: Electron fuses as configured in electron-builder.yml, read back from the built binary.
+if FUSES_OUT="$(node "$ROOT/scripts/fuses.cjs" "$APP" 2>/dev/null)"; then
+  record 'electronFuses' 1 "$FUSES_OUT"
+else
+  record 'electronFuses' 0 "${FUSES_OUT:-无法读取 fuse}"
+fi
+
 # 5. Native smoke test in an isolated directory (first real nativeMacTest evidence).
 SMOKE_DIR="$(mktemp -d "$TMP/smoke.XXXXXXXX")"
 EXEC_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST" 2>/dev/null || true)"
