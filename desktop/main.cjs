@@ -68,8 +68,10 @@ const menubarPoc = !app.isPackaged && process.env.TUA_MENUBAR_POC === '1' && isM
 if (isMac) {
   // Packaged: ~/Library/Application Support/TokenUsageAssistant (unchanged). Development: TokenUsageAssistant-Dev.
   const macName = macDataName(app.isPackaged);
-  // Smoke runs get their own name and therefore their own Keychain Safe Storage item.
+  // Smoke runs get their own name; since 2026-10-25 they also use Chromium's mock keychain, so a packaged smoke never
+  // reads or writes any real Keychain item and never shows a Keychain prompt (each new ad-hoc build used to ask).
   app.setName(smoke ? macSmokeName : macName);
+  if (smoke) app.commandLine.appendSwitch('use-mock-keychain');
   app.setPath('userData', path.join(app.getPath('appData'), macName));
 }
 if (smoke || islandPoc || menubarPoc) {

@@ -225,3 +225,15 @@ test('Mac smoke runs use their own app name, so they never touch the real Keycha
   const smokeModule = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'smoke', 'index.cjs'), 'utf8');
   assert.match(smokeModule, /\(!isMac \|\| app\.getName\(\) === macSmokeName\)/);
 });
+
+test('Mac smoke runs use the mock keychain, never a real Keychain item (2026-10-25)', () => {
+  const main = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '..', 'desktop', 'main.cjs'),
+    'utf8',
+  );
+  const mac = main.slice(main.indexOf('if (isMac) {'), main.indexOf('if (smoke || islandPoc || menubarPoc)'));
+  assert.match(
+    mac,
+    /app\.setName\(smoke \? macSmokeName : macName\);\s*if \(smoke\) app\.commandLine\.appendSwitch\('use-mock-keychain'\);/,
+  );
+});
