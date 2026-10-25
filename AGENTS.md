@@ -69,7 +69,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 额度查询成功时，不因缺少工具日志或来源添加失败而显示失败；不重新启用用户已禁用的来源。
 - **Zcode**：只读白名单 SQLite 投影；多个副本身份重叠时只做保守的暂停合并，不猜测哪份最新。见 [TOOL-SOURCES-1.4.0](docs/TOOL-SOURCES-1.4.0.md)。
 - **OpenCode 数据库**：优先使用 step 记录，排除旧版镜像和会话创建之前的历史。
-- **Harness**：锁定 `0.1.7-rc.1` / session format 4 / JSONL schema 1。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
+- **Harness**：已验证 `0.1.7-rc.1`、`0.2.1-rc.2`（T8.13，2026-10-26 用户决定）/ session format 4 / JSONL schema 1。其他版本的运行时只有每个事件都符合已知结构才导出，记录写明实际版本，助手标为「版本未经验证，按已知结构读取」（`unverified-version`）；字段改名、缺失或未知结束原因一律停止导出，不猜测。导出器 1.5.0 沿用 1.4.0 建立的来源身份。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
 
 ## 7. 交付与验证（过渡期：D1 / D3 / D4）
 

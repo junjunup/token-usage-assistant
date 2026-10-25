@@ -2,9 +2,20 @@ import { promises as fs } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { resolve, join } from 'node:path';
 
-export const HARNESS_VERSION = '0.1.7-rc.1';
-export const HARNESS_COMMIT = '46a7f68b0922371ce7144b668b90e377d8e799f4';
-export const EXPORTER_VERSION = '1.4.0';
+// T8.13: runtimes whose session contract was reviewed (upstream tag commits). Any other runtime is still exported
+// when every observed event passes the same strict structure checks; its version is recorded, the app labels it
+// unverified, and a renamed or missing field still stops the export (unsupported-format).
+export const VERIFIED_RUNTIMES = Object.freeze({
+  '0.1.7-rc.1': '46a7f68b0922371ce7144b668b90e377d8e799f4',
+  '0.2.1-rc.2': '687f282e8625c6b8d11ff58211a90524be2e4317',
+});
+export const HARNESS_VERSION = '0.2.1-rc.2';
+export const HARNESS_COMMIT = VERIFIED_RUNTIMES[HARNESS_VERSION];
+export const EXPORTER_VERSION = '1.5.0';
+// Sources created by the 1.4.0 exporter keep their identity after the plugin is updated.
+const COMPATIBLE_EXPORTERS = new Set(['1.4.0', EXPORTER_VERSION]);
+const RUNTIME = /^\d{1,4}\.\d{1,4}\.\d{1,4}(?:-[0-9A-Za-z.-]{1,40})?$/;
+const runtime = value => typeof value === 'string' && RUNTIME.test(value) ? value : null;
 const count = value => Number.isSafeInteger(value) && value >= 0;
 // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
 const text = (value, max = 2048) => typeof value === 'string' && value.length > 0 && value.length <= max && !/[\u0000-\u001f]/.test(value) ? value : null;
@@ -63,7 +74,8 @@ export class UsageExporter {
     this.sessions = new WeakMap();
     this.pending = 0;
     this.closed = false;
-    this.error = runtimeVersion === HARNESS_VERSION ? null : 'unsupported-runtime';
+    this.runtimeVersion = runtime(runtimeVersion);
+    this.error = this.runtimeVersion ? null : 'unsupported-runtime';
     this.gaps = new Set();
     this.lastWriteAt = null;
     this.writerId = randomUUID();
@@ -75,10 +87,12 @@ export class UsageExporter {
     await this.io.mkdir(this.directory, { recursive: true });
     await this.withLock(async () => {
     const file = join(this.directory, 'source.json');
-    const proposed = { schema: 'token-usage-assistant.harness-source', schemaVersion: 1, sourceId: randomUUID(), tool: 'deepseek-harness', harnessVersion: HARNESS_VERSION, harnessCommit: HARNESS_COMMIT, sessionFormatVersion: 4, exporterVersion: EXPORTER_VERSION, createdAt: this.coverageStart };
+    const version = this.runtimeVersion ?? HARNESS_VERSION;
+    const proposed = { schema: 'token-usage-assistant.harness-source', schemaVersion: 1, sourceId: randomUUID(), tool: 'deepseek-harness', harnessVersion: version, harnessCommit: VERIFIED_RUNTIMES[version] ?? null, sessionFormatVersion: 4, exporterVersion: EXPORTER_VERSION, createdAt: this.coverageStart };
     try { await this.io.writeFile(file, `${JSON.stringify(proposed)}\n`, { flag: 'wx', mode: 0o600 }); } catch (error) { if (error?.code !== 'EEXIST') throw error; }
     const marker = JSON.parse(await this.io.readFile(file, 'utf8'));
-    if (marker.schema !== proposed.schema || marker.schemaVersion !== 1 || marker.harnessVersion !== HARNESS_VERSION || marker.harnessCommit !== HARNESS_COMMIT || marker.sessionFormatVersion !== 4 || marker.exporterVersion !== EXPORTER_VERSION || !text(marker.sourceId, 80)) {
+    // The marker records the runtime that created the source; a later Harness upgrade keeps the same source.
+    if (marker.schema !== proposed.schema || marker.schemaVersion !== 1 || marker.tool !== proposed.tool || !runtime(marker.harnessVersion) || (marker.harnessCommit !== null && !/^[0-9a-f]{40}$/.test(marker.harnessCommit)) || marker.sessionFormatVersion !== 4 || !COMPATIBLE_EXPORTERS.has(marker.exporterVersion) || !text(marker.sourceId, 80)) {
       this.error = 'source-conflict';
     } else this.sourceId = marker.sourceId;
     // An empty export is a valid new source; it does not imply zero historical use.
@@ -228,7 +242,7 @@ export class UsageExporter {
       if (previous && event.type === 'step/start') throw new Error('unsupported-format');
       if (previous && previous.record.status !== 'failed') { previous.record.status = 'failed'; this.emit(previous, event); }
       const requestId = `${session.id}:${data.turn}:${data.step}`;
-      const record = { schema: 'token-usage-assistant.harness', schemaVersion: 1, sourceId: null, tool: 'deepseek-harness', harnessVersion: HARNESS_VERSION, exporterVersion: EXPORTER_VERSION, sessionId: session.id, requestId, attemptId: `${requestId}:${event.seq}`, revision: event.seq, timestamp: event.time, updatedAt: event.time, provider: state.route?.provider ?? null, model: state.route?.model ?? null, project: text(session.header.cwd), status: 'pending', usage: { ...EMPTY_USAGE }, usageReported: false, coverageStart: this.coverageStart, provenance: 'harness-plugin/provider-reported', accountId: null };
+      const record = { schema: 'token-usage-assistant.harness', schemaVersion: 1, sourceId: null, tool: 'deepseek-harness', harnessVersion: this.runtimeVersion, exporterVersion: EXPORTER_VERSION, sessionId: session.id, requestId, attemptId: `${requestId}:${event.seq}`, revision: event.seq, timestamp: event.time, updatedAt: event.time, provider: state.route?.provider ?? null, model: state.route?.model ?? null, project: text(session.header.cwd), status: 'pending', usage: { ...EMPTY_USAGE }, usageReported: false, coverageStart: this.coverageStart, provenance: 'harness-plugin/provider-reported', accountId: null };
       const attempt = { turn: data.turn, record };
       state.attempts.set(key, attempt);
       this.emit(attempt, event);

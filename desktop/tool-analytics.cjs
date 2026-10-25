@@ -164,6 +164,8 @@ function normalizeZcodeRecord(raw, sourceId) {
 function unsupported() {
   return Object.assign(new Error('不支持这份 Harness 用量格式或版本。'), { code: 'UNSUPPORTED_HARNESS_FORMAT' });
 }
+// T8.13: any well-formed runtime version is admitted; whether it was verified is decided by the reader.
+const HARNESS_RUNTIME = /^\d{1,4}\.\d{1,4}\.\d{1,4}(?:-[0-9A-Za-z.-]{1,40})?$/;
 /**
  * @param {any} wire Harness export line
  * @param {string} [sourceId]
@@ -173,7 +175,8 @@ function normalizeHarnessRecord(wire, sourceId) {
     !wire ||
     wire.schema !== 'token-usage-assistant.harness' ||
     wire.schemaVersion !== 1 ||
-    wire.harnessVersion !== '0.1.7-rc.1' ||
+    typeof wire.harnessVersion !== 'string' ||
+    !HARNESS_RUNTIME.test(wire.harnessVersion) ||
     wire.tool !== 'deepseek-harness' ||
     !['sourceId', 'sessionId', 'requestId', 'attemptId'].every(
       // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
@@ -256,6 +259,7 @@ function normalizeHarnessRecord(wire, sourceId) {
     invalidUsage,
     usageReported: wire.usageReported,
     provenance: 'harness-plugin/provider-reported',
+    harnessVersion: wire.harnessVersion,
   };
 }
 /**

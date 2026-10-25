@@ -369,3 +369,35 @@ test('missing plugin health is disclosed as stale even when its existing records
   assert.equal(report.summary.total, 240);
   assert.equal(report.sourceReports.find((s) => s.id === h.id).status, 'stale');
 });
+
+test('T8.13: verified Harness versions read normally; an unverified version is read and labelled, malformed ones are refused', async (t) => {
+  const { dir, sources } = setup(t);
+  const verifiedFile = createHarness(
+    path.join(dir, 'h-old'),
+    [harnessWire(now, { harnessVersion: '0.1.7-rc.1', exporterVersion: '1.4.0' })],
+    'h-old',
+  );
+  const v = sources.add({ kind: 'harness', file: verifiedFile });
+  let report = (await query(sources)).sourceReports.find((s) => s.id === v.id);
+  assert.equal(report.status, 'ready');
+  assert.equal(report.contract, undefined);
+  const newer = createHarness(path.join(dir, 'h-new'), [harnessWire(now, { harnessVersion: '0.2.2-rc.1' })], 'h-new');
+  const u = sources.add({ kind: 'harness', file: newer });
+  const all = await query(sources);
+  report = all.sourceReports.find((s) => s.id === u.id);
+  assert.equal(report.status, 'ready');
+  assert.equal(report.contract, 'unverified-version');
+  assert.equal(report.observedVersion, '0.2.2-rc.1');
+  assert.match(report.message, /^0\.2 版本未经验证，按已知结构读取。/);
+  assert.equal(all.summary.total, 120 * 3);
+  // A line with a malformed version, or a manifest claiming a commit for an unverified version, is refused.
+  const bad = createHarness(path.join(dir, 'h-bad'), [harnessWire(now, { harnessVersion: 'latest' })], 'h-bad');
+  const b = sources.add({ kind: 'harness', file: bad });
+  assert.equal((await query(sources)).sourceReports.find((s) => s.id === b.id).status, 'schema');
+  const manifest = path.join(dir, 'h-new', 'source.json');
+  fs.writeFileSync(
+    manifest,
+    JSON.stringify({ ...JSON.parse(fs.readFileSync(manifest, 'utf8')), harnessVersion: '0.2.2-rc.1' }),
+  );
+  assert.equal((await query(sources)).sourceReports.find((s) => s.id === u.id).status, 'schema');
+});
