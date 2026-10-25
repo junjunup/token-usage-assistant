@@ -5,6 +5,9 @@ module.exports = {
   id: 'opencode-go',
   capabilities: { quota: true, balance: false, usageSummary: false, actualBilling: false },
   name: 'OpenCode · Go',
+  // T6.1: how far this platform has been checked (live = a real account was observed read-only; contract = only
+  // the official interface samples). Not a reconciliation; see PROJECT_HANDOFF for the evidence.
+  verification: { level: 'contract', date: '2026-10-15', note: '只用官方接口样例测试过，未用真实账户核对' },
   regions: [{ id: 'global', name: '官方平台' }],
   credential: 'apiKey',
   note: '使用订阅成员的 OpenCode API Key，查询 Go 三个周期的官方额度。Zen 余额、Black 套餐及续费日期尚不由此接口提供；本机 Token 在工具分析中查看。',

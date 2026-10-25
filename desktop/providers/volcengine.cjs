@@ -52,6 +52,9 @@ module.exports = {
   id: 'volcengine',
   capabilities: { quota: true, balance: false, usageSummary: false, actualBilling: false },
   name: '火山 Agent Plan',
+  // T6.1: how far this platform has been checked (live = a real account was observed read-only; contract = only
+  // the official interface samples). Not a reconciliation; see PROJECT_HANDOFF for the evidence.
+  verification: { level: 'contract', date: '2026-10-15', note: '只用官方接口样例测试过，未用真实账户核对' },
   regions: [{ id: 'cn-beijing', name: '国内 · 北京' }],
   credential: 'aksk',
   note: '个人版 Agent Plan；填写有 GetAFPUsage 查询权限的 Access Key ID 和 Secret Access Key。模型 API Key 不适用。',

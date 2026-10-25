@@ -9,6 +9,17 @@ const number = (v) => typeof v === 'number' && Number.isFinite(v);
 const format = (v) => (number(v) ? v.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) : '—');
 const toneFor = (w, threshold) =>
   w.exceeded ? 'red' : number(w.remainingPercent) && w.remainingPercent < threshold ? 'amber' : 'green';
+// T6.1: how far each platform has been checked (registry `verification`), shown next to its name.
+const VERIFICATION = {
+  live: { text: '已实测', title: '用真实账户只读验证过' },
+  contract: { text: '样例验证', title: '只用官方接口样例测试过' },
+  experimental: { text: '实验', title: '实验性支持' },
+};
+export function verificationBadge(provider) {
+  const v = providerInfo(provider)?.verification;
+  const label = v && VERIFICATION[v.level];
+  return label ? { text: label.text, tone: v.level } : null;
+}
 export function Bar({ value, label, tone = 'green', small = false }) {
   const length = small ? 20 : 32,
     clamped = number(value) ? Math.max(0, Math.min(100, value)) : null;
@@ -61,6 +72,7 @@ export function AccountSwitcher({ state, onSelect, onManage }) {
             options={accounts.map((a) => ({
               value: a.id,
               label: a.label,
+              badge: verificationBadge(a.provider),
               description:
                 (providerInfo(a.provider)?.name || a.provider) +
                 ' · ' +
@@ -409,7 +421,7 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove }
               value={provider}
               onChange={changeProvider}
               disabled={busy || mode === 'update'}
-              options={PROVIDERS.map((p) => ({ value: p.id, label: p.name }))}
+              options={PROVIDERS.map((p) => ({ value: p.id, label: p.name, badge: verificationBadge(p.id) }))}
             />
           </label>
           <label>
@@ -427,6 +439,12 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove }
           </label>
         </div>
         <p className="provider-form-note">{info.note}</p>
+        {info.verification && (
+          <p className="provider-verification">
+            <em className={'ui-select-badge ' + info.verification.level}>{verificationBadge(provider)?.text}</em>
+            {info.verification.note}（{info.verification.date}）
+          </p>
+        )}
         <label htmlFor="account-label">
           账户备注 <span>可选，方便区分多个连接</span>
         </label>

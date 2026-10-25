@@ -158,6 +158,19 @@
   margin: 8px 0 20px;
   max-width: 640px;
 }
+.provider-form-note:has(+ .provider-verification) {
+  margin-bottom: 4px;
+}
+.provider-verification {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.9;
+  margin: 0 0 20px;
+  max-width: 640px;
+}
+.provider-verification .ui-select-badge {
+  margin: 0 8px 0 0;
+}
 @media (max-width: 950px) {
   .account-switcher {
     flex-wrap: wrap;

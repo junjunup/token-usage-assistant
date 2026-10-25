@@ -5,6 +5,9 @@ module.exports = {
   id: 'glm',
   capabilities: { quota: true, balance: false, usageSummary: false, actualBilling: false },
   name: 'GLM Coding Plan',
+  // T6.1: how far this platform has been checked (live = a real account was observed read-only; contract = only
+  // the official interface samples). Not a reconciliation; see PROJECT_HANDOFF for the evidence.
+  verification: { level: 'contract', date: '2026-10-15', note: '只用官方接口样例测试过，未用真实账户核对' },
   regions: [
     { id: 'cn', name: '国内 · 智谱' },
     { id: 'global', name: '国际 · Z.ai' },
