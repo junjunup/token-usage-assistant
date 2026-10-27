@@ -43,6 +43,8 @@ Windows 可用：`certutil -hashfile TokenUsageAssistant-Setup-<版本>.exe SHA2
 - Windows：安装版在「设置 → 应用」里卸载，免安装版直接删除 exe；再删除 `%APPDATA%` 下本应用的文件夹。
 - 用过 DeepSeek Harness 插件的，另删 `~/.token-usage-assistant/`，并在 Harness 中卸载插件。
 
+**我用的编程工具升级了，还能读到吗？** 能。应用按数据结构读取，不按版本号：新版本只要用量的核心字段没变就照常统计。工具不再提供某些可选数据（例如缓存或推理 Token）时，这几项显示「—」并提示「部分字段缺失」；核心字段改名或消失时，会明确提示格式不兼容，不会猜。
+
 **遇到问题怎么反馈？** 用 [issue 模板](https://github.com/junjunup/token-usage-assistant/issues/new/choose) 提交；可以附「账户与设置 → 导出诊断信息」（不含密钥和对话内容，保存前可完整预览）。
 
 ---
@@ -76,5 +78,7 @@ Each release includes `SHA256SUMS.txt`. Compute the file's SHA256 and compare it
 **Does it update itself?** No. It checks for new versions at start and every 24 hours and tells you; you download and install (the check can be turned off in settings).
 
 **How do I remove it completely?** macOS: quit, move the app to the Trash, delete `~/Library/Application Support/TokenUsageAssistant/`, and optionally the `TokenUsageAssistant Safe Storage` item in Keychain Access. Windows: uninstall Setup in Settings → Apps (or delete the Portable exe) and delete the app's folder under `%APPDATA%`. If you used the DeepSeek Harness plugin, also delete `~/.token-usage-assistant/` and remove the plugin in Harness.
+
+**My coding tool updated — will it still work?** Yes. The app reads by data structure, not by version: a new version is counted as usual while its core usage fields are unchanged. Optional values the tool stops reporting (e.g. cache or reasoning tokens) show "—" with a "partial fields" note; if core fields are renamed or removed, the app says the format is incompatible instead of guessing.
 
 **How do I report a problem?** Use the [issue templates](https://github.com/junjunup/token-usage-assistant/issues/new/choose); you can attach the diagnostics export (no keys or conversation content, previewed before saving).

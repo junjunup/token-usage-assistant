@@ -65,13 +65,13 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - **OpenCode Go**：固定 HTTPS `GET /zen/go/v1/usage`，Bearer 鉴权，不跟随重定向，不调用推理。只展示服务端给出的三个百分比和重置时间，不编造余额、金额额度或续费日；舍入为 0 不能说明滚动窗口的起点。Zen / Black / 企业版查询不可用，不得暗示支持全部套餐。见 [OPENCODE-1.8.0-beta.5](docs/OPENCODE-1.8.0-beta.5.md)。
 - **Codex 订阅**：只读 app-server 方法白名单：`initialize`、`initialized`、`account/read`、`account/rateLimits/read`。选定程序前只做初始化预检；保留用户所选配置；可直接选择 `Codex.app` 的 `Resources/codex`。区分进程、协议、登录、阶段超时四类失败，不暴露 stderr；不声称支持旧版 CLI 协议。
 - **Codex 连接发现**：已保存的位置、`CODEX_HOME`、默认 `~/.codex`。只有一个时直接连接，多个时在应用内选择，手动选择作为回退；更新一个已丢失的保存位置时，不得静默改绑到另一个账户。见 [CONNECTION-UX-1.5.1](docs/CONNECTION-UX-1.5.1.md)、[MAC-TRIAL-1.8.0-beta.2](docs/MAC-TRIAL-1.8.0-beta.2.md)。
-- **Codex rollout**：0.155.x 的元数据快照不是请求数，请求状态未知。已验证版本以外的 rollout，只有结构完全一致时才读取，并标为 `unverified-version`（T5.1）；字段改名一律视为不支持。
-- **Claude**：额度来自 statusLine，`context_window` 不是总消耗；已验证版本（2.1.x ≥ 251）以外的状态栏数据只有结构一致才读取，并标为未验证（T8.4）。OTLP 本地组件只监听回环地址，只采集启用之后的数据，覆盖缺口要明示。组件就绪和首次额度同步是两个独立状态。见 [SUBSCRIPTIONS-1.5.0](docs/SUBSCRIPTIONS-1.5.0.md)。
+- **Codex rollout**：元数据快照不是请求数，请求状态未知。按结构契约读取（T9.13，D15）：任何版本只要核心计数（`input_tokens`、`output_tokens`、`total_tokens`）齐全且都是非负整数就读取，版本号只作记录；缓存与推理计数是可选字段，缺失显示「—」并标「部分字段缺失」；核心字段改名、缺失或类型不对一律拒绝（格式不兼容）。
+- **Claude**：额度来自 statusLine，`context_window` 不是总消耗；按结构契约读取（T9.13，D15）：任何版本只要至少一个已知窗口（5 小时 / 每周）字段齐全就读取，有窗口但都不认识视为格式不兼容、保留原额度；没有任何窗口表示当前没有套餐额度、清空窗口。OTLP 请求事件的输入、输出是核心字段，缓存计数可选。OTLP 本地组件只监听回环地址，只采集启用之后的数据，覆盖缺口要明示。组件就绪和首次额度同步是两个独立状态。见 [SUBSCRIPTIONS-1.5.0](docs/SUBSCRIPTIONS-1.5.0.md)。
 - 额度查询成功时，不因缺少工具日志或来源添加失败而显示失败；不重新启用用户已禁用的来源。
 - **Zcode**：只读白名单 SQLite 投影；多个副本身份重叠时只做保守的暂停合并，不猜测哪份最新。见 [TOOL-SOURCES-1.4.0](docs/TOOL-SOURCES-1.4.0.md)。
 - **OpenCode 数据库**：优先使用 step 记录，排除旧版镜像和会话创建之前的历史。
-- **跟随上游（D15，2026-10-27，T9.12–T9.15 实施中）**：本机工具数据的可信度改为按结构契约判断（核心字段 / 可选字段 / 语义约束），三档状态：正常 / 部分字段缺失 / 格式不兼容；只记字段名集合用于变化提示。在 T9.13 落地前，下面 Codex、Claude、Harness 的「已验证版本」规则仍然有效。
-- **Harness**：已验证 `0.1.7-rc.1`、`0.2.1-rc.2`（T8.13，2026-10-26 用户决定）/ session format 4 / JSONL schema 1。其他版本的运行时只有每个事件都符合已知结构才导出，记录写明实际版本，助手标为「版本未经验证，按已知结构读取」（`unverified-version`）；字段改名、缺失或未知结束原因一律停止导出，不猜测。导出器 1.5.0 沿用 1.4.0 建立的来源身份。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
+- **跟随上游（D15，2026-10-27；T9.13 已实现，T9.14–T9.15 进行中）**：本机工具数据的可信度按结构契约判断（核心字段 / 可选字段；关系不一致按记录标 `invalidUsage`，不丢记录），三档状态：正常 / 部分字段缺失 / 格式不兼容；不再按版本号贴「版本未验证」。契约在 `desktop/upstream-contracts.cjs`，依据见 [UPSTREAM-CONTRACTS](docs/research/UPSTREAM-CONTRACTS.md)。各工具代码里的「已复核版本」列表只供上游检查脚本参考。
+- **Harness**：已验证 `0.1.7-rc.1`、`0.2.1-rc.2`（T8.13，2026-10-26 用户决定）/ session format 4 / JSONL schema 1。其他版本的运行时只有每个事件都符合已知结构才导出，记录写明实际版本（T9.13 起助手不再按版本贴标签）；字段改名、缺失或未知结束原因一律停止导出，不猜测。导出器 1.5.0 沿用 1.4.0 建立的来源身份。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
 
 ## 7. 交付与验证（过渡期：D1 / D3 / D4）
 
@@ -102,6 +102,6 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
 - `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
 - Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。smoke 使用模拟钥匙串（见第 5 节），不会弹钥匙串授权窗；代价是 smoke 不再测到真实钥匙串读写，这部分由真机使用覆盖。
-- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：本机 366 通过 / 0 失败 / 6 跳过（共 372）；CI 安装了两个已验证版本的 Harness 运行时（T8.10、T8.13），为 372 通过 / 0 失败 / 0 跳过。本机要跑这 6 项，按插件 README 安装两套运行时并设置四个环境变量。
-- `pnpm run typecheck`（T5.5 起：8 个纯领域模块的严格 JSDoc 类型检查，T7.4 / T7.6 加入 `menubar-status.cjs`、`menubar-panel.cjs`，T6.2 加入 `coverage-report.cjs`；已接入 CI）必须通过。修改这些模块时同步维护注解；可能缺失的数值写成 `number|null`，不要用 0 代替。
+- 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：本机 370 通过 / 0 失败 / 6 跳过（共 376）；CI 安装了两个已验证版本的 Harness 运行时（T8.10、T8.13），为 376 通过 / 0 失败 / 0 跳过。本机要跑这 6 项，按插件 README 安装两套运行时并设置四个环境变量。
+- `pnpm run typecheck`（T5.5 起：8 个纯领域模块的严格 JSDoc 类型检查，T7.4 / T7.6 加入 `menubar-status.cjs`、`menubar-panel.cjs`，T6.2 加入 `coverage-report.cjs`，T9.13 加入 `upstream-contracts.cjs`；已接入 CI）必须通过。修改这些模块时同步维护注解；可能缺失的数值写成 `number|null`，不要用 0 代替。
 - 本地服务和预览由执行模型自己启动，并在可用的浏览器中查看，不让用户手动启动。
