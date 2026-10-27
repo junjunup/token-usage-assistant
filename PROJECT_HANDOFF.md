@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.4`（上一个 `v1.8.0-beta.8`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.4（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1–beta.3；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 376 项，本机 370 通过 / 0 失败 / 6 跳过（CI 装有两个已验证版本的 Harness 运行时，376 / 0 / 0）（本机未装 Harness 运行时）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 380 项，本机 374 通过 / 0 失败 / 6 跳过（CI 装有两个已验证版本的 Harness 运行时，380 / 0 / 0）（本机未装 Harness 运行时）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -104,6 +104,6 @@
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 
-- 当前：阶段 9「开源与增长」（2026-10-26，D14：开源积攒用户、攒一批再发、签名暂不花钱、做英文 README、新平台先只调研）。T9.1–T9.6 已完成；2026-10-27 加入 D15（跟随上游：信任结构契约而不是版本号），之后的顺序为 T9.12（与 T9.9 一起调研）→ T9.13 → T9.14 → T9.15 → T9.7 → T9.8 → T9.10 → T9.11（1.9.0-beta.5）。阶段 8 已全部完成；T4.2 暂不做，T7.2、增量一、增量二推迟，刘海悬停面板搁置。
+- 当前：阶段 9「开源与增长」（2026-10-26，D14：开源积攒用户、攒一批再发、签名暂不花钱、做英文 README、新平台先只调研）。T9.1–T9.6、T9.12–T9.14 已完成；2026-10-27 加入 D15（跟随上游：信任结构契约而不是版本号），之后的顺序为 T9.12（与 T9.9 一起调研）→ T9.13 → T9.14 → T9.15 → T9.7 → T9.8 → T9.10 → T9.11（1.9.0-beta.5）。阶段 8 已全部完成；T4.2 暂不做，T7.2、增量一、增量二推迟，刘海悬停面板搁置。
 - 菜单栏：首版（T7.3–T7.8）以 1.9.0-beta.1 发布，真机验收后的改进（T7.9–T7.12）与 T4.7 以 1.9.0-beta.2 发布，均在 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases)。真机验收：第 3 项由用户填写；第 12、14、15 项为 ③（Claude 代测）；第 13 项与第 16、17 项的剩余部分待用户。
 - GitHub Actions：源码仓库 2026-10-18 公开后恢复运行（此前私有仓库因计费限制无法启动作业）。Release 工作流的 Artifacts 只保留 7 天。T7.5–T7.7 的 Windows 安装包随 T7.8 的 Release 补齐。
