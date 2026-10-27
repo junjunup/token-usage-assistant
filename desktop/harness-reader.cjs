@@ -1,9 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { newest, unverifiedNote } = require('./codex-reader.cjs');
-// T8.13: reviewed runtimes and their upstream tag commits (same list as the shipped exporter). Other runtimes are
-// read when every line passes the strict record checks and are reported as 'unverified-version'.
+// T8.13: reviewed runtimes and their upstream tag commits (same list as the shipped exporter). Since T9.13 (D15) the
+// version is informational: every runtime is read when each line passes the strict record checks.
 const VERIFIED = Object.freeze({
   '0.1.7-rc.1': '46a7f68b0922371ce7144b668b90e377d8e799f4',
   '0.2.1-rc.2': '687f282e8625c6b8d11ff58211a90524be2e4317',
@@ -176,22 +175,14 @@ function scanHarness(db, source, range, normalize) {
     const truncated = stored.length > 100000;
     if (truncated) stored.pop();
     const rows = stored.map((row) => JSON.parse(row.record));
-    // Records indexed before T8.13 carry no version; they came from the verified 0.1.7-rc.1 exporter.
-    const unverified = new Set(
-      rows.map((row) => row.harnessVersion).filter((v) => typeof v === 'string' && !verified(v)),
-    );
-    const observedVersion = unverified.size ? newest(unverified) : null;
     return {
       rows,
       status: unhealthy ? 'stale' : 'ready',
-      message:
-        (observedVersion ? unverifiedNote(observedVersion) : '') +
-        (unhealthy
-          ? '插件状态未确认、已停止或存在采集缺口；仅统计文件中已有的记录。'
-          : carry.length
-            ? '导出文件末尾尚未写完，将在下次同步继续读取。'
-            : ''),
-      ...(observedVersion ? { contract: 'unverified-version', observedVersion } : {}),
+      message: unhealthy
+        ? '插件状态未确认、已停止或存在采集缺口；仅统计文件中已有的记录。'
+        : carry.length
+          ? '导出文件末尾尚未写完，将在下次同步继续读取。'
+          : '',
       truncated,
       partialLine: carry.length > 0,
       imported,

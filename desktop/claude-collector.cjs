@@ -7,7 +7,7 @@ const { log } = require('./logger.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const { normalizeClaude } = require('./subscriptions.cjs');
 const { launcherName, shellQuote } = require('./platform.cjs');
-const { newest, unverifiedNote } = require('./codex-reader.cjs');
+const { claudeUsageViolation, missingOptional, SOURCE_OPTIONAL, partialNote } = require('./upstream-contracts.cjs');
 const clean = (v, max = 2048) =>
   // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   typeof v === 'string' && v.length && v.length <= max && !/[\x00-\x1f]/.test(v) ? v : null;
@@ -18,8 +18,10 @@ const count = (v) => {
 // Locally verified Claude Code versions (2.1.251+ within 2.1.x). OTLP events from other versions are accepted only
 // when their structure matches (T5.1) and are reported as unverified. Since T8.4 the status-line quota follows the
 // same rule: an unverified version must report at least one known window with valid fields, or it is rejected.
+// T9.13 (D15): informational since then — the upstream check compares new releases against it; reading follows the
+// structure contract for every version.
 const supported = (v) => typeof v === 'string' && /^2\.1\.\d+$/.test(v) && Number(v.split('.')[2]) >= 251;
-const VERSION = /^\d+\.\d+\.\d+$/;
+const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const ATTRIBUTES = new Set([
   'event.name',
   'event.timestamp',
@@ -45,8 +47,7 @@ function attrs(list) {
 }
 function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
   if (!Array.isArray(body?.resourceLogs)) throw new Error('otlp schema');
-  const rows = [],
-    unverified = new Set();
+  const rows = [];
   let unsupported = 0;
   for (const resource of body.resourceLogs) {
     const r = attrs(resource.resource?.attributes);
@@ -56,13 +57,8 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
           name = a['event.name'];
         if (!['api_request', 'api_error', 'claude_code.api_request', 'claude_code.api_error'].includes(name)) continue;
         const session = clean(a['session.id'], 200),
-          meta = sessions[session],
-          version = a['app.version'] || a['service.version'] || meta?.version;
-        if (typeof version !== 'string' || !VERSION.test(version)) {
-          unsupported++;
-          continue;
-        }
-        const strict = !supported(version);
+          meta = sessions[session];
+        // The version is not checked (D15): the structure contract below decides.
         const timestamp = Date.parse(a['event.timestamp']),
           requestId = clean(a.request_id, 300) || clean(a.client_request_id, 300);
         if (!session || !Number.isFinite(timestamp) || timestamp > now + 60000 || timestamp <= 0) {
@@ -82,12 +78,11 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
           write = count(a.cache_creation_tokens),
           output = count(a.output_tokens),
           input = [fresh, read, write].every((v) => v !== null) ? fresh + read + write : null;
-        // An unverified version must report every known usage attribute on a request (renamed = unsupported).
-        if (strict && !error && [fresh, read, write, output].some((v) => v === null)) {
+        // T9.13: a request must report input and output (core); cache counters are optional and shown as "—".
+        if (!error && claudeUsageViolation({ input: fresh, output, read, write })) {
           unsupported++;
           continue;
         }
-        if (strict) unverified.add(version);
         const row = normalizeSubscriptionRecord(
           {
             tool: 'claude-code',
@@ -105,7 +100,7 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
         rows.push(row);
       }
   }
-  return { rows, unsupported, unverified: [...unverified] };
+  return { rows, unsupported };
 }
 class ClaudeCollector {
   constructor(home) {
@@ -208,7 +203,7 @@ class ClaudeCollector {
                   )
                   .join('\n') + '\n',
               );
-            this.health(parsed.unsupported ? 'unsupported-events' : 'ready', newest(parsed.unverified));
+            this.health(parsed.unsupported ? 'unsupported-events' : 'ready');
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end('{}');
@@ -233,11 +228,10 @@ class ClaudeCollector {
     this.server = server;
     this.health('ready');
   }
-  health(state, unverifiedVersion = null) {
+  health(state) {
     try {
       const file = path.join(this.home, 'status.json'),
         prior = readJson(file),
-        observedVersion = newest([prior?.observedVersion, unverifiedVersion].filter((v) => VERSION.test(v || ''))),
         gaps = Array.isArray(prior?.gaps)
           ? prior.gaps.filter((x) => ['unsupported-events', 'invalid-events'].includes(x))
           : [];
@@ -247,7 +241,6 @@ class ClaudeCollector {
         state,
         gaps,
         at: Date.now(),
-        ...(observedVersion ? { observedVersion } : {}),
       });
     } catch {
       log.warn('claude-collector', 'status-write-failed');
@@ -292,14 +285,13 @@ class ClaudeCollector {
   receiveQuota(input) {
     if (typeof input?.version !== 'string' || !VERSION.test(input.version) || !clean(input.sessionId, 200))
       throw new Error('version');
-    const verified = supported(input.version);
-    if (!verified) {
-      // T8.4: renamed or missing windows are not guessed; field shapes are checked by normalizeClaude below.
-      const w = input.windows;
-      const known =
-        w && typeof w === 'object' && !Array.isArray(w) ? ['five_hour', 'seven_day'].filter((k) => w[k] != null) : [];
-      if (!known.length) throw new Error('version');
-    }
+    // T9.13 (D15), for every version: no windows (absent or empty) means the session reports no plan quota and clears
+    // the stored windows, as before; windows that are present but none of them known are incompatible (renamed) and
+    // leave the stored quota untouched. Field shapes are checked by normalizeClaude below.
+    const w = input.windows;
+    if (w != null && (typeof w !== 'object' || Array.isArray(w))) throw new Error('schema');
+    const present = w ? Object.keys(w).filter((k) => w[k] != null) : [];
+    if (present.length && !present.some((k) => k === 'five_hour' || k === 'seven_day')) throw new Error('schema');
     const project = clean(input.project);
     this.sessions[input.sessionId] = { project, version: input.version };
     // Retain only a bounded metadata map for current sessions.
@@ -307,7 +299,6 @@ class ClaudeCollector {
     if (keys.length > 500) delete this.sessions[keys[0]];
     atomicWrite(path.join(this.home, 'sessions.json'), this.sessions);
     const raw = { schema: 'token-usage-assistant.claude-quota', schemaVersion: 1, observedAt: Date.now(), windows: {} };
-    if (!verified) raw.unverifiedVersion = input.version;
     for (const k of ['five_hour', 'seven_day']) {
       const w = input.windows?.[k];
       if (w != null) raw.windows[k] = { used_percentage: w.used_percentage, resets_at: w.resets_at };
@@ -318,7 +309,7 @@ class ClaudeCollector {
     // Status-line repaint is not a fresh platform query. Unchanged values keep their original timestamp.
     if (JSON.stringify(old?.windows) === JSON.stringify(raw.windows)) raw.observedAt = old.observedAt;
     atomicWrite(file, raw);
-    this.health('ready', verified ? null : input.version);
+    this.health('ready');
   }
   close() {
     this.server?.close();
@@ -447,15 +438,16 @@ function scanClaude(db, source, range) {
     }
   }
   const health = readJson(path.join(path.dirname(source.file), 'status.json')),
-    observedVersion = VERSION.test(health?.observedVersion || '') ? health.observedVersion : null;
+    rows = [...map.values()].slice(0, 100000),
+    missing = missingOptional(rows, SOURCE_OPTIONAL.claude);
   return {
-    rows: [...map.values()].slice(0, 100000),
+    rows,
     status: health?.state === 'ready' && !health.gaps?.length ? 'ready' : 'stale',
     truncated,
-    ...(observedVersion ? { contract: 'unverified-version', observedVersion } : {}),
+    ...(missing.length ? { contract: 'partial', missing } : {}),
     message:
-      (health?.gaps?.length ? '存在未识别事件，采集有缺口。' : '') +
-      (observedVersion ? unverifiedNote(observedVersion) : '') +
+      (health?.gaps?.length ? '存在格式不兼容的事件，已排除，采集有缺口。' : '') +
+      partialNote(missing) +
       '只覆盖助手运行期间收到的用量事件',
     messageDetail: '需本机组件已启用。未报告的中间重试、离线及网页聊天不在覆盖范围内。',
   };
