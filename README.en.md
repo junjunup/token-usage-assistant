@@ -86,7 +86,7 @@ Node 24.x, pnpm 11.19.0, Electron 44.9.3 (locked in `pnpm-lock.yaml`).
 ```bash
 pnpm install
 pnpm run dev               # browser preview (sample data)
-pnpm run test:desktop      # desktop and analytics tests (baseline: 376 pass / 0 fail / 6 skipped locally; 382 / 0 / 0 in CI with Harness runtimes)
+pnpm run test:desktop      # desktop and analytics tests (baseline: 377 pass / 0 fail / 6 skipped locally; 383 / 0 / 0 in CI with Harness runtimes)
 pnpm run lint              # ESLint
 pnpm run typecheck         # strict type check of the pure domain modules (required in CI)
 pnpm run format:check      # Prettier (pnpm run format to fix)
