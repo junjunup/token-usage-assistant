@@ -29,6 +29,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The official Harness CLI installs plugins with pnpm (same version as CI); without it the CLI test cannot run.
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.19.0
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24.12.0

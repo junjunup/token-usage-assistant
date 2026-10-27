@@ -168,6 +168,12 @@ function checkCodex(version, tmp) {
 /** @param {string} version @param {string} tmp */
 function checkHarness(version, tmp) {
   const dir = path.join(tmp, 'harness');
+  // The official CLI installs plugins with pnpm; without it the CLI test fails for a reason that is not the version's.
+  const pnpm = spawnSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['--version'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  if (pnpm.status !== 0) return { state: 'unknown', note: '检查环境缺少 pnpm（官方 CLI 安装插件需要），没有运行' };
   if (!install('@deepseek-ai/dsh', version, dir)) return { state: 'unknown', note: '官方包安装失败' };
   const r = spawnSync(
     process.execPath,
