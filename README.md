@@ -29,14 +29,16 @@ Mac 版大部分为 ②：菜单栏图标与面板做过部分真机验收（③
 
 ## 安装
 
-**Windows（x64）**：使用 `TokenUsageAssistant-Setup-<版本>.exe`（安装版）或 `TokenUsageAssistant-Portable-<版本>.exe`（免安装版）。不需要 Node.js。程序未签名。
+完整步骤、升级、核对下载文件和常见问题见 **[安装与升级](docs/INSTALL.md)**（中英文）。
+
+**Windows（x64）**：使用 `TokenUsageAssistant-Setup-<版本>.exe`（安装版）或 `TokenUsageAssistant-Portable-<版本>.exe`（免安装版）。不需要 Node.js。程序未签名，Windows 可能提示「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」（未在 Windows 真机实测）。
 
 **macOS（Apple Silicon，macOS 13+）**：
 1. 打开 DMG，把「Token 用量助手」拖进「应用程序」。
 2. 首次打开时，系统会提示「无法验证开发者」，弹窗里**没有「打开」按钮**（因为没有 Apple Developer 账号）。先关掉提示，再打开**「系统设置 → 隐私与安全性」**，在下方点**「仍要打开」**并按提示确认。同一版本只需操作一次（2026-10-25 在 macOS 15.7.9 上实测）。
-3. 覆盖升级后，macOS 可能会弹出 Keychain 授权，请选「始终允许」。
+3. 升级：拖入新版替换旧版，再放行一次；第一次读取已保存的密钥时会弹出钥匙串授权，输入 Mac 登录密码后点「始终允许」。账户、设置和历史都会保留。
 
-详见 [Mac 安装说明](docs/MAC-APP-1.8.0-beta.5.md)。历史安装包存放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。
+历史安装包存放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`。
 
 ## 使用要点
 
