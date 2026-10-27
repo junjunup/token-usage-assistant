@@ -5,7 +5,7 @@
 //   balance at or below zero is red, below the reminder threshold is amber.
 // - Missing data is "—", never 0; resetAt=0 is "未启用"; balances keep their own currency and are never a gauge.
 // - Within an account, quota windows come first and money is the fallback (T7.9, see focusOf).
-const { monthlyQuota } = require('./domain.cjs');
+const { monthlyQuota, percentText } = require('./domain.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 
 /**
@@ -27,7 +27,6 @@ const STALE = ['stale', 'offline', 'auth-error', 'partial'];
 const SYMBOL = /** @type {Record<string, string>} */ ({ CNY: '¥', USD: '$' });
 
 /** @param {number|null} p @returns {string} */
-const percentText = (p) => (p === null ? '—' : p > 0 && p < 0.5 ? '<1%' : Math.round(p) + '%');
 
 /**
  * Short label for the two-line form. Platforms name their windows differently; unknown names keep two characters.

@@ -17,7 +17,7 @@ const {
 const path = require('node:path');
 const fs = require('node:fs');
 const { LocalStore } = require('./store.cjs');
-const { patchSettings } = require('./domain.cjs');
+const { patchSettings, percentText } = require('./domain.cjs');
 const { ApiError } = require('./api.cjs');
 const { AnalyticsService } = require('./analytics-service.cjs');
 const { ToolSources } = require('./tool-sources.cjs');
@@ -382,11 +382,14 @@ function quotaAlert(alert) {
     prefix + name + (alert.level === 2 ? '已用尽' : '偏低'),
     alert.level === 2
       ? detail
-      : '剩余 ' + Math.round(alert.remaining) + '%，低于 ' + settings.threshold + '% 提醒阈值。',
+      : '剩余 ' + percentText(alert.remaining) + '，低于 ' + settings.threshold + '% 提醒阈值。',
   );
 }
-function percent(v) {
-  return typeof v === 'number' ? `${Math.round(v)}%` : '—';
+// T9.3: tray text follows the menu bar — "<1%" below 0.5%, and an explicitly idle window reads "未启用".
+function windowText(w) {
+  if (w?.unlimited) return '不限';
+  if (w?.resetState === 'idle' && !w?.exceeded) return '未启用';
+  return percentText(w?.remainingPercent);
 }
 function updateTray() {
   if (!tray || !settings) return;
@@ -403,10 +406,10 @@ function updateTray() {
         ? credit.windows
             .filter((w) => w.applicable !== false)
             .slice(0, 4)
-            .map((w) => w.label + ' ' + (w.unlimited ? '不限' : percent(w.remainingPercent)))
+            .map((w) => w.label + ' ' + windowText(w))
         : [
             '月度剩余 ' + (typeof credit?.monthly === 'number' ? '$' + credit.monthly.toFixed(2) : '—'),
-            '5 小时 ' + percent(credit?.five?.remainingPercent) + ' · 每周 ' + percent(credit?.week?.remainingPercent),
+            '5 小时 ' + windowText(credit?.five) + ' · 每周 ' + windowText(credit?.week),
           ];
   tray.setToolTip(['Token 用量助手', accounts?.active.entry.label || '未连接', ...lines].join('\n'));
   trayMenu = Menu.buildFromTemplate([
