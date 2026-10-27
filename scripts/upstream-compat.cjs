@@ -189,7 +189,6 @@ function checkHarness(version, tmp) {
     },
   );
   const c = testCounts(r.stdout || '');
-  if (process.env.UPSTREAM_COMPAT_DEBUG_TMP) console.error((r.stdout || '').slice(-6000), (r.stderr || '').slice(-2000));
   if (c.pass === 3 && c.fail === 0 && r.status === 0)
     return {
       state: 'compatible',
