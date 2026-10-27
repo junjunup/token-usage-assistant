@@ -10,6 +10,10 @@ const {
   contractState,
   partialNote,
   SOURCE_OPTIONAL,
+  fieldNames,
+  usageFieldNames,
+  fieldChange,
+  fieldChangeNote,
 } = require('../desktop/upstream-contracts.cjs');
 
 const usage = {
@@ -67,4 +71,36 @@ test('the Codex client sends only the four read-only methods, never one that con
   const sent = [...source.matchAll(/request\('([^']+)'|method: '([^']+)'/g)].map((m) => m[1] || m[2]).sort();
   assert.deepEqual(sent, ['account/rateLimits/read', 'account/read', 'initialize', 'initialized']);
   assert.doesNotMatch(source, /consume|ResetCredit|resetCredit/i);
+});
+
+test('T9.14: fingerprints keep identifier-like names only, sorted and capped; changes list both directions', () => {
+  assert.deepEqual(fieldNames(['b', 'a', 'a', 'x y', '', 5, null, 'sk-abc DEF', '1abc', 'ok.name:v2']), [
+    'a',
+    'b',
+    'ok.name:v2',
+  ]);
+  assert.equal(fieldNames(Array.from({ length: 100 }, (_, i) => 'f' + i)).length, 64);
+  assert.equal(fieldChange(['a', 'b'], ['a', 'b']), null);
+  assert.equal(fieldChange([], ['a']), null, 'no saved fingerprint yet is not a change');
+  assert.equal(fieldChange(null, ['a']), null);
+  assert.deepEqual(fieldChange(['a', 'b'], ['a', 'c']), { added: ['c'], removed: ['b'] });
+  assert.equal(fieldChangeNote({ added: ['c'], removed: ['b'] }), '数据字段有变化：新增 c；不再提供 b。');
+  assert.equal(fieldChangeNote({ added: [], removed: ['b'] }), '数据字段有变化：不再提供 b。');
+});
+
+test('T9.14: usage fingerprints keep counter names and drop anything hinting at content or credentials', () => {
+  assert.deepEqual(
+    usageFieldNames([
+      'input_tokens',
+      'cache_read_tokens',
+      'cached_input_tokens',
+      'prompt',
+      'apiKey',
+      'auth_token',
+      'session_token',
+      'model',
+      'message_tokens',
+    ]),
+    ['cache_read_tokens', 'cached_input_tokens', 'input_tokens'],
+  );
 });

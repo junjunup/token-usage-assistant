@@ -2,6 +2,7 @@
 // Never includes account labels, organisation ids, keys, file paths, error messages or conversation content;
 // only enums, counts, timestamps and short identifier codes. Log lines are re-sanitized by the logger.
 const { DEFAULT_SETTINGS } = require('./domain.cjs');
+const { fieldNames } = require('./upstream-contracts.cjs');
 
 const CODE = /^[A-Za-z0-9_.:-]{1,48}$/;
 const code = (value) => (typeof value === 'string' && CODE.test(value) ? value : value ? 'other' : null);
@@ -29,7 +30,8 @@ function accountSnapshot({ provider, region, active, monitor }) {
   };
 }
 
-// sources: tool-sources list() items; only kind / enabled / status / lastSuccessAt / scannedRows are read.
+// sources: tool-sources list() items; only kind / enabled / status / lastSuccessAt / scannedRows and the field-name
+// fingerprint (T9.14) are read.
 function sourceSnapshot(source) {
   return {
     kind: code(source.kind),
@@ -37,6 +39,16 @@ function sourceSnapshot(source) {
     status: code(source.status) || 'unknown',
     lastSuccessAt: time(source.lastSuccessAt),
     scannedRows: count(source.scannedRows),
+    // T9.14: field names only (no values), so a report after a tool update shows what the tool now writes.
+    fields: Array.isArray(source.fields) ? fieldNames(source.fields) : [],
+    fieldChange:
+      source.fieldChange && Array.isArray(source.fieldChange.added) && Array.isArray(source.fieldChange.removed)
+        ? {
+            added: fieldNames(source.fieldChange.added),
+            removed: fieldNames(source.fieldChange.removed),
+            at: time(source.fieldChange.at),
+          }
+        : null,
   };
 }
 

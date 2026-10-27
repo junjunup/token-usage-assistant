@@ -15,6 +15,7 @@ for (const name of [
   'menubar-status',
   'menubar-panel',
   'coverage-report',
+  'upstream-contracts',
 ]) {
   let code = fs.readFileSync(`desktop/${name}.cjs`, 'utf8');
   // Match the require lines regardless of formatting whitespace.

@@ -39,6 +39,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 - macOS：`~/Library/Application Support/TokenUsageAssistant/`；Windows：系统应用数据目录（`%APPDATA%`）下本应用的文件夹。
 - 其中：`accounts.encrypted.json`（密钥，用 macOS 钥匙串 / Windows DPAPI 加密）、`settings.json`（设置）、`history.sqlite`（账户用量采样）、`tool-usage.sqlite` 与 `tool-sources.json`（工具元数据索引与来源设置）、`logs/`（运行日志，不含密钥和对话内容）、`claude-collector/`（Claude 采集组件的本机配置）。
 - DeepSeek Harness 插件的导出：`~/.token-usage-assistant/harness/`。
+- 为了在工具升级后提示「数据字段有变化」，应用会记录 Codex 与 Claude Code 用量记录里**用量计数的字段名**（例如 `input_tokens`），不记录任何值；含有内容、凭据含义的名字一律不记。它们和来源状态一起保存在上面的目录里，也会出现在诊断信息中。
 
 ### 联网
 
@@ -94,6 +95,7 @@ Only on your computer:
 - macOS: `~/Library/Application Support/TokenUsageAssistant/`; Windows: the app's folder under `%APPDATA%`.
 - `accounts.encrypted.json` (keys, encrypted with the macOS Keychain / Windows DPAPI), `settings.json`, `history.sqlite` (account usage samples), `tool-usage.sqlite` and `tool-sources.json` (tool metadata index and source settings), `logs/` (no keys or conversation content), `claude-collector/` (local Claude component settings).
 - DeepSeek Harness plugin exports: `~/.token-usage-assistant/harness/`.
+- To show "data fields changed" after a tool update, the app keeps the **names of usage counters** in Codex and Claude Code records (e.g. `input_tokens`), never their values; names that suggest content or credentials are never kept. They are stored with the source status in the folder above and appear in diagnostics.
 
 ### Network
 

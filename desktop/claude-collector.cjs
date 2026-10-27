@@ -7,7 +7,14 @@ const { log } = require('./logger.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const { normalizeClaude } = require('./subscriptions.cjs');
 const { launcherName, shellQuote } = require('./platform.cjs');
-const { claudeUsageViolation, missingOptional, SOURCE_OPTIONAL, partialNote } = require('./upstream-contracts.cjs');
+const {
+  claudeUsageViolation,
+  missingOptional,
+  SOURCE_OPTIONAL,
+  partialNote,
+  fieldNames,
+  usageFieldNames,
+} = require('./upstream-contracts.cjs');
 const clean = (v, max = 2048) =>
   // eslint-disable-next-line no-control-regex -- intentionally rejects/strips control characters (input validation and privacy).
   typeof v === 'string' && v.length && v.length <= max && !/[\x00-\x1f]/.test(v) ? v : null;
@@ -47,7 +54,8 @@ function attrs(list) {
 }
 function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
   if (!Array.isArray(body?.resourceLogs)) throw new Error('otlp schema');
-  const rows = [];
+  const rows = [],
+    fieldSet = new Set();
   let unsupported = 0;
   for (const resource of body.resourceLogs) {
     const r = attrs(resource.resource?.attributes);
@@ -56,6 +64,8 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
         const a = { ...r, ...attrs(log.attributes) },
           name = a['event.name'];
         if (!['api_request', 'api_error', 'claude_code.api_request', 'claude_code.api_error'].includes(name)) continue;
+        // T9.14: usage-counter attribute names (never values) of request events, as the field-name fingerprint.
+        if (!name.endsWith('api_error')) for (const item of log.attributes || []) fieldSet.add(item?.key);
         const session = clean(a['session.id'], 200),
           meta = sessions[session];
         // The version is not checked (D15): the structure contract below decides.
@@ -100,7 +110,7 @@ function parseOtel(body, sourceId, sessions = {}, now = Date.now()) {
         rows.push(row);
       }
   }
-  return { rows, unsupported };
+  return { rows, unsupported, fields: usageFieldNames(fieldSet) };
 }
 class ClaudeCollector {
   constructor(home) {
@@ -203,7 +213,7 @@ class ClaudeCollector {
                   )
                   .join('\n') + '\n',
               );
-            this.health(parsed.unsupported ? 'unsupported-events' : 'ready');
+            this.health(parsed.unsupported ? 'unsupported-events' : 'ready', parsed.fields);
           }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end('{}');
@@ -228,10 +238,12 @@ class ClaudeCollector {
     this.server = server;
     this.health('ready');
   }
-  health(state) {
+  health(state, fields = null) {
     try {
       const file = path.join(this.home, 'status.json'),
         prior = readJson(file),
+        // T9.14: the latest request-event attribute names; kept until a batch with request events replaces them.
+        names = fields?.length ? fields : fieldNames(Array.isArray(prior?.fields) ? prior.fields : []),
         gaps = Array.isArray(prior?.gaps)
           ? prior.gaps.filter((x) => ['unsupported-events', 'invalid-events'].includes(x))
           : [];
@@ -241,6 +253,7 @@ class ClaudeCollector {
         state,
         gaps,
         at: Date.now(),
+        ...(names.length ? { fields: names } : {}),
       });
     } catch {
       log.warn('claude-collector', 'status-write-failed');
@@ -445,6 +458,7 @@ function scanClaude(db, source, range) {
     status: health?.state === 'ready' && !health.gaps?.length ? 'ready' : 'stale',
     truncated,
     ...(missing.length ? { contract: 'partial', missing } : {}),
+    ...(Array.isArray(health?.fields) && health.fields.length ? { fields: fieldNames(health.fields) } : {}),
     message:
       (health?.gaps?.length ? '存在格式不兼容的事件，已排除，采集有缺口。' : '') +
       partialNote(missing) +

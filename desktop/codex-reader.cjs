@@ -9,7 +9,14 @@ const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 // check script compares new releases against it; reading follows the structure contract for every version.
 const VERIFIED_VERSIONS = [/^0\.155\./];
 const VERSION = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
-const { codexUsageViolation, missingOptional, SOURCE_OPTIONAL, partialNote } = require('./upstream-contracts.cjs');
+const {
+  codexUsageViolation,
+  missingOptional,
+  SOURCE_OPTIONAL,
+  partialNote,
+  fieldNames,
+  usageFieldNames,
+} = require('./upstream-contracts.cjs');
 // Highest version by numeric major.minor.patch.
 const newest = (versions) =>
   [...versions].sort((a, b) => {
@@ -73,7 +80,8 @@ function readRollout(file, sourceId) {
     epoch = 0,
     seen = new Set(),
     unsupported = false;
-  const rows = [];
+  const rows = [],
+    fieldSet = new Set();
   for (const line of lines(file)) {
     if (!line.trim()) continue;
     const event = projectJSON(line, selection),
@@ -98,6 +106,15 @@ function readRollout(file, sourceId) {
       continue;
     }
     if (event.type !== 'event_msg' || p.type !== 'token_count' || !p.info) continue;
+    // T9.14: the names of the usage counters this version reports. token_count lines carry only numbers, so the full
+    // line is parsed here to see names outside the projection; values are never kept.
+    try {
+      const raw = JSON.parse(line)?.payload?.info?.last_token_usage;
+      if (raw && typeof raw === 'object' && !Array.isArray(raw))
+        for (const name of Object.keys(raw)) fieldSet.add(name);
+    } catch {
+      // The projection above already accepted the line; a parse failure only leaves the fingerprint incomplete.
+    }
     if (!session || !Number.isFinite(at)) throw new Error('metadata');
     const cumulative = p.info.total_token_usage,
       u = p.info.last_token_usage;
@@ -148,7 +165,7 @@ function readRollout(file, sourceId) {
     );
   }
   if (unsupported) throw Object.assign(new Error('version'), { code: 'unsupported' });
-  return { rows, version };
+  return { rows, version, fields: usageFieldNames(fieldSet) };
 }
 function readFile(file, sourceId) {
   return readRollout(file, sourceId).rows;
@@ -176,12 +193,19 @@ function scanCodex(db, source, range) {
       // T5.1: each cached file's rollout version. Since T9.13 rows of every version are cached only here and
       // codex_files is no longer written, so an older build after a rollback re-reads 0.155 files itself and only
       // reuses rows of other versions, which it also accepted under its own (stricter) structural check.
-      'CREATE TABLE IF NOT EXISTS codex_file_versions(source_id TEXT,file TEXT,size INTEGER,modified REAL,version TEXT,rows TEXT,PRIMARY KEY(source_id,file));',
+      'CREATE TABLE IF NOT EXISTS codex_file_versions(source_id TEXT,file TEXT,size INTEGER,modified REAL,version TEXT,rows TEXT,PRIMARY KEY(source_id,file));' +
+      // T9.14: field-name fingerprints in their own table, so the tables older builds write keep their columns.
+      'CREATE TABLE IF NOT EXISTS codex_file_fields(source_id TEXT,file TEXT,size INTEGER,modified REAL,fields TEXT,PRIMARY KEY(source_id,file));',
   );
   const get = db.prepare('SELECT * FROM codex_files WHERE source_id=? AND file=?'),
     getVersion = db.prepare('SELECT * FROM codex_file_versions WHERE source_id=? AND file=?'),
     saveVersion = db.prepare('INSERT OR REPLACE INTO codex_file_versions VALUES (?,?,?,?,?,?)'),
-    dropCached = db.prepare('DELETE FROM codex_files WHERE source_id=? AND file=?');
+    dropCached = db.prepare('DELETE FROM codex_files WHERE source_id=? AND file=?'),
+    getFields = db.prepare('SELECT * FROM codex_file_fields WHERE source_id=? AND file=?'),
+    saveFields = db.prepare('INSERT OR REPLACE INTO codex_file_fields VALUES (?,?,?,?,?)');
+  // The fingerprint of the most recently modified file that has one: what the current Codex version writes.
+  let latestFields = null,
+    latestModified = -Infinity;
   const records = new Map();
   let rejected = 0,
     unsupported = 0,
@@ -204,10 +228,16 @@ function scanCodex(db, source, range) {
           dropCached.run(source.id, file);
           saveVersion.run(source.id, file, stat.size, stat.mtimeMs, cachedVersion.version, cached.rows);
         } else {
-          let version;
-          ({ rows, version } = readRollout(file, source.id));
+          let version, fields;
+          ({ rows, version, fields } = readRollout(file, source.id));
           dropCached.run(source.id, file);
           saveVersion.run(source.id, file, stat.size, stat.mtimeMs, version ?? '', JSON.stringify(rows));
+          if (fields.length) saveFields.run(source.id, file, stat.size, stat.mtimeMs, JSON.stringify(fields));
+        }
+        const cachedFields = getFields.get(source.id, file);
+        if (fresh(cachedFields) && stat.mtimeMs > latestModified) {
+          latestModified = stat.mtimeMs;
+          latestFields = fieldNames(JSON.parse(cachedFields.fields));
         }
         for (const row of rows)
           if (row.at >= range.start - (range.end - range.start) && row.at <= range.end) {
@@ -235,6 +265,7 @@ function scanCodex(db, source, range) {
     status: rejected ? 'stale' : 'ready',
     truncated,
     ...(missing.length ? { contract: 'partial', missing } : {}),
+    ...(latestFields ? { fields: latestFields } : {}),
     message:
       (rejected ? `${rejected} 个日志的用量格式不兼容，已排除。` : '') +
       partialNote(missing) +

@@ -27,7 +27,9 @@ body:
     id: source
     attributes:
       label: 涉及的平台或工具 / Platform or tool involved
-      description: 例如 Command Code、DeepSeek、Codex、Claude Code、Zcode / e.g. Command Code, DeepSeek, Codex
+      description: |
+        例如 Command Code、DeepSeek、Codex、Claude Code、Zcode；如果是编程工具升级后读不到或显示「数据字段有变化」，请写上工具版本，并附诊断信息（只含字段名）。
+        e.g. Command Code, DeepSeek, Codex. If a coding tool stopped working after an update or shows a field change, give its version and attach diagnostics (field names only).
   - type: textarea
     id: what
     attributes:
