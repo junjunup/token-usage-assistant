@@ -84,7 +84,7 @@
 ```bash
 pnpm install
 pnpm run dev               # 浏览器预览（示例数据）
-pnpm run test:desktop      # 桌面与分析测试（基线：本机 376 通过 / 0 失败 / 6 跳过；CI 装了 Harness 运行时，382 / 0 / 0）
+pnpm run test:desktop      # 桌面与分析测试（基线：本机 377 通过 / 0 失败 / 6 跳过；CI 装了 Harness 运行时，383 / 0 / 0）
 pnpm run lint              # ESLint
 pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）

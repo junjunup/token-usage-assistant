@@ -43,3 +43,39 @@ test('archive check: installer hashes must be in the CI reports and every report
   fs.rmSync(path.join(dir, REPORTS[2]));
   assert.ok(checkRelease(dir, v).problems.some((p) => p.includes('smoke-result-windows.json')));
 });
+
+// T9.10: the installer repository README (kept in docs/installer-repo/, pushed with each release) and the public
+// notes template stay aligned with the source READMEs: same screenshots, same install and privacy docs, both languages.
+test('installer README and public notes stay aligned with the source READMEs', () => {
+  const root = path.join(__dirname, '..');
+  const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+  const installer = read('docs/installer-repo/README.md');
+  const raw = 'https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/';
+  const shots = [...installer.matchAll(/(?:src|srcset)="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(shots.length, 2);
+  for (const url of shots) {
+    assert.ok(url.startsWith(raw), url);
+    const file = url.slice(raw.length);
+    assert.ok(fs.existsSync(path.join(root, file)), file);
+    for (const readme of ['README.md', 'README.en.md'])
+      assert.ok(read(readme).includes(`"${file}"`), `${readme}: ${file}`);
+  }
+  const blob = 'https://github.com/junjunup/token-usage-assistant/blob/main/';
+  for (const doc of [
+    'docs/INSTALL.md',
+    'docs/INSTALL.md#english',
+    'docs/PRIVACY.md',
+    'docs/PRIVACY.md#english',
+    'SECURITY.md',
+  ]) {
+    assert.ok(installer.includes(`${blob}${doc})`), doc);
+  }
+  for (const anchor of ['## 中文', '## English']) assert.ok(read('docs/INSTALL.md').includes(anchor), anchor);
+  assert.ok(
+    installer.includes('## English') && installer.includes('Chinese only'),
+    'English section says the UI is Chinese only',
+  );
+  const notes = read('.github/workflows/publish.yml');
+  assert.ok(notes.includes(`${blob}docs/INSTALL.md\n`) && notes.includes(`${blob}docs/INSTALL.md#english`));
+  assert.ok(notes.includes('https://github.com/junjunup/token-usage-assistant\n'), 'notes link the source repository');
+});

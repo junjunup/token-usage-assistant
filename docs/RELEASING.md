@@ -29,6 +29,7 @@
    - 上传的是源码仓库 Release 中**同一批**安装包（不重新构建），加上 `SHA256SUMS.txt` 和说明（固定的安装说明加上 CHANGELOG 中本版那一节，T8.10；演练时在 job summary 里先看到全文。T8.10 之前打的标签没有 `scripts/changelog-section.cjs`，不能再用新版 Publish 发布）；**不上传**源码、完整性 JSON（含 runner 路径）和 smoke 报告。
    - 需要 secret `PUBLIC_RELEASE_TOKEN`：fine-grained token，只授权 `junjunup/TokenUsageAssistant`，权限只给 Contents: Read and write。令牌由用户自己创建和设置，不经过聊天。
    - 推送标签时**不会**自动公开发布。
+   4. 安装包仓库的 README 以本仓库的 [docs/installer-repo/README.md](installer-repo/README.md) 为准（T9.10：与 `README.md` / `README.en.md` 用同一张截图、同样的介绍，中英文）。它变过时，随这次发版一起确认，正式发布后再更新安装包仓库的 `README.md`（只改这一个文件）；没变就不动。截图引用源码仓库 `main` 上的 `docs/readme/`，安装包仓库不放图片。`tests/release-tools.test.cjs` 检查它和 Publish 的说明模板没有与源码 README、安装说明脱节。
 
 不打标签、只想拿到安装包时，可以在 Actions 页面手动运行 Release 工作流（workflow_dispatch）：只产出构建产物（Artifacts），不创建 Release。Release 工作流上传的 Artifacts 只保留 7 天（私有仓库的 Artifact 存储有配额，2026-10-18 曾因占满导致上传失败），需要的安装包请在 7 天内下载保存；打标签时 release 作业已把安装包附到草稿 Release 上，不受影响。
 
