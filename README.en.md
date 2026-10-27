@@ -15,7 +15,7 @@
 
 **[Download](https://github.com/junjunup/TokenUsageAssistant/releases)**: Windows Setup / Portable, macOS DMG / ZIP, with SHA256 checksums. Installing and first launch: see [Install and upgrade](docs/INSTALL.md#english).
 
-Current version: **1.9.0-beta.4** (beta, not signed or notarized). History: [CHANGELOG.md](CHANGELOG.md) (Chinese).
+Current version: **1.9.0-beta.5** (beta, not signed or notarized). History: [CHANGELOG.md](CHANGELOG.md) (Chinese).
 
 ## What it does
 
