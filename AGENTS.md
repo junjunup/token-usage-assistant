@@ -3,7 +3,7 @@
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
 - 当前版本：**1.9.0-beta.4**（T6.1–T6.3：平台验证等级、覆盖范围报告、说明渐进披露；2026-10-25 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
-- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D14）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D15）
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
 ## 1. 读取顺序
@@ -70,6 +70,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 额度查询成功时，不因缺少工具日志或来源添加失败而显示失败；不重新启用用户已禁用的来源。
 - **Zcode**：只读白名单 SQLite 投影；多个副本身份重叠时只做保守的暂停合并，不猜测哪份最新。见 [TOOL-SOURCES-1.4.0](docs/TOOL-SOURCES-1.4.0.md)。
 - **OpenCode 数据库**：优先使用 step 记录，排除旧版镜像和会话创建之前的历史。
+- **跟随上游（D15，2026-10-27，T9.12–T9.15 实施中）**：本机工具数据的可信度改为按结构契约判断（核心字段 / 可选字段 / 语义约束），三档状态：正常 / 部分字段缺失 / 格式不兼容；只记字段名集合用于变化提示。在 T9.13 落地前，下面 Codex、Claude、Harness 的「已验证版本」规则仍然有效。
 - **Harness**：已验证 `0.1.7-rc.1`、`0.2.1-rc.2`（T8.13，2026-10-26 用户决定）/ session format 4 / JSONL schema 1。其他版本的运行时只有每个事件都符合已知结构才导出，记录写明实际版本，助手标为「版本未经验证，按已知结构读取」（`unverified-version`）；字段改名、缺失或未知结束原因一律停止导出，不猜测。导出器 1.5.0 沿用 1.4.0 建立的来源身份。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
 
 ## 7. 交付与验证（过渡期：D1 / D3 / D4）
