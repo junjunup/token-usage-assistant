@@ -54,3 +54,77 @@ test('lookup reads only the dist-tags endpoint and returns null on any failure',
   global.fetch = async () => new Response('{"latest": 5}', { status: 200 });
   assert.equal(await lookup('@openai/codex', 'latest'), null);
 });
+
+// T9.15: the compatibility check compares the Codex protocol definitions with what the app reads.
+const { CODEX_NEEDS, codexProtocolProblems, testCounts, compatReport } = require('../scripts/upstream-compat.cjs');
+const codexSchema = () => {
+  const props = (names) => Object.fromEntries(names.map((n) => [n, { type: 'integer' }]));
+  const definitions = Object.fromEntries(
+    Object.entries(CODEX_NEEDS.types).map(([k, v]) => [k, { properties: props(v) }]),
+  );
+  definitions.RateLimitWindow.required = ['usedPercent'];
+  definitions.Account = {
+    oneOf: [
+      { properties: { type: { enum: ['apiKey'] } } },
+      { properties: { type: { enum: ['chatgpt'] }, email: {}, planType: {} } },
+    ],
+  };
+  const union = (names) => ({ oneOf: names.map((m) => ({ properties: { method: { enum: [m] } } })) });
+  return {
+    bundle: { definitions },
+    clientRequest: union([...CODEX_NEEDS.requests, 'account/rateLimitResetCredit/consume']),
+    clientNotification: union(CODEX_NEEDS.notifications),
+  };
+};
+
+test('T9.15: Codex protocol definitions are compatible when every method, type and field the app reads is there', () => {
+  assert.deepEqual(codexProtocolProblems(codexSchema()), []);
+  const renamed = codexSchema();
+  delete renamed.bundle.definitions.RateLimitWindow.properties.usedPercent;
+  renamed.bundle.definitions.RateLimitWindow.properties.usedPct = { type: 'integer' };
+  renamed.bundle.definitions.RateLimitWindow.required = ['usedPct'];
+  assert.deepEqual(codexProtocolProblems(renamed), [
+    'RateLimitWindow 缺少 usedPercent',
+    'RateLimitWindow 的 usedPercent 不再是必填',
+  ]);
+  const gone = codexSchema();
+  gone.clientRequest.oneOf = gone.clientRequest.oneOf.filter((v) => v.properties.method.enum[0] !== 'account/read');
+  gone.clientNotification.oneOf = [];
+  delete gone.bundle.definitions.TokenUsageBreakdown;
+  gone.bundle.definitions.Account.oneOf.pop();
+  assert.deepEqual(codexProtocolProblems(gone), [
+    '缺少方法 account/read',
+    '缺少通知 initialized',
+    '缺少类型 TokenUsageBreakdown',
+    'Account 缺少 chatgpt 类型',
+  ]);
+  assert.ok(codexProtocolProblems({ bundle: null, clientRequest: null, clientNotification: null }).length > 0);
+});
+
+test('T9.15: the compatibility report counts only real incompatibilities and reads node --test counts', () => {
+  assert.deepEqual(
+    testCounts(
+      'ok 1 - a\nnot ok 2 - Official dsh 9.9.9 CLI installs\n  ---\n# tests 2\n# pass 1\n# fail 1\n# skipped 0\n',
+    ),
+    {
+      pass: 1,
+      fail: 1,
+      skipped: 0,
+      failed: ['Official dsh 9.9.9 CLI installs'],
+    },
+  );
+  assert.deepEqual(testCounts('crashed'), { pass: null, fail: null, skipped: null, failed: [] });
+  const rows = [
+    { tool: 'Codex CLI', version: '0.164.0', state: 'compatible', note: 'ok' },
+    { tool: 'Claude Code', version: null, state: 'manual', note: 'no definition' },
+    { tool: 'DeepSeek Harness', version: '0.2.1-rc.4', state: 'unknown', note: '官方包安装失败' },
+  ];
+  const text = compatReport(/** @type {any} */ (rows), '2026-10-27');
+  assert.match(text, /^## 上游兼容性检查（2026-10-27）/);
+  assert.match(text, /\| Codex CLI \| 0\.164\.0 \| 兼容 \| ok \|/);
+  assert.match(text, /\| Claude Code \| — \| 无法自动检查 \|/);
+  assert.match(text, /\| DeepSeek Harness \| 0\.2\.1-rc\.4 \| 无法检查 \|/);
+  assert.match(text, /没有发现不兼容。/);
+  rows[0].state = 'incompatible';
+  assert.match(compatReport(/** @type {any} */ (rows), 'x'), /发现不兼容：1 项/);
+});

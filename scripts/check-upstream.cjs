@@ -1,4 +1,5 @@
-// T9.1: read-only check of the upstream tools this app reads, against the versions the code has verified.
+// T9.1: read-only check of the upstream tools this app reads, against the versions the code has reviewed (since
+// T9.13 the readers trust structure, not versions; the list only decides what the T9.15 compatibility check runs on).
 //   node scripts/check-upstream.cjs            (UPSTREAM_REGISTRY=https://registry.npmmirror.com to use a mirror)
 // Queries only the registry's dist-tags; never installs or runs an upstream package. Prints a Markdown report
 // and, in GitHub Actions, appends it to the job summary. A lookup failure is reported as "无法检查", never as
@@ -19,7 +20,7 @@ const TOOLS = [
     tag: 'latest',
     verified: (v) => CODEX.some((re) => re.test(v)),
     range: '0.155.x',
-    outside: 'rollout 结构一致时读取，标「版本未验证」（T5.1）',
+    outside: '按结构契约照常读取（T9.13）；每周兼容性检查会导出官方协议定义比对（T9.15）',
   },
   {
     name: 'Claude Code',
@@ -27,7 +28,7 @@ const TOOLS = [
     tag: 'latest',
     verified: claudeSupported,
     range: '2.1.x（≥ 2.1.251）',
-    outside: '状态栏与 OTLP 结构一致时读取，标「版本未验证」（T8.4）',
+    outside: '按结构契约照常读取（T9.13）；没有可机读定义，靠字段名指纹发现变化（T9.14）',
   },
   {
     name: 'DeepSeek Harness',
@@ -36,7 +37,7 @@ const TOOLS = [
     tag: 'latest',
     verified: (v) => Object.hasOwn(HARNESS, v),
     range: Object.keys(HARNESS).join('、'),
-    outside: '事件结构一致时导出，标「版本未验证」（T8.13）',
+    outside: '事件结构一致时导出（T8.13）；每周兼容性检查会在官方运行时上跑运行时测试（T9.15）',
   },
 ];
 
@@ -48,7 +49,7 @@ function classify(tool, latest) {
   if (typeof latest !== 'string' || !VERSION.test(latest))
     return { name: tool.name, latest: null, state: 'unknown', note: '无法检查（网络或注册表无响应），不代表已是最新' };
   if (tool.verified(latest)) return { name: tool.name, latest, state: 'verified', note: '在已验证范围内' };
-  return { name: tool.name, latest, state: 'outside', note: `超出已验证范围：${tool.outside}；需复核后加入已验证列表` };
+  return { name: tool.name, latest, state: 'outside', note: `超出已复核范围：${tool.outside}` };
 }
 
 const LABEL = { verified: '已验证', outside: '超出范围', unknown: '无法检查' };
