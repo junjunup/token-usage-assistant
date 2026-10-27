@@ -102,8 +102,18 @@ test('T9.15: Codex protocol definitions are compatible when every method, type a
 });
 
 test('T9.15: the compatibility report counts only real incompatibilities and reads node --test counts', () => {
-  assert.deepEqual(testCounts('ℹ tests 3\nℹ pass 3\nℹ fail 0\nℹ skipped 0\n'), { pass: 3, fail: 0, skipped: 0 });
-  assert.deepEqual(testCounts('crashed'), { pass: null, fail: null, skipped: null });
+  assert.deepEqual(
+    testCounts(
+      'ok 1 - a\nnot ok 2 - Official dsh 9.9.9 CLI installs\n  ---\n# tests 2\n# pass 1\n# fail 1\n# skipped 0\n',
+    ),
+    {
+      pass: 1,
+      fail: 1,
+      skipped: 0,
+      failed: ['Official dsh 9.9.9 CLI installs'],
+    },
+  );
+  assert.deepEqual(testCounts('crashed'), { pass: null, fail: null, skipped: null, failed: [] });
   const rows = [
     { tool: 'Codex CLI', version: '0.164.0', state: 'compatible', note: 'ok' },
     { tool: 'Claude Code', version: null, state: 'manual', note: 'no definition' },

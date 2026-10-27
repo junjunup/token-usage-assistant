@@ -82,13 +82,17 @@ function readCodexSchema(dir) {
   };
 }
 
-/** Pass / fail / skip counts from node --test output. @param {string} out */
+/**
+ * Pass / fail / skip counts and the names of failed tests (ours, never upstream output) from TAP output.
+ * @param {string} out
+ */
 function testCounts(out) {
   const n = (k) => {
-    const m = out.match(new RegExp(`^ℹ ${k} (\\d+)$`, 'm'));
+    const m = out.match(new RegExp(`^# ${k} (\\d+)$`, 'm'));
     return m ? Number(m[1]) : null;
   };
-  return { pass: n('pass'), fail: n('fail'), skipped: n('skipped') };
+  const failed = [...out.matchAll(/^\s*not ok \d+ - (.+?)(?: # .*)?$/gm)].map((m) => m[1].slice(0, 160));
+  return { pass: n('pass'), fail: n('fail'), skipped: n('skipped'), failed };
 }
 
 /**
@@ -167,7 +171,12 @@ function checkHarness(version, tmp) {
   if (!install('@deepseek-ai/dsh', version, dir)) return { state: 'unknown', note: '官方包安装失败' };
   const r = spawnSync(
     process.execPath,
-    ['--test', `--test-name-pattern=${version.replace(/[.]/g, '\\.')}`, path.join('tests', 'harness-plugin.test.cjs')],
+    [
+      '--test',
+      '--test-reporter=tap',
+      `--test-name-pattern=${version.replace(/[.]/g, '\\.')}`,
+      path.join('tests', 'harness-plugin.test.cjs'),
+    ],
     {
       cwd: ROOT,
       env: {
@@ -186,7 +195,10 @@ function checkHarness(version, tmp) {
       note: '官方运行时上 3 项运行时测试全部通过（SessionStore 契约、插件入口、CLI 隔离安装）',
     };
   if (c.pass === null) return { state: 'unknown', note: '测试没有运行' };
-  return { state: 'incompatible', note: `运行时测试：通过 ${c.pass}、失败 ${c.fail ?? '—'}，需要复核` };
+  return {
+    state: 'incompatible',
+    note: `运行时测试：通过 ${c.pass}、失败 ${c.fail ?? '—'}${c.failed.length ? '（' + c.failed.join('；') + '）' : ''}，需要复核`,
+  };
 }
 
 async function main() {
