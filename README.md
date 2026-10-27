@@ -1,5 +1,7 @@
 # Token 用量助手
 
+**中文** · [English](README.en.md)
+
 **一个本机桌面小工具：同时看清 AI 编程平台的剩余额度，和你本机编程工具实际用掉的 Token。** 支持 Windows x64 与 Apple Silicon macOS；凭据只保存在本机并加密，没有服务器、不收集遥测、不调用任何模型。非任何平台的官方客户端。
 
 <picture>
@@ -9,7 +11,7 @@
 
 <sub>截图使用应用内置的示例数据，不是真实账户。</sub>
 
-**[下载安装包](https://github.com/junjunup/TokenUsageAssistant/releases)**：Windows 安装版 / 便携版、macOS DMG / ZIP，附 SHA256 校验。安装与首次打开见 [安装与升级](docs/INSTALL.md)。· [English](docs/INSTALL.md#english)
+**[下载安装包](https://github.com/junjunup/TokenUsageAssistant/releases)**：Windows 安装版 / 便携版、macOS DMG / ZIP，附 SHA256 校验。安装与首次打开见 [安装与升级](docs/INSTALL.md)。
 
 当前版本：**1.9.0-beta.4**（开发测试版，未签名、未公证）。更新历史见 [CHANGELOG.md](CHANGELOG.md)。
 
