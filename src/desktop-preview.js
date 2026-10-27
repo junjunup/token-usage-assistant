@@ -244,6 +244,15 @@ function coverageDemo(query) {
           associationCoverage: { start: now - 5.6 * 3600000, end: now - 120000 },
         },
         {
+          id: 'preview-codex',
+          label: 'Codex · 示例',
+          status: 'ready',
+          missingUsage: 0,
+          contract: 'partial',
+          missing: ['推理 Token'],
+          associationCoverage: { start: now - 4 * 3600000, end: now - 300000 },
+        },
+        {
           id: 'preview-harness',
           label: 'Harness · 示例',
           status: 'stale',
@@ -376,9 +385,9 @@ state.settings = {
 state.menubar = { hidden: new URLSearchParams(location.search).get('desktop-preview') === 'menubar-hidden' };
 if (new URLSearchParams(location.search).get('desktop-preview') === 'update-available')
   state.update = { status: 'available', version: '1.8.0-beta.8', checkedAt: now };
-// Preview of an unverified upstream version (?desktop-preview=unverified-version, T5.1): the Codex source reads a
-// newer rollout version by its known structure and says so in its existing status message.
-if (new URLSearchParams(location.search).get('desktop-preview') === 'unverified-version')
+// T9.13 (D15) preview (?desktop-preview=contract-states): a Codex source missing an optional counter (partial) and a
+// Claude source with incompatible events, next to the normal sources.
+if (new URLSearchParams(location.search).get('desktop-preview') === 'contract-states')
   state.toolSources = [
     ...state.toolSources,
     {
@@ -389,10 +398,22 @@ if (new URLSearchParams(location.search).get('desktop-preview') === 'unverified-
       enabled: true,
       status: 'ready',
       lastSuccessAt: now,
-      contract: 'unverified-version',
-      observedVersion: '0.160.0',
-      message: '0.160 版本未经验证，按已知结构读取。Codex 本机用量快照，不等于请求次数',
-      messageDetail: '0.155.x 格式。缺少终态的记录不参与成功率；历史继承与重复快照不累计。',
+      contract: 'partial',
+      missing: ['推理 Token'],
+      message: '部分字段缺失：推理 Token，显示为「—」。Codex 本机用量快照，不等于请求次数',
+      messageDetail:
+        '按结构契约读取，任何版本只要核心字段齐全就照常统计。缺少终态的记录不参与成功率；历史继承与重复快照不累计。',
+    },
+    {
+      id: 'preview-claude',
+      kind: 'claude-code',
+      label: 'Claude Code · 示例',
+      file: '/Users/demo/Library/Application Support/TokenUsageAssistant/claude-collector/usage.jsonl',
+      enabled: true,
+      status: 'stale',
+      lastSuccessAt: now - 3600000,
+      message: '存在格式不兼容的事件，已排除，采集有缺口。只覆盖助手运行期间收到的用量事件',
+      messageDetail: '需本机组件已启用。未报告的中间重试、离线及网页聊天不在覆盖范围内。',
     },
   ];
 export const previewBridge = {

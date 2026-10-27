@@ -263,13 +263,15 @@ test('Codex compaction counter reduction establishes a new baseline without rech
   fs.writeFileSync(file, rollout({ events: [event(-500, 100), event(-400, 50), event(0, 80)] }));
   assert.equal(readFile(file, 'source').length, 2);
 });
-test('unparseable Codex versions and malformed token fields fail closed; incomplete last line deferred', (t) => {
+test('T9.13: Codex version strings are informational; a missing session identity fails closed; incomplete last line deferred', (t) => {
   const home = setup(t),
     file = path.join(home, 'rollout-x.jsonl');
-  // T5.1: an unverified but well-formed version is read when its structure matches (see structural tests).
+  // D15: the structure contract decides, not the version — odd or empty versions are read when the counts are valid.
   fs.writeFileSync(file, rollout({ version: '9.0' }));
-  assert.throws(() => readFile(file, 'source'), /version/);
+  assert.equal(readFile(file, 'source').length, 1);
   fs.writeFileSync(file, rollout({ version: '' }));
+  assert.equal(readFile(file, 'source').length, 1);
+  fs.writeFileSync(file, rollout({ id: null }));
   assert.throws(() => readFile(file, 'source'), /version/);
   fs.writeFileSync(file, rollout() + '{"type":');
   assert.equal(readFile(file, 'source').length, 1);
@@ -345,11 +347,11 @@ test('Claude error with usage is counted, error without usage stays unknown; ign
   assert.equal(p.rows[0].total, null);
   assert.equal(parseOtel(otel({ 'event.name': 'user_prompt' }), 'source', {}, now).rows.length, 0);
 });
-test('Claude malformed versions and missing session identities produce explicit unsupported counts', () => {
-  // T5.1: a well-formed unverified version is accepted when its structure matches (see structural tests).
-  assert.equal(parseOtel(otel({}, { 'service.version': '3.0' }), 's', {}, now).unsupported, 1);
-  assert.equal(parseOtel(otel({}, { 'service.version': '' }), 's', {}, now).unsupported, 1);
+test('T9.13: Claude version strings are informational; missing session identities produce explicit unsupported counts', () => {
+  assert.equal(parseOtel(otel({}, { 'service.version': '3.0' }), 's', {}, now).unsupported, 0);
+  assert.equal(parseOtel(otel({}, { 'service.version': '' }), 's', {}, now).rows.length, 1);
   assert.equal(parseOtel(otel({ 'session.id': '' }), 's', {}, now).unsupported, 1);
+  assert.equal(parseOtel(otel({ 'event.timestamp': 'later' }), 's', {}, now).unsupported, 1);
 });
 test('Claude retries have separate request identities, OTLP replay and stream final values merge', () => {
   const a = parseOtel(otel(), 'source', {}, now).rows[0],
@@ -434,7 +436,7 @@ test('subscription sources query and restart independently, isolate versions, an
 });
 
 // T5.1: structural validation instead of an exact version allow-list.
-test('Codex 0.160.0 with the known structure is read and reported as an unverified version', (t) => {
+test('T9.13: Codex 0.160.0 with the contract structure is read like 0.155, with no version label; one cache table', (t) => {
   const { readRollout } = require('../desktop/codex-reader.cjs');
   const home = setup(t),
     dir = path.join(home, 'sessions', '2026', '10', '16');
@@ -450,45 +452,74 @@ test('Codex 0.160.0 with the known structure is read and reported as an unverifi
     const r = scanCodex(db, source, wide);
     assert.equal(r.status, 'ready', pass);
     assert.equal(r.rows.length, 2, pass);
-    assert.equal(r.contract, 'unverified-version', pass);
-    assert.equal(r.observedVersion, '0.160.0', pass);
-    assert.match(r.message, /0\.160 版本未经验证，按已知结构读取。/, pass);
+    assert.equal(r.contract, undefined, pass);
+    assert.equal(r.observedVersion, undefined, pass);
+    assert.doesNotMatch(r.message, /未经验证|部分字段缺失/, pass);
   }
-  // Rollback safety: unverified rows never land in codex_files, which older builds read as their cache.
-  const cachedFiles = db
-    .prepare('SELECT file FROM codex_files')
-    .all()
-    .map((r) => path.basename(r.file));
-  assert.deepEqual(cachedFiles, ['rollout-old.jsonl']);
-  fs.rmSync(path.join(dir, 'rollout-new.jsonl'));
-  const verifiedOnly = scanCodex(db, source, wide);
-  assert.equal(verifiedOnly.contract, undefined, 'only verified versions: no marker');
-  assert.doesNotMatch(verifiedOnly.message, /未经验证/);
+  // Rollback safety: rows of every version are cached only in codex_file_versions; codex_files (read by builds
+  // before T9.13 for reviewed 0.155 files) is no longer written, so an older build re-reads those files itself.
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM codex_files').get().n, 0);
+  assert.deepEqual(
+    db
+      .prepare('SELECT file FROM codex_file_versions WHERE rows IS NOT NULL ORDER BY file')
+      .all()
+      .map((r) => path.basename(r.file)),
+    ['rollout-new.jsonl', 'rollout-old.jsonl'],
+  );
+  // A version that stops reporting an optional counter is read, shown as "—", and the source is partial.
+  const partial = tokens(20);
+  delete partial.reasoning_output_tokens;
+  fs.writeFileSync(
+    path.join(dir, 'rollout-partial.jsonl'),
+    rollout({
+      id: 'p1',
+      version: '0.170.0',
+      events: [
+        {
+          timestamp: new Date(now).toISOString(),
+          type: 'event_msg',
+          payload: { type: 'token_count', info: { total_token_usage: partial, last_token_usage: partial } },
+        },
+      ],
+    }),
+  );
+  const r = scanCodex(db, source, wide);
+  assert.equal(r.status, 'ready');
+  assert.equal(r.rows.length, 3);
+  assert.equal(r.contract, 'partial');
+  assert.deepEqual(r.missing, ['推理 Token']);
+  assert.match(r.message, /^部分字段缺失：推理 Token，显示为「—」。/);
+  assert.equal(r.rows.find((row) => row.sessionId === 'p1').reasoning, null);
 });
 
-test('Codex unverified versions with a renamed or missing usage field are rejected, never guessed', (t) => {
+test('T9.13: a renamed or missing core usage field is rejected for every version, never guessed', (t) => {
   const { readRollout } = require('../desktop/codex-reader.cjs');
   const renamed = { input: 20, output_tokens: 10, total_tokens: 30 },
     missing = { input_tokens: 20, output_tokens: 10 };
   const home = setup(t),
     file = path.join(home, 'rollout-bad.jsonl');
-  for (const info of [
-    { total_token_usage: renamed, last_token_usage: tokens(20) },
-    { total_token_usage: tokens(20), last_token_usage: missing },
-    { total_token_usage: { ...tokens(20), output_tokens: -1 }, last_token_usage: tokens(20) },
-  ]) {
-    fs.writeFileSync(
-      file,
-      rollout({
-        version: '0.160.0',
-        events: [{ timestamp: new Date(now).toISOString(), type: 'event_msg', payload: { type: 'token_count', info } }],
-      }),
-    );
-    assert.throws(
-      () => readRollout(file, 's'),
-      (e) => e.code === 'unsupported',
-    );
-  }
+  for (const version of ['0.155.0-alpha.16.4', '0.160.0'])
+    for (const info of [
+      { total_token_usage: renamed, last_token_usage: tokens(20) },
+      { total_token_usage: tokens(20), last_token_usage: missing },
+      { total_token_usage: { ...tokens(20), output_tokens: -1 }, last_token_usage: tokens(20) },
+      { total_token_usage: tokens(20), last_token_usage: { ...tokens(20), cached_input_tokens: '4' } },
+    ]) {
+      fs.writeFileSync(
+        file,
+        rollout({
+          version,
+          events: [
+            { timestamp: new Date(now).toISOString(), type: 'event_msg', payload: { type: 'token_count', info } },
+          ],
+        }),
+      );
+      assert.throws(
+        () => readRollout(file, 's'),
+        (e) => e.code === 'unsupported',
+        version,
+      );
+    }
   const dir = path.join(home, 'sessions');
   fs.mkdirSync(dir, { recursive: true });
   fs.renameSync(file, path.join(dir, 'rollout-bad.jsonl'));
@@ -498,29 +529,42 @@ test('Codex unverified versions with a renamed or missing usage field are reject
   assert.equal(r.status, 'stale');
   assert.equal(r.rows.length, 0);
   assert.equal(r.contract, undefined);
-  assert.match(r.message, /1 个日志的版本或用量格式不受支持，已排除。/);
+  assert.match(r.message, /1 个日志的用量格式不兼容，已排除。/);
 });
 
-test('Claude 2.2.0 OTLP with every known attribute is accepted as unverified; a missing attribute is rejected', () => {
-  const ok = parseOtel(otel({}, { 'service.version': '2.2.0' }), 's', {}, now);
-  assert.equal(ok.rows.length, 1);
-  assert.equal(ok.unsupported, 0);
-  assert.deepEqual(ok.unverified, ['2.2.0']);
-  assert.equal(ok.rows[0].total, 38);
-  const verifiedOne = parseOtel(otel(), 's', {}, now);
-  assert.deepEqual(verifiedOne.unverified, []);
-  for (const drop of ['cache_read_tokens', 'cache_creation_tokens', 'input_tokens', 'output_tokens']) {
-    const data = otel({}, { 'service.version': '2.2.0' });
-    const attrs = data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes;
-    attrs.splice(
-      attrs.findIndex((a) => a.key === drop),
-      1,
-    );
-    const p = parseOtel(data, 's', {}, now);
-    assert.equal(p.rows.length, 0, drop);
-    assert.equal(p.unsupported, 1, drop);
+test('T9.13: Claude OTLP of any version — input and output are core (rejected when missing), cache counters optional', () => {
+  for (const version of ['2.1.251', '2.2.0']) {
+    const ok = parseOtel(otel({}, { 'service.version': version }), 's', {}, now);
+    assert.equal(ok.rows.length, 1, version);
+    assert.equal(ok.unsupported, 0, version);
+    assert.equal(ok.rows[0].total, 38, version);
+    assert.equal(Object.hasOwn(ok, 'unverified'), false);
+    for (const drop of ['input_tokens', 'output_tokens']) {
+      const data = otel({}, { 'service.version': version });
+      const attrs = data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes;
+      attrs.splice(
+        attrs.findIndex((a) => a.key === drop),
+        1,
+      );
+      const p = parseOtel(data, 's', {}, now);
+      assert.equal(p.rows.length, 0, version + ' ' + drop);
+      assert.equal(p.unsupported, 1, version + ' ' + drop);
+    }
+    for (const drop of ['cache_read_tokens', 'cache_creation_tokens']) {
+      const data = otel({}, { 'service.version': version });
+      const attrs = data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes;
+      attrs.splice(
+        attrs.findIndex((a) => a.key === drop),
+        1,
+      );
+      const p = parseOtel(data, 's', {}, now);
+      assert.equal(p.rows.length, 1, version + ' ' + drop);
+      // The cache counter is unknown, so the total input is unknown too — never undercounted.
+      assert.equal(p.rows[0].input, null, version + ' ' + drop);
+      assert.equal(p.rows[0].output, 5, version + ' ' + drop);
+    }
   }
-  // An unverified error event may still lack usage, exactly like a verified one.
+  // An error event may still lack usage.
   const error = parseOtel(
     otel(
       {
@@ -540,26 +584,29 @@ test('Claude 2.2.0 OTLP with every known attribute is accepted as unverified; a 
   assert.equal(error.rows[0].usageReported, false);
 });
 
-test('the Claude collector records the unverified version and the source report carries it', (t) => {
+test('T9.13: the Claude collector status carries no version label; a status file written before T9.13 is ignored', (t) => {
   const home = setup(t),
     c = new ClaudeCollector(home);
   c.prepare();
-  c.health('ready', '2.2.0');
-  c.health('ready', '2.1.300'); // older than the recorded one: the newest is kept
+  // A status.json from an earlier build may still carry observedVersion.
+  fs.writeFileSync(
+    path.join(home, 'status.json'),
+    JSON.stringify({ schemaVersion: 1, state: 'ready', gaps: [], observedVersion: '2.2.0' }),
+  );
   c.health('ready');
   const status = JSON.parse(fs.readFileSync(path.join(home, 'status.json'), 'utf8'));
-  assert.equal(status.observedVersion, '2.2.0');
+  assert.equal(Object.hasOwn(status, 'observedVersion'), false);
   assert.equal(status.state, 'ready');
   const usage = path.join(home, 'usage.jsonl');
   fs.writeFileSync(usage, '');
   const r = scanClaude(null, { id: 'claude', file: usage }, { start: now - 1000, end: now + 1000 });
-  assert.equal(r.contract, 'unverified-version');
-  assert.equal(r.observedVersion, '2.2.0');
-  assert.match(r.message, /2\.2 版本未经验证，按已知结构读取。/);
+  assert.equal(r.contract, undefined);
+  assert.equal(r.observedVersion, undefined);
+  assert.doesNotMatch(r.message, /未经验证/);
 });
 
 // T8.4: the status-line quota follows the same structural rule as the OTLP events (T5.1).
-test('T8.4: an unverified Claude Code version is accepted when a known window has the known fields, and marked', async (t) => {
+test('T9.13: any Claude Code version is accepted when a known window has the known fields, with no version label', async (t) => {
   const home = setup(t),
     c = new ClaudeCollector(home);
   c.prepare();
@@ -573,15 +620,19 @@ test('T8.4: an unverified Claude Code version is accepted when a known window ha
     },
   });
   const raw = JSON.parse(fs.readFileSync(path.join(home, 'quota.json')));
-  assert.equal(raw.unverifiedVersion, '2.2.0');
-  assert.equal(JSON.parse(fs.readFileSync(path.join(home, 'status.json'))).observedVersion, '2.2.0');
+  assert.equal(Object.hasOwn(raw, 'unverifiedVersion'), false);
+  assert.equal(Object.hasOwn(JSON.parse(fs.readFileSync(path.join(home, 'status.json'))), 'observedVersion'), false);
   const usage = await new SubscriptionClient('claude', { now: () => now }).usage({ home });
   assert.deepEqual(
     usage.parts.credits.windows.map((w) => w.remainingPercent),
     [87, 17],
   );
-  assert.match(usage.parts.credits.note, /^2\.2 版本未经验证，按已知结构读取。/);
-  // A verified version writes no marker.
+  assert.doesNotMatch(usage.parts.credits.note, /未经验证/);
+  // A quota.json written before T9.13 with a marker reads without a version label.
+  fs.writeFileSync(path.join(home, 'quota.json'), JSON.stringify({ ...raw, unverifiedVersion: '2.2.0' }));
+  const old = await new SubscriptionClient('claude', { now: () => now }).usage({ home });
+  assert.doesNotMatch(old.parts.credits.note, /未经验证/);
+  assert.equal(old.parts.credits.windows.length, 2);
   c.receiveQuota({
     version: '2.1.251',
     sessionId: 's',
@@ -590,7 +641,7 @@ test('T8.4: an unverified Claude Code version is accepted when a known window ha
   assert.equal(Object.hasOwn(JSON.parse(fs.readFileSync(path.join(home, 'quota.json'))), 'unverifiedVersion'), false);
 });
 
-test('T8.4: renamed, missing or malformed windows from an unverified version are rejected and leave the quota untouched', (t) => {
+test('T9.13: renamed or malformed windows are rejected for every version and leave the quota untouched', (t) => {
   const home = setup(t),
     c = new ClaudeCollector(home);
   c.prepare();
@@ -602,16 +653,20 @@ test('T8.4: renamed, missing or malformed windows from an unverified version are
     windows: { five_hour: { used_percentage: 20, resets_at: resets } },
   });
   const before = fs.readFileSync(file, 'utf8');
-  for (const input of [
-    { version: '2.2.0', sessionId: 's', windows: { fiveHour: { used_percentage: 20, resets_at: resets } } },
-    { version: '2.2.0', sessionId: 's', windows: {} },
-    { version: '2.2.0', sessionId: 's' },
-    { version: '2.2.0', sessionId: 's', windows: { five_hour: { usedPercentage: 20, resets_at: resets } } },
-    { version: '2.2', sessionId: 's', windows: { five_hour: { used_percentage: 20, resets_at: resets } } },
-    { version: '2.2.0', windows: { five_hour: { used_percentage: 20, resets_at: resets } } },
-  ])
-    assert.throws(() => c.receiveQuota(input));
+  for (const version of ['2.1.251', '2.2.0'])
+    for (const input of [
+      { version, sessionId: 's', windows: { fiveHour: { used_percentage: 20, resets_at: resets } } },
+      { version, sessionId: 's', windows: { five_hour: { usedPercentage: 20, resets_at: resets } } },
+      { version, sessionId: 's', windows: { five_hour: { used_percentage: 120, resets_at: resets } } },
+      { version, sessionId: 's', windows: [{ used_percentage: 20, resets_at: resets }] },
+      { version: '2.2', sessionId: 's', windows: { five_hour: { used_percentage: 20, resets_at: resets } } },
+      { version, windows: { five_hour: { used_percentage: 20, resets_at: resets } } },
+    ])
+      assert.throws(() => c.receiveQuota(input), JSON.stringify(input));
   assert.equal(fs.readFileSync(file, 'utf8'), before);
+  // No windows at all still means "no plan quota now" for every version (cleared, as before T9.13).
+  c.receiveQuota({ version: '2.2.0', sessionId: 's', windows: {} });
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')).windows, {});
 });
 
 // T8.5: the collector moves to another port when the saved one cannot be used.

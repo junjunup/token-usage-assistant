@@ -33,8 +33,9 @@ function sourceGaps(source) {
   if (source.partialLine) gaps.push('最后一行仍在写入，已跳过');
   const missing = whole(source.missingUsage);
   if (missing) gaps.push(`${missing} 条记录缺少用量，未计为零`);
-  if (source.contract === 'unverified-version')
-    gaps.push(`${source.observedVersion || '新'} 版本未经验证，按已知结构读取`);
+  // T9.13 (D15): optional fields the tool no longer reports; they are shown as "—".
+  if (source.contract === 'partial' && Array.isArray(source.missing) && source.missing.length)
+    gaps.push(`部分字段缺失：${source.missing.join('、')}，显示为「—」`);
   if (time(source.associationCoverage?.start) === null) gaps.push('所选范围内没有归入此账户的记录');
   return gaps;
 }

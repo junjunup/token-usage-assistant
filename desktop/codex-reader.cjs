@@ -3,19 +3,13 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { projectJSON } = require('./metadata-json.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
-const count = (v) => Number.isSafeInteger(v) && v >= 0;
-// Locally verified rollout contracts (T5.1). Other versions are read only when their structure matches exactly
-// and are reported as unverified; a renamed or missing field fails closed (no guessing at field meanings).
+// Rollout usage follows the structure contract (T5.1, T9.13 / D15): any version is read when the core counts are
+// present and well-formed; a renamed or missing core field fails closed (no guessing at field meanings).
+// T9.13 (D15): the versions whose rollout structure was last reviewed by hand. Informational only — the upstream
+// check script compares new releases against it; reading follows the structure contract for every version.
 const VERIFIED_VERSIONS = [/^0\.155\./];
 const VERSION = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
-const verified = (v) => VERIFIED_VERSIONS.some((re) => re.test(v));
-const usageShape = (u) =>
-  !!u &&
-  typeof u === 'object' &&
-  Object.values(u).every(count) &&
-  count(u.input_tokens) &&
-  count(u.output_tokens) &&
-  count(u.total_tokens);
+const { codexUsageViolation, missingOptional, SOURCE_OPTIONAL, partialNote } = require('./upstream-contracts.cjs');
 // Highest version by numeric major.minor.patch.
 const newest = (versions) =>
   [...versions].sort((a, b) => {
@@ -24,7 +18,6 @@ const newest = (versions) =>
     for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i];
     return 0;
   })[0] || null;
-const unverifiedNote = (version) => `${version.split('.').slice(0, 2).join('.')} 版本未经验证，按已知结构读取。`;
 const tokenFields = Object.fromEntries(
   [
     'input_tokens',
@@ -71,8 +64,7 @@ function* lines(file) {
   }
 }
 function readRollout(file, sourceId) {
-  let strict = false,
-    session = null,
+  let session = null,
     born = 0,
     version,
     project = null,
@@ -91,14 +83,13 @@ function readRollout(file, sourceId) {
       if (session && session !== p.id) throw new Error('session');
       session = p.id;
       born = at;
-      version = p.cli_version || '';
+      // The version is kept for details only (D15); a session needs an id and a start time.
+      version = typeof p.cli_version === 'string' && VERSION.test(p.cli_version) ? p.cli_version : null;
       project = p.cwd || null;
-      if (!VERSION.test(version) || typeof session !== 'string' || !Number.isFinite(born)) {
+      if (typeof session !== 'string' || !Number.isFinite(born)) {
         unsupported = true;
         break;
       }
-      // Unverified versions must match the full known structure (checked per token_count below).
-      strict = !verified(version);
       continue;
     }
     if (event.type === 'turn_context') {
@@ -110,9 +101,9 @@ function readRollout(file, sourceId) {
     if (!session || !Number.isFinite(at)) throw new Error('metadata');
     const cumulative = p.info.total_token_usage,
       u = p.info.last_token_usage;
-    if (strict && (!usageShape(cumulative) || !usageShape(u)))
+    // T9.13: the structure contract applies to every version (core counts present, every count a non-negative integer).
+    if (codexUsageViolation(cumulative) || codexUsageViolation(u))
       throw Object.assign(new Error('structure'), { code: 'unsupported' });
-    if (!cumulative || !count(cumulative.total_tokens)) throw new Error('usage');
     const signature = JSON.stringify(cumulative);
     // Forks retain old event timestamps. These establish context, never new consumption.
     if (at < born) {
@@ -126,14 +117,6 @@ function readRollout(file, sourceId) {
     }
     if (previous && signature === JSON.stringify(previous)) continue;
     previous = cumulative;
-    if (
-      !u ||
-      !Object.values(u).every(count) ||
-      !count(u.input_tokens) ||
-      !count(u.output_tokens) ||
-      !count(u.total_tokens)
-    )
-      throw new Error('usage');
     const attemptId = crypto
       .createHash('sha256')
       .update(JSON.stringify([session, epoch, cumulative]))
@@ -190,17 +173,16 @@ function scanCodex(db, source, range) {
   visit(path.join(source.file, 'archived_sessions'));
   db.exec(
     'CREATE TABLE IF NOT EXISTS codex_files(source_id TEXT,file TEXT,size INTEGER,modified REAL,rows TEXT,PRIMARY KEY(source_id,file));' +
-      // T5.1: each cached file's rollout version. Rows of unverified versions are cached only here (never in
-      // codex_files), so an older build that rejects those versions cannot read them from its cache after a rollback.
+      // T5.1: each cached file's rollout version. Since T9.13 rows of every version are cached only here and
+      // codex_files is no longer written, so an older build after a rollback re-reads 0.155 files itself and only
+      // reuses rows of other versions, which it also accepted under its own (stricter) structural check.
       'CREATE TABLE IF NOT EXISTS codex_file_versions(source_id TEXT,file TEXT,size INTEGER,modified REAL,version TEXT,rows TEXT,PRIMARY KEY(source_id,file));',
   );
   const get = db.prepare('SELECT * FROM codex_files WHERE source_id=? AND file=?'),
-    save = db.prepare('INSERT OR REPLACE INTO codex_files VALUES (?,?,?,?,?)'),
     getVersion = db.prepare('SELECT * FROM codex_file_versions WHERE source_id=? AND file=?'),
     saveVersion = db.prepare('INSERT OR REPLACE INTO codex_file_versions VALUES (?,?,?,?,?,?)'),
     dropCached = db.prepare('DELETE FROM codex_files WHERE source_id=? AND file=?');
   const records = new Map();
-  const unverified = new Set();
   let rejected = 0,
     unsupported = 0,
     truncated = false;
@@ -213,24 +195,20 @@ function scanCodex(db, source, range) {
         const cached = get.get(source.id, file),
           cachedVersion = getVersion.get(source.id, file),
           fresh = (c) => c && c.size === stat.size && c.modified === stat.mtimeMs;
-        let rows, version;
-        if (fresh(cachedVersion) && !verified(cachedVersion.version) && cachedVersion.rows) {
+        let rows;
+        if (fresh(cachedVersion) && cachedVersion.rows) {
           rows = JSON.parse(cachedVersion.rows);
-          version = cachedVersion.version;
-        } else if (fresh(cachedVersion) && verified(cachedVersion.version) && fresh(cached)) {
+        } else if (fresh(cachedVersion) && fresh(cached)) {
+          // Cached by a build before T9.13 (a reviewed 0.155 file): reuse once, then move it to the new table.
           rows = JSON.parse(cached.rows);
-          version = cachedVersion.version;
+          dropCached.run(source.id, file);
+          saveVersion.run(source.id, file, stat.size, stat.mtimeMs, cachedVersion.version, cached.rows);
         } else {
+          let version;
           ({ rows, version } = readRollout(file, source.id));
-          if (verified(version)) {
-            save.run(source.id, file, stat.size, stat.mtimeMs, JSON.stringify(rows));
-            saveVersion.run(source.id, file, stat.size, stat.mtimeMs, version, null);
-          } else {
-            dropCached.run(source.id, file);
-            saveVersion.run(source.id, file, stat.size, stat.mtimeMs, version, JSON.stringify(rows));
-          }
+          dropCached.run(source.id, file);
+          saveVersion.run(source.id, file, stat.size, stat.mtimeMs, version ?? '', JSON.stringify(rows));
         }
-        if (!verified(version)) unverified.add(version);
         for (const row of rows)
           if (row.at >= range.start - (range.end - range.start) && row.at <= range.end) {
             records.set(row.attemptId, row);
@@ -250,17 +228,19 @@ function scanCodex(db, source, range) {
     db.exec('ROLLBACK');
     throw e;
   }
-  const observedVersion = newest(unverified);
+  const rows = [...records.values()].slice(0, 100000),
+    missing = missingOptional(rows, SOURCE_OPTIONAL.codex);
   return {
-    rows: [...records.values()].slice(0, 100000),
+    rows,
     status: rejected ? 'stale' : 'ready',
     truncated,
-    ...(observedVersion ? { contract: 'unverified-version', observedVersion } : {}),
+    ...(missing.length ? { contract: 'partial', missing } : {}),
     message:
-      (rejected ? `${rejected} 个日志的版本或用量格式不受支持，已排除。` : '') +
-      (observedVersion ? unverifiedNote(observedVersion) : '') +
+      (rejected ? `${rejected} 个日志的用量格式不兼容，已排除。` : '') +
+      partialNote(missing) +
       'Codex 本机用量快照，不等于请求次数',
-    messageDetail: '0.155.x 格式。缺少终态的记录不参与成功率；历史继承与重复快照不累计。',
+    messageDetail:
+      '按结构契约读取，任何版本只要核心字段齐全就照常统计。缺少终态的记录不参与成功率；历史继承与重复快照不累计。',
   };
 }
-module.exports = { readFile, readRollout, scanCodex, selection, lines, VERIFIED_VERSIONS, newest, unverifiedNote };
+module.exports = { readFile, readRollout, scanCodex, selection, lines, VERIFIED_VERSIONS, newest };

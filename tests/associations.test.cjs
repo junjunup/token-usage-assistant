@@ -283,7 +283,7 @@ test('T6.2: the coverage report carries no difference fields while the compariso
   assert.deepEqual(ok.comparison, { difference: 5, errorRate: 2.5 });
   assert.equal(coverageReport(null).sources.length, 0);
 });
-test('T6.2: source gaps name truncation, stale data, missing usage, unverified versions and empty spans', () => {
+test('T6.2: source gaps name truncation, stale data, missing usage, partial fields (T9.13) and empty spans', () => {
   const covered = { associationCoverage: { start: now - 60000, end: now } };
   assert.deepEqual(sourceGaps({ status: 'ready', missingUsage: 0, ...covered }), []);
   const gaps = sourceGaps({
@@ -291,15 +291,16 @@ test('T6.2: source gaps name truncation, stale data, missing usage, unverified v
     truncated: true,
     partialLine: true,
     missingUsage: 3,
-    contract: 'unverified-version',
-    observedVersion: '0.160',
+    contract: 'partial',
+    missing: ['缓存读取', '推理 Token'],
     associationCoverage: { start: null, end: null },
   });
   assert.equal(gaps.length, 6);
   assert.ok(gaps[0].includes('延迟'));
   assert.ok(gaps.some((g) => g.includes('读取上限')));
   assert.ok(gaps.some((g) => g.includes('3 条记录缺少用量')));
-  assert.ok(gaps.some((g) => g.includes('0.160 版本未经验证')));
+  assert.ok(gaps.some((g) => g.includes('部分字段缺失：缓存读取、推理 Token')));
+  assert.ok(!gaps.some((g) => g.includes('未经验证')));
   assert.ok(gaps.some((g) => g.includes('没有归入此账户')));
   assert.deepEqual(sourceGaps({ status: 'error', message: '文件无法读取。', ...covered }), ['文件无法读取。']);
 });

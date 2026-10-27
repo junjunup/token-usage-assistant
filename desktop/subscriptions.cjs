@@ -80,15 +80,11 @@ function normalizeClaude(raw, now = Date.now()) {
       }),
     );
   }
-  // T8.4: a quota read from a Claude Code version outside the verified range is marked as such.
-  const unverified =
-    typeof raw.unverifiedVersion === 'string' && /^\d+\.\d+\.\d+$/.test(raw.unverifiedVersion)
-      ? `${raw.unverifiedVersion.split('.').slice(0, 2).join('.')} 版本未经验证，按已知结构读取。`
-      : '';
+  // T9.13 (D15): no version label; an older quota.json may still carry `unverifiedVersion`, which is ignored.
   return {
     windows,
     planName: 'Claude 本机订阅观察',
-    note: unverified + '本地 Claude Code 状态栏的最近观察值',
+    note: '本地 Claude Code 状态栏的最近观察值',
     noteDetail: '账户身份未由账单接口核验，网页聊天明细不在本机采集范围。',
   };
 }
