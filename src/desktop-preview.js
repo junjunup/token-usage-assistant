@@ -1,3 +1,4 @@
+import { version } from '../package.json';
 import { demoAnalytics, demoPrices } from './preview-analytics.js';
 import { demoTools } from './tools-preview.js';
 import { fixtureBody } from './generated/provider-fixture.js';
@@ -159,7 +160,7 @@ snapshots.deepseek = {
   status: 'connected',
   nextRefreshAt: now + 60000,
 };
-state.version = '1.8.0-beta.4';
+state.version = version;
 // T7.10: ?desktop-preview=panel-unsynced shows the Claude account as connected but never synced.
 if (new URLSearchParams(location.search).get('desktop-preview') === 'panel-unsynced' && snapshots.claude) {
   snapshots.claude.parts = {};
