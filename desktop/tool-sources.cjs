@@ -9,6 +9,17 @@ const { rangeFor } = require('./analytics-core.cjs');
 const { pathKey } = require('./platform.cjs');
 // Kinds, default labels, inspection and directory/file choice come from desktop/tool-kinds/ (T5.3b).
 const { TOOL_KINDS, toolKind } = require('./tool-kinds/index.cjs');
+const { fieldNames, fieldChange } = require('./upstream-contracts.cjs');
+// T9.14: a saved fingerprint and its last change, validated (names only; times finite).
+function savedFields(saved) {
+  const fields = Array.isArray(saved?.fields) ? fieldNames(saved.fields) : [];
+  const c = saved?.fieldChange;
+  const change =
+    c && Number.isFinite(c.at) && Array.isArray(c.added) && Array.isArray(c.removed)
+      ? { added: fieldNames(c.added), removed: fieldNames(c.removed), at: c.at }
+      : null;
+  return { ...(fields.length ? { fields } : {}), ...(change ? { fieldChange: change } : {}) };
+}
 const KINDS = new Set(TOOL_KINDS.map((k) => k.kind));
 const isDirectory = (kind) => toolKind(kind)?.picker.type === 'directory';
 function publicError(message) {
@@ -103,6 +114,7 @@ class ToolSources extends EventEmitter {
           lastSuccessAt: saved.lastSuccessAt,
           observedStartAt: Number.isFinite(saved.observedStartAt) ? saved.observedStartAt : null,
           observedEndAt: Number.isFinite(saved.observedEndAt) ? saved.observedEndAt : null,
+          ...savedFields(saved),
         });
     }
   }
@@ -368,11 +380,16 @@ class ToolSources extends EventEmitter {
       return { source: 'tools', status: 'cancelled', range, summary: null, message: '数据源已变化，请重新分析。' };
     for (const report of result.sourceReports || []) {
       const previous = this.runtime.get(report.id);
+      // T9.14: compare the reported field-name fingerprint with the saved one; a change is kept with its time.
+      const fields = Array.isArray(report.fields) && report.fields.length ? fieldNames(report.fields) : null,
+        change = fields ? fieldChange(previous?.fields, fields) : null;
       this.runtime.set(report.id, {
         ...report,
         lastSuccessAt: report.status === 'ready' ? this.now() : previous?.lastSuccessAt || null,
         observedStartAt: report.coverage?.start || null,
         observedEndAt: report.coverage?.end || null,
+        fields: fields || previous?.fields || null,
+        fieldChange: change ? { ...change, at: this.now() } : previous?.fieldChange || null,
       });
     }
     const timestamps = Object.fromEntries(
@@ -384,6 +401,8 @@ class ToolSources extends EventEmitter {
             lastSuccessAt: saved?.lastSuccessAt || null,
             observedStartAt: saved?.observedStartAt || null,
             observedEndAt: saved?.observedEndAt || null,
+            ...(saved?.fields ? { fields: saved.fields } : {}),
+            ...(saved?.fieldChange ? { fieldChange: saved.fieldChange } : {}),
           },
         ];
       }),

@@ -760,3 +760,92 @@ test('T8.5: a port change shows on the Claude details status until a new session
     '工具明细待添加',
   );
 });
+
+// T9.14 (D15): field-name fingerprints — names only, compared across scans and restarts.
+test('T9.14: a Codex field rename is reported as a field change, kept across a restart, and never carries values', async (t) => {
+  const root = setup(t),
+    home = path.join(root, 'codex'),
+    dir = path.join(home, 'sessions');
+  fs.mkdirSync(dir, { recursive: true });
+  const older = path.join(dir, 'rollout-a.jsonl');
+  fs.writeFileSync(older, rollout({ id: 'a' }));
+  fs.utimesSync(older, new Date(now - 60000), new Date(now - 60000));
+  const store = new LocalStore(path.join(root, 'store'), {}),
+    sources = new ToolSources({ store, now: () => now });
+  const s = sources.add({ kind: 'codex', file: home });
+  await sources.query({ range: 'today' });
+  let item = sources.list().find((x) => x.id === s.id);
+  assert.deepEqual(item.fields, [
+    'cache_write_input_tokens',
+    'cached_input_tokens',
+    'input_tokens',
+    'output_tokens',
+    'reasoning_output_tokens',
+    'total_tokens',
+  ]);
+  assert.equal(item.fieldChange, null);
+  // A newer Codex renames an optional counter: read as partial, and the change names both fields.
+  const renamed = tokens(20);
+  renamed.cache_read_input_tokens = renamed.cached_input_tokens;
+  delete renamed.cached_input_tokens;
+  const newer = path.join(dir, 'rollout-b.jsonl');
+  fs.writeFileSync(
+    newer,
+    rollout({
+      id: 'b',
+      version: '0.170.0',
+      events: [
+        {
+          timestamp: new Date(now).toISOString(),
+          type: 'event_msg',
+          payload: { type: 'token_count', info: { total_token_usage: renamed, last_token_usage: renamed } },
+        },
+      ],
+    }),
+  );
+  const r = await sources.query({ range: 'today' });
+  const report = r.sourceReports.find((x) => x.id === s.id);
+  assert.equal(report.contract, 'partial');
+  assert.deepEqual(report.missing, ['缓存读取']);
+  item = sources.list().find((x) => x.id === s.id);
+  assert.deepEqual(item.fieldChange, { added: ['cache_read_input_tokens'], removed: ['cached_input_tokens'], at: now });
+  await sources.dispose();
+  // After a restart the fingerprint and the change are restored from tool-source-status.json.
+  const restarted = new ToolSources({ store, now: () => now });
+  t.after(() => restarted.dispose());
+  item = restarted.list().find((x) => x.id === s.id);
+  assert.deepEqual(item.fieldChange, { added: ['cache_read_input_tokens'], removed: ['cached_input_tokens'], at: now });
+  const saved = fs.readFileSync(store.file('tool-source-status.json'), 'utf8');
+  assert.doesNotMatch(saved, /PRIVATE|gpt-test|D:\/project/);
+});
+
+test('T9.14: Claude request attribute names (never values) become the fingerprint and survive in the collector status', (t) => {
+  const data = otel();
+  data.resourceLogs[0].scopeLogs[0].logRecords[0].attributes.push(
+    { key: 'cache_read_input_tokens_v2', value: { intValue: 7 } },
+    { key: 'not a name!', value: { stringValue: 'PRIVATE_VALUE' } },
+  );
+  const p = parseOtel(data, 's', {}, now);
+  assert.ok(p.fields.includes('input_tokens'));
+  // Only usage-counter names: event metadata, model, and names that hint at content or credentials are not kept.
+  for (const name of ['prompt', 'apiKey', 'model', 'session.id', 'event.name'])
+    assert.ok(!p.fields.includes(name), name);
+  assert.ok(p.fields.includes('cache_read_input_tokens_v2'));
+  assert.ok(!p.fields.includes('not a name!'));
+  assert.doesNotMatch(JSON.stringify(p.fields), /PRIVATE|7/);
+  // Error events do not change the fingerprint.
+  assert.deepEqual(parseOtel(otel({ 'event.name': 'api_error' }), 's', {}, now).fields, []);
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  c.health('ready', p.fields);
+  c.health('ready', []);
+  const status = JSON.parse(fs.readFileSync(path.join(home, 'status.json'), 'utf8'));
+  assert.deepEqual(status.fields, p.fields);
+  const usage = path.join(home, 'usage.jsonl');
+  fs.writeFileSync(usage, '');
+  assert.deepEqual(
+    scanClaude(null, { id: 'claude', file: usage }, { start: now - 1000, end: now + 1000 }).fields,
+    p.fields,
+  );
+});

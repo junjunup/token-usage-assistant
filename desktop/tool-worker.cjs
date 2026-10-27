@@ -70,6 +70,7 @@ function execute(
         scannedRows: rows.length,
         missingUsage: current.filter((r) => !r.usageReported).length,
         ...(result.contract ? { contract: result.contract, missing: result.missing } : {}),
+        ...(Array.isArray(result.fields) ? { fields: result.fields } : {}),
       });
       timings.push({
         kind: source.kind,

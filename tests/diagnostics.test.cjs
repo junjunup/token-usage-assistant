@@ -79,8 +79,24 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
     { provider: 'deepseek', region: 'global', active: false, status: 'unknown', lastSuccessAt: null, lastError: null },
   ]);
   assert.deepEqual(report.toolSources, [
-    { kind: 'zcode', enabled: true, status: 'ready', lastSuccessAt: new Date(2000).toISOString(), scannedRows: 42 },
-    { kind: 'codex', enabled: false, status: 'disabled', lastSuccessAt: null, scannedRows: null },
+    {
+      kind: 'zcode',
+      enabled: true,
+      status: 'ready',
+      lastSuccessAt: new Date(2000).toISOString(),
+      scannedRows: 42,
+      fields: [],
+      fieldChange: null,
+    },
+    {
+      kind: 'codex',
+      enabled: false,
+      status: 'disabled',
+      lastSuccessAt: null,
+      scannedRows: null,
+      fields: [],
+      fieldChange: null,
+    },
   ]);
   assert.equal(report.credentialIssue, false);
   assert.equal(report.log.lines, 1);

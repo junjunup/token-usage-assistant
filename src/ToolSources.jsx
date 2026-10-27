@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fieldChangeNote, FIELD_CHANGE_VISIBLE_MS } from './generated/upstream-contracts.js';
 import { Disclosure } from './Disclosure.jsx';
 import { Database, Folder, Plus, ArrowClockwise, WarningCircle, Trash, Check, Info } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
@@ -86,6 +87,21 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
           </span>
         )}
       </div>
+      {recentChange(source) && source.enabled !== false && (
+        <p className="tool-source-message" role="status">
+          <WarningCircle size={14} />
+          <span>
+            <Disclosure
+              summary={fieldChangeNote(source.fieldChange)}
+              detail={
+                '发现于 ' +
+                stamp(source.fieldChange.at) +
+                '，通常是工具升级。核心字段齐全时照常统计；如果读不到数据，请导出诊断信息反馈（只含字段名，不含任何内容）。'
+              }
+            />
+          </span>
+        </p>
+      )}
       {source.message && source.enabled !== false && (
         <p className="tool-source-message" role="status">
           <WarningCircle size={14} />
@@ -136,6 +152,12 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
     </li>
   );
 }
+
+// T9.14: a field-name change stays visible for 14 days.
+const recentChange = (source) =>
+  !!source.fieldChange &&
+  Number.isFinite(source.fieldChange.at) &&
+  Date.now() - source.fieldChange.at < FIELD_CHANGE_VISIBLE_MS;
 
 export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove, onSync }) {
   const [kind, setKind] = useState('zcode'),
