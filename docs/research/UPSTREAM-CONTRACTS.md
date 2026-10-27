@@ -50,3 +50,17 @@
 - T9.13 可以按上面的初稿实现；「部分字段缺失」主要会出现在 Codex 和 Claude 的可选计数（缓存、推理）上。
 - T9.14 的字段名指纹对 Claude（没有任何可机读定义）最有价值。
 - T9.15：Harness、Codex 额度可以做成自动检查；Codex rollout 只能比对协议里的 `TokenUsageBreakdown` 作为旁证；Claude 只能（可选）监控官方文档页的变化。
+
+## 自动兼容性检查（T9.15 已实现）
+
+每周的「Upstream versions」工作流（`.github/workflows/upstream.yml`）在版本检查（T9.1）之后运行 `scripts/upstream-compat.cjs`：最新版本超出代码里已复核列表的工具，在临时目录安装官方包（`--ignore-scripts`，不登录、不调用模型、不使用任何密钥），检查后删除临时目录。报告只写进任务摘要，只含方法名、字段名和测试计数，不含上游的原始输出。
+
+| 工具 | 检查方式 | 不兼容时 |
+|---|---|---|
+| Codex | 隔离的 `CODEX_HOME` 下运行 `codex app-server generate-json-schema`，核对 4 个只读方法（`initialize`、`initialized`、`account/read`、`account/rateLimits/read`）、`GetAccountRateLimitsResponse` / `RateLimitSnapshot` / `RateLimitWindow`（`usedPercent` 必填）、`Account` 的 chatgpt 类型，以及 `TokenUsageBreakdown` 的 6 个计数（rollout 字段含义的旁证；rollout 本身不在协议里） | 列出缺少的方法 / 类型 / 字段，任务失败（GitHub 会通知仓库所有者） |
+| DeepSeek Harness | 安装官方 `@deepseek-ai/dsh`，用它自带的 SessionStore 与 Cordis 跑 `tests/harness-plugin.test.cjs` 的 3 项运行时测试（环境变量 `TUA_HARNESS_CANDIDATE_VERSION`、`TUA_HARNESS_CANDIDATE_RUNTIME`） | 列出通过 / 失败数，任务失败 |
+| Claude Code | 做不了：状态栏与 OTLP 事件没有官方可机读定义 | 报告写明「无法自动检查」，靠读取端契约（T9.13）与字段名指纹（T9.14） |
+
+安装或导出失败记为「无法检查」，不算兼容，也不让任务失败。手动运行时可以在工作流输入里指定要检查的 Codex / Harness 版本（不受已复核列表限制）。
+
+2026-10-27 本机首次运行：Codex 0.164.0 兼容；Harness 0.2.1-rc.4 的 3 项运行时测试全部通过。

@@ -1,11 +1,23 @@
 name: Upstream versions
 
 # T9.1: weekly read-only check of Codex CLI, Claude Code and DeepSeek Harness against the versions this app has
-# verified. Writes a report to the job summary only: no issues, no commits, no package installs.
+# reviewed. T9.15: for a tool whose newest version is outside that list, install the official package in a temporary
+# directory (--ignore-scripts; no login, no model calls, no secrets) and check the structures this app reads.
+# Writes reports to the job summary only: no issues, no commits. The job fails only when a check finds an
+# incompatibility, so that GitHub notifies the repository owner.
 on:
   schedule:
     - cron: '17 1 * * 1'
   workflow_dispatch:
+    inputs:
+      codex:
+        description: 'Codex CLI version to check anyway (optional, e.g. 0.164.0)'
+        required: false
+        default: ''
+      harness:
+        description: 'DeepSeek Harness version to check anyway (optional, e.g. 0.2.1-rc.4)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -13,7 +25,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
 
@@ -23,3 +35,10 @@ jobs:
 
       - name: Check upstream versions
         run: node scripts/check-upstream.cjs
+
+      - name: Check compatibility of new versions
+        env:
+          # Passed through the environment, never interpolated into the shell; the script validates both.
+          UPSTREAM_COMPAT_CODEX: ${{ inputs.codex }}
+          UPSTREAM_COMPAT_HARNESS: ${{ inputs.harness }}
+        run: node scripts/upstream-compat.cjs

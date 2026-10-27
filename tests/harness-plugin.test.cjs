@@ -547,6 +547,13 @@ const RUNTIMES = [
   { version: '0.1.7-rc.1', contract: 'TUA_HARNESS_CONTRACT_RUNTIME', cli: 'TUA_HARNESS_CLI_RUNTIME' },
   { version: '0.2.1-rc.2', contract: 'TUA_HARNESS_CONTRACT_RUNTIME_0_2', cli: 'TUA_HARNESS_CLI_RUNTIME_0_2' },
 ];
+// T9.15: the weekly compatibility check runs the same tests against a new upstream version (only when it sets these).
+if (process.env.TUA_HARNESS_CANDIDATE_VERSION)
+  RUNTIMES.push({
+    version: process.env.TUA_HARNESS_CANDIDATE_VERSION,
+    contract: 'TUA_HARNESS_CANDIDATE_RUNTIME',
+    cli: 'TUA_HARNESS_CANDIDATE_RUNTIME',
+  });
 for (const { version, contract: contractEnv, cli: cliEnv } of RUNTIMES) {
   test(
     `Pinned installed Harness ${version} Cordis SessionStore publishes the exact plugin contract`,
