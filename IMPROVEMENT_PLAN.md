@@ -108,7 +108,7 @@
 | 9 开源与增长 | T9.3 「未启用」措辞统一与通知「<1%」 | 是（UI） | — | D10、D14 | [x] |
 | 9 开源与增长 | T9.4 隐私与安全说明（`docs/PRIVACY.md`、`SECURITY.md`） | 否 | — | D14 | [x] |
 | 9 开源与增长 | T9.5 贡献与反馈入口（issue 模板、`CONTRIBUTING.md`） | 否 | — | D14 | [x] |
-| 9 开源与增长 | T9.6 安装与升级说明写清楚（含常见问题） | 否 | — | D4、D14 | [ ] |
+| 9 开源与增长 | T9.6 安装与升级说明写清楚（含常见问题） | 否 | — | D4、D14 | [x] |
 | 9 开源与增长 | T9.7 README 改版（截图、定位、平台与验证等级） | 否 | T9.3、T9.6 | D14 | [ ] |
 | 9 开源与增长 | T9.8 英文 README | 否 | T9.7 | D14 | [ ] |
 | 9 开源与增长 | T9.9 新平台调研（只调研） | 否 | — | D14 | [ ] |
@@ -378,6 +378,7 @@
 | 2026-10-26 | T9.4 | `task/T9.4-privacy-security`：`97ff48d`；分支 CI `40223262784` 两个平台通过；`--no-ff` 合并为 `eda6775` | 371 项不变；`prettier --check` 通过 | —（只改文档，不出包） | 新增 `docs/PRIVACY.md`（中英文）：逐个平台写读取内容与访问地址（取自 `desktop/providers/*.cjs` 的固定地址），本机工具来源只读白名单元数据，不读的内容，数据目录与各文件用途，联网只有已连接平台与 GitHub 更新检查（可关），诊断信息只在用户导出时生成且先预览，如何删除。Windows 数据目录只写「`%APPDATA%` 下本应用的文件夹」，未在 Windows 真机核对具体名称。`SECURITY.md` 改为中英双语，并保留原文要点（凭据外泄、绕过只读、打码或合成样例）——**执行模型一开始用新内容直接覆盖了原文件，没有先读**，发现后对照 `main` 上的原文补回遗漏的两点。GitHub 私密漏洞报告查询为已开启（`enabled:true`），无需改设置。AGENTS §4 新增一条：数据边界变化时同步更新 `docs/PRIVACY.md`。 | 下一步 T9.5；T9.3 等截图确认。 |
 | 2026-10-26 | T9.5 | `task/T9.5-contributing`：`dbfd51e`；分支 CI `40223669123` 两个平台通过；`--no-ff` 合并为 `53f4185` | 371 项不变；`prettier --check` 通过 | —（只改文档与仓库模板，不出包） | `.github/ISSUE_TEMPLATE/`：问题反馈表单（版本、系统、涉及的平台或工具、现象、步骤、可选诊断信息，必选「没有贴密钥 / 令牌 / 账户名 / 对话内容」）、新平台请求表单（必须附官方只读接口文档链接）、`config.yml` 链接到私密漏洞报告；均为中英双语，标签用 GitHub 默认的 `bug`、`enhancement`。`CONTRIBUTING.md`（中英）：开发环境与命令、隔离 smoke、提交前要求（CI、测试只增不减、界面改动先附浅色 / 深色截图、数据边界变化更新 PRIVACY）、数据规则摘要、新平台的实现要求。发现 README「开发」一节的 Electron 版本（44.4.4）和测试基线已过时，留给 T9.7 改版时一并更正。 | 下一步 T9.6；T9.3 等截图确认。 |
 | 2026-10-27 | T9.3 | `task/T9.3-idle-and-percent`：`05ebae6`；分支 CI `40223140803` 两个平台通过；用户按 D10 确认浅色 / 深色截图（`docs/design/T9.3-idle-and-percent/` 共 4 张）后 `--no-ff` 合并为 `b68220a` | 372 项：本机 366 通过 / 0 失败 / 6 跳过（新增 1 项 `tests/desktop.test.cjs`：剩余百分比文本 `<1%` / `1%` / `0%` / `—` 的边界；原「未启用与缺数据不同」测试把期望文案从「待首次使用后开始计时」改为「未启用 · 首次使用后开始计时」，这是本任务要改的文案，并**新增**「已有用量的未启用」与「已有用量的缺数据」两个断言，区分仍然严格）；ESLint 0 个错误、35 个警告；typecheck、`prettier --check` 通过 | ②：本机 ad-hoc 打包 `1.9.0-beta.4-dev.05ebae6`：两次打包因网络（TLS 被断开）失败后第三次成功；第一次 `Verify-Mac-Native.command` 原生 smoke 150 秒超时（见第 5 节），立即重跑 8 项门禁全部通过；包内 `domain.cjs`、`main.cjs`、`menubar-status.cjs` 与源码逐字节一致，前端产物含新文案；存档于 `release-v1.9.0-beta.4-dev.05ebae6/`。Windows 双包待 CI 补齐。未做 ③ | `domain.cjs` 新增 `percentText`（<1% 规则的唯一实现，菜单栏改为引用它）；`resetDescription` 对 `resetState:'idle'` 一律以「未启用」开头，已用为 0 时「首次使用后开始计时」，否则「计时起点待平台返回」；只有字段缺失才是「重置时间暂未返回」。`main.cjs`：低额度通知用 `percentText`；托盘提示改用 `windowText`（不限 / 未启用 / `percentText`）。额度说明弹窗文案同步。浏览器预览新增 `?scenario=idle-used`。 | 下一步 T9.6。 |
+| 2026-10-27 | T9.6 | `task/T9.6-install-docs`：`ebb67f2`；分支 CI `40440769599` 两个平台通过；`--no-ff` 合并为 `8dcd92d` | 372 项不变；`prettier --check` 通过 | —（只改文档与公开说明模板，不出包） | 新增 `docs/INSTALL.md`（中英）：macOS 安装、首次放行（已实测）、升级时再放行与钥匙串「始终允许」及原因；Windows 安装版 / 免安装版与 SmartScreen「更多信息 → 仍要运行」（**明确标注未在 Windows 真机实测**）；用 `shasum` / `certutil` 核对 `SHA256SUMS.txt`；常见问题（为什么不签名、是否安全、不自动更新、数据位置、彻底卸载含钥匙串条目 `TokenUsageAssistant Safe Storage` 与 Harness 目录、反馈方式）。README 安装节链接到它并补 Windows 提示、改写升级一步（去掉指向旧版 Mac 说明的链接）；`publish.yml` 的公开说明模板补 Windows 提示、macOS 升级说明和安装文档链接（下次发布生效）。安装包仓库 README 的同步留给 T9.10，随发版确认。 | 下一步 T9.9（新平台调研）。 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
