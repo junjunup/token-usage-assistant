@@ -41,4 +41,5 @@ jobs:
           # Passed through the environment, never interpolated into the shell; the script validates both.
           UPSTREAM_COMPAT_CODEX: ${{ inputs.codex }}
           UPSTREAM_COMPAT_HARNESS: ${{ inputs.harness }}
+          UPSTREAM_COMPAT_DEBUG_TMP: '1'
         run: node scripts/upstream-compat.cjs
