@@ -24,6 +24,57 @@ function fixtureBody(provider, now = NOW) {
       scode: '0x0',
       status: true,
     };
+  // T10.2: shaped like the official example (credits = USD); identity fields are synthetic and must never be kept.
+  if (provider === 'openrouter')
+    return {
+      data: {
+        label: 'sk-or-v1-synthetic...',
+        limit: 100,
+        limit_remaining: 74.5,
+        limit_reset: 'monthly',
+        include_byok_in_limit: false,
+        usage: 25.5,
+        usage_daily: 1.24,
+        usage_weekly: 9.87,
+        usage_monthly: 25.5,
+        byok_usage: 17.38,
+        byok_usage_daily: 0,
+        byok_usage_weekly: 0,
+        byok_usage_monthly: 17.38,
+        is_free_tier: false,
+        is_management_key: false,
+        budgets: [
+          {
+            scope: 'member',
+            guardrail_id: null,
+            budget_id: null,
+            include_byok: false,
+            limit_usd: 50,
+            spend_usd: 32.5,
+            remaining_usd: 17.5,
+            reset_interval: 'weekly',
+            resets_at: new Date(now + 3 * 86400000).toISOString(),
+          },
+          {
+            scope: 'key_limit',
+            guardrail_id: null,
+            budget_id: null,
+            include_byok: false,
+            limit_usd: 100,
+            spend_usd: 25.5,
+            remaining_usd: 74.5,
+            reset_interval: 'monthly',
+            resets_at: new Date(now + 9 * 86400000).toISOString(),
+          },
+        ],
+        effective_budget: null,
+        expires_at: null,
+        creator_user_id: 'user_synthetic',
+        organization_id: null,
+        workspace_id: 'ws_synthetic',
+        free_model_daily_requests: { used: 12, limit: 50, remaining: 38 },
+      },
+    };
   if (provider === 'glm')
     return {
       code: 200,
@@ -101,13 +152,15 @@ async function fixtureFetch(url) {
         ? 'deepseek'
         : url.includes('api.moonshot.')
           ? 'kimi'
-          : url.includes('bigmodel') || url.includes('api.z.ai')
-            ? 'glm'
-            : url.includes('minimax')
-              ? 'minimax'
-              : url.includes('volcengineapi')
-                ? 'volcengine'
-                : null;
+          : url === 'https://openrouter.ai/api/v1/key'
+            ? 'openrouter'
+            : url.includes('bigmodel') || url.includes('api.z.ai')
+              ? 'glm'
+              : url.includes('minimax')
+                ? 'minimax'
+                : url.includes('volcengineapi')
+                  ? 'volcengine'
+                  : null;
   return new Response(JSON.stringify(fixtureBody(provider, Date.now())), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

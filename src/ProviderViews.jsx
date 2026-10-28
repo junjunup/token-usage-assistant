@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Disclosure } from './Disclosure.jsx';
-import { ShieldCheck, Clock, Info, Key, Plug, SignOut, ArrowUpRight, WarningCircle } from '@phosphor-icons/react';
+import {
+  ShieldCheck,
+  Clock,
+  Info,
+  Key,
+  Plug,
+  SignOut,
+  ArrowUpRight,
+  WarningCircle,
+  Receipt,
+} from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import { Live } from './Live.jsx';
 import { PROVIDERS, providerInfo } from './generated/provider-catalog.js';
 import { quotaStatus, resetDescription } from './generated/domain.js';
+import { formatAmount } from './generated/balance-domain.js';
 import './providers.css';
 const number = (v) => typeof v === 'number' && Number.isFinite(v);
 const format = (v) => (number(v) ? v.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) : '—');
+// T10.2: USD windows keep every digit the server sent (at least two decimals), never rounded to one.
+const money = (v) => (number(v) ? formatAmount(String(v)) : '—');
 const toneFor = (w, threshold) =>
   w.exceeded ? 'red' : number(w.remainingPercent) && w.remainingPercent < threshold ? 'amber' : 'green';
 // T6.1: how far each platform has been checked (registry `verification`), shown next to its name.
@@ -53,7 +66,10 @@ function reset(w, now) {
 }
 function usage(w) {
   if (w.applicable === false) return '此模型未包含在当前套餐中';
+  if (w.unlimited && w.unit === 'USD') return '这把 Key 未设花费上限';
   if (w.unlimited) return '平台明确返回不设此窗口限制';
+  if (w.unit === 'USD' && number(w.remainingAmount) && number(w.cap))
+    return '剩余 ' + money(w.remainingAmount) + ' / 上限 ' + money(w.cap) + ' USD';
   if (number(w.used) && number(w.cap)) return '已用 ' + format(w.used) + ' / ' + format(w.cap) + ' ' + w.unit;
   return number(w.remainingPercent) ? '平台提供百分比，未提供可核对的总量' : '此窗口额度暂不可获取';
 }
@@ -102,15 +118,19 @@ export function ProviderDashboard({ state, onSettings }) {
     account = state.accounts?.find((a) => a.id === state.activeAccountId);
   const [baseStatus, baseTone] = quotaStatus(state),
     windows = c?.windows || [],
-    stale = state.data.status !== 'connected';
-  const status = state.connectionStatus?.quota.label || baseStatus,
+    stale = state.data.status !== 'connected',
+    // T10.2 (D16 ③, layout A): an OpenRouter key's limit and budgets, plus its reported spend — not a plan.
+    keyLimits = state.provider === 'openrouter';
+  // A key with no limit and no budgets is not "sufficient quota"; it has none set (T10.2 mock A).
+  const unlimitedKey = keyLimits && baseTone === 'green' && windows.length > 0 && windows.every((w) => w.unlimited);
+  const status = state.connectionStatus?.quota.label || (unlimitedKey ? '未设上限' : baseStatus),
     tone = state.connectionStatus?.quota.status === 'waiting' ? 'neutral' : baseTone;
   return (
     <div className="provider-dashboard">
       <div className="account-line">
         <span>
           <span className={'status-dot ' + tone} />
-          {account?.label || info?.name} · 套餐额度
+          {account?.label || info?.name} · {keyLimits ? 'Key 用量与上限' : '套餐额度'}
         </span>
         <span>{c?.planName || info?.name}</span>
       </div>
@@ -134,16 +154,32 @@ export function ProviderDashboard({ state, onSettings }) {
         <div className="panel-heading">
           <div className="section-title green-text">
             <ShieldCheck size={16} />
-            <span>
-              PLAN QUOTAS <span className="label-cn">/ 套餐额度</span>
-            </span>
+            {keyLimits ? (
+              <span>
+                KEY LIMITS <span className="label-cn">/ Key 上限与预算</span>
+              </span>
+            ) : (
+              <span>
+                PLAN QUOTAS <span className="label-cn">/ 套餐额度</span>
+              </span>
+            )}
           </div>
           <span className={'status-tag ' + tone}>{status}</span>
         </div>
         <div className="quota-subhead">
           <span>
-            {stale && windows.length ? '上次数据 · ' : '各窗口分别计算 · '}
-            {windows.length + ' 个额度窗口'}
+            {stale && windows.length
+              ? '上次数据 · '
+              : keyLimits
+                ? '这把 Key 的上限 · 不是账户余额 · '
+                : '各窗口分别计算 · '}
+            {keyLimits
+              ? c?.budgets === null || c?.budgets === undefined
+                ? '预算未返回'
+                : c.budgets
+                  ? c.budgets + ' 个预算'
+                  : '没有预算'
+              : windows.length + ' 个额度窗口'}
           </span>
           <div className="segmented-control" aria-label="额度显示方式">
             <button className={!used ? 'selected' : ''} aria-pressed={!used} onClick={() => setUsed(false)}>
@@ -165,7 +201,15 @@ export function ProviderDashboard({ state, onSettings }) {
                 <div className={'quota-number ' + toneFor(w, state.settings.threshold) + '-text'}>
                   <strong>{metric(w, used)}</strong>
                   <span className="remaining-label">
-                    {w.applicable === false ? '套餐权益' : w.unlimited ? '额度' : used ? '已用' : '剩余'}
+                    {w.applicable === false
+                      ? '套餐权益'
+                      : w.unlimited
+                        ? w.unit === 'USD'
+                          ? '上限'
+                          : '额度'
+                        : used
+                          ? '已用'
+                          : '剩余'}
                   </span>
                 </div>
               </div>
@@ -213,16 +257,60 @@ export function ProviderDashboard({ state, onSettings }) {
           </span>
         </div>
       </section>
+      {keyLimits && c?.spend && <KeySpend spend={c.spend} />}
       <div className="provider-data-note">
         <Info size={16} />
         <p>
-          <Disclosure
-            summary="只有套餐额度，没有 Token 明细与费用"
-            detail="额度来自官方接口；Token 与实际费用不在此接口中。工具分析是独立来源。"
-          />
+          {keyLimits ? (
+            <Disclosure
+              summary="只有这把 Key 的上限与花费，没有 Token 明细"
+              detail="上限、预算与花费来自 OpenRouter 官方接口，只针对这把 Key；Token 明细不在此接口中。工具分析是独立来源，与这里不相加。"
+            />
+          ) : (
+            <Disclosure
+              summary="只有套餐额度，没有 Token 明细与费用"
+              detail="额度来自官方接口；Token 与实际费用不在此接口中。工具分析是独立来源。"
+            />
+          )}
         </p>
       </div>
     </div>
+  );
+}
+// T10.2 (layout A): the key's reported spend in USD per UTC period — OpenRouter's own numbers, not a bill.
+const SPEND = [
+  ['daily', '今日', 'UTC 当天'],
+  ['weekly', '本周', 'UTC 周一起'],
+  ['monthly', '本月', 'UTC 当月'],
+  ['total', '累计', '这把 Key 创建以来'],
+];
+function KeySpend({ spend }) {
+  return (
+    <section className="panel key-spend-panel">
+      <div className="panel-heading">
+        <div className="section-title purple-text">
+          <Receipt size={16} />
+          <span>
+            REPORTED SPEND <span className="label-cn">/ 已报告花费</span>
+          </span>
+        </div>
+        <span className="micro-label">USD · 不是账单</span>
+      </div>
+      <div className="key-spend-grid">
+        {SPEND.map(([key, label, note]) => (
+          <section key={key} aria-label={label + '已报告花费'}>
+            <div className="micro-label">{note}</div>
+            <h2>{label}</h2>
+            <strong className="mono">
+              {formatAmount(spend[key])} <small>USD</small>
+            </strong>
+          </section>
+        ))}
+      </div>
+      {spend.byok !== null && spend.byok !== '0' && (
+        <p className="analysis-note">另有自带 Key（BYOK）的用量累计 {formatAmount(spend.byok)} USD，不计入以上花费。</p>
+      )}
+    </section>
   );
 }
 export function ProviderWidget({ state }) {

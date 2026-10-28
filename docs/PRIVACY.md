@@ -18,6 +18,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 | 火山方舟 | AFP 套餐用量（北京区） | `ark.cn-beijing.volcengineapi.com` |
 | DeepSeek | 账户余额 | `api.deepseek.com` |
 | Kimi 开放平台 | 可用余额、代金券余额、现金余额 | 国内 `api.moonshot.cn` / 国际 `api.moonshot.ai`（按你选的站点） |
+| OpenRouter | 这把 Key 的花费上限、预算和已报告花费（USD）；接口同时返回的 Key 名称、用户 / 组织 / 工作区编号等不保存 | `openrouter.ai` |
 | OpenCode Go | 三个周期的用量百分比 | `opencode.ai` |
 | Codex 订阅 | 账户与额度窗口 | 不联网；只调用本机官方 Codex 程序的 4 个只读方法 |
 | Claude 订阅 | 额度窗口 | 不联网；来自你用生成的启动脚本运行的 Claude Code 状态栏 |
@@ -75,6 +76,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 | Volcengine Ark | AFP plan usage (Beijing) | `ark.cn-beijing.volcengineapi.com` |
 | DeepSeek | account balance | `api.deepseek.com` |
 | Kimi open platform | available, voucher and cash balance | China `api.moonshot.cn` / international `api.moonshot.ai` (the site you choose) |
+| OpenRouter | this key's spend limit, budgets and reported spend (USD); the key label and user / organization / workspace ids it also returns are not kept | `openrouter.ai` |
 | OpenCode Go | usage percentages of three periods | `opencode.ai` |
 | Codex subscription | account and quota windows | no network; four read-only methods of the official local Codex program |
 | Claude subscription | quota windows | no network; from the Claude Code status line when you start it with the generated launcher |
