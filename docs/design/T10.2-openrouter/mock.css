@@ -1,0 +1,72 @@
+/* T10.2 mock-only additions (layout wrapper, spend grid, budget table); real CSS is written after the user picks. */
+body {
+  margin: 0;
+}
+.mock-main {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 28px 32px 40px;
+  display: grid;
+  gap: 16px;
+}
+.mock-caption {
+  margin-top: 8px;
+}
+.mock-badge {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+}
+.mock-spend-panel {
+  padding: 24px 26px;
+}
+.mock-spend-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+.mock-spend-grid section {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.mock-spend-grid h2 {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 12px 0 8px;
+}
+.mock-spend-grid strong {
+  font-size: 24px;
+  font-weight: 500;
+}
+.mock-spend-grid small,
+.mock-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+.mock-tight {
+  margin-top: 8px !important;
+}
+.mock-budgets {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 4px 0 20px;
+}
+.mock-budgets th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mock-budgets td {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.mock-main .provider-dashboard {
+  display: grid;
+  gap: 16px;
+}
