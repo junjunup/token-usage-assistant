@@ -16,6 +16,14 @@ function fixtureBody(provider, now = NOW) {
         { currency: 'CNY', total_balance: '110.00', granted_balance: '10.00', topped_up_balance: '100.00' },
       ],
     };
+  // T10.1: the official sample response (both sites use the same shape; the currency comes from the site).
+  if (provider === 'kimi')
+    return {
+      code: 0,
+      data: { available_balance: 49.58894, voucher_balance: 46.58893, cash_balance: 3.00001 },
+      scode: '0x0',
+      status: true,
+    };
   if (provider === 'glm')
     return {
       code: 200,
@@ -91,13 +99,15 @@ async function fixtureFetch(url) {
       ? 'opencode-go'
       : url === 'https://api.deepseek.com/user/balance'
         ? 'deepseek'
-        : url.includes('bigmodel') || url.includes('api.z.ai')
-          ? 'glm'
-          : url.includes('minimax')
-            ? 'minimax'
-            : url.includes('volcengineapi')
-              ? 'volcengine'
-              : null;
+        : url.includes('api.moonshot.')
+          ? 'kimi'
+          : url.includes('bigmodel') || url.includes('api.z.ai')
+            ? 'glm'
+            : url.includes('minimax')
+              ? 'minimax'
+              : url.includes('volcengineapi')
+                ? 'volcengine'
+                : null;
   return new Response(JSON.stringify(fixtureBody(provider, Date.now())), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

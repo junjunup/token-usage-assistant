@@ -9,7 +9,7 @@ import {
   normalizeOpenCodeGo,
   quota,
 } from './generated/provider-domain.js';
-import { normalizeDeepSeek } from './generated/balance-domain.js';
+import { normalizeDeepSeek, normalizeKimi } from './generated/balance-domain.js';
 import { PROVIDERS } from './generated/provider-catalog.js';
 import { panelState } from './generated/menubar-panel.js';
 const now = Date.now();
@@ -154,6 +154,15 @@ for (const provider of ['codex', 'claude'])
   };
 snapshots.deepseek = {
   parts: { balance: normalizeDeepSeek(fixtureBody('deepseek')) },
+  errors: [],
+  updatedAt: { balance: now },
+  fetching: false,
+  status: 'connected',
+  nextRefreshAt: now + 60000,
+};
+// T10.1: Kimi open platform, China site (CNY), from the official sample response.
+snapshots.kimi = {
+  parts: { balance: normalizeKimi(fixtureBody('kimi'), 'CNY') },
   errors: [],
   updatedAt: { balance: now },
   fetching: false,
@@ -335,7 +344,22 @@ if (
     },
   };
 if (selectedProvider === 'deepseek' && scenario === 'unknown') state.data.parts.balance.balances[0].granted = null;
-if (selectedProvider && selectedProvider !== 'deepseek' && scenario === 'unknown')
+// T10.1: ?provider=kimi&scenario=arrears (negative cash: available equals the voucher) / scenario=exhausted.
+if (selectedProvider === 'kimi' && ['arrears', 'exhausted', 'unknown'].includes(scenario))
+  state.data.parts.balance = normalizeKimi(
+    {
+      code: 0,
+      data:
+        scenario === 'arrears'
+          ? { available_balance: 12.5, voucher_balance: 12.5, cash_balance: -3.2 }
+          : scenario === 'exhausted'
+            ? { available_balance: 0, voucher_balance: 0, cash_balance: -1.08 }
+            : { available_balance: 49.58894 },
+    },
+    'CNY',
+  );
+const balanceProvider = ['deepseek', 'kimi'].includes(selectedProvider);
+if (selectedProvider && !balanceProvider && scenario === 'unknown')
   state.data.parts.credits.windows.forEach((w) => {
     w.used = null;
     w.cap = null;
@@ -350,7 +374,7 @@ if (selectedProvider === 'deepseek' && scenario === 'exhausted')
     is_available: false,
     balance_infos: [{ currency: 'CNY', total_balance: '0', granted_balance: '0', topped_up_balance: '0' }],
   });
-if (selectedProvider && selectedProvider !== 'deepseek' && scenario === 'exhausted') {
+if (selectedProvider && !balanceProvider && scenario === 'exhausted') {
   const w = state.data.parts.credits.windows[0];
   w.remainingPercent = 0;
   w.usedPercent = 100;
@@ -476,7 +500,7 @@ export const previewBridge = {
                 status: 'unavailable',
                 source: 'account',
                 range: { id: query.range },
-                ...(state.provider === 'deepseek'
+                ...(['deepseek', 'kimi'].includes(state.provider)
                   ? {
                       message: '此连接只有余额，没有 Token 或账单汇总',
                       messageDetail: '余额变化不是实际消费。请在总览查看余额，或切换到独立工具分析。',
@@ -513,8 +537,9 @@ export const previewBridge = {
     publish();
     await new Promise((r) => setTimeout(r, 600));
     state.data.fetching = false;
-    state.data.updatedAt =
-      state.provider === 'deepseek' ? { balance: Date.now() } : { credits: Date.now(), summary: Date.now() };
+    state.data.updatedAt = ['deepseek', 'kimi'].includes(state.provider)
+      ? { balance: Date.now() }
+      : { credits: Date.now(), summary: Date.now() };
     state.data.nextRefreshAt = Date.now() + state.settings.refreshSeconds * 1000;
     publish();
     return ok(state);

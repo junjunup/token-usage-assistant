@@ -39,6 +39,42 @@ function normalizeDeepSeek(raw) {
   return { isAvailable: raw.is_available, balances, source: 'deepseek-official-balance' };
 }
 /**
+ * A JSON number amount as a decimal string (T10.1: Kimi returns numbers such as 49.58894). The shortest round-trip
+ * form keeps the digits the server sent; exponent forms and non-finite values are rejected, not guessed.
+ * @param {any} value
+ * @returns {string|null}
+ */
+function numberAmount(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('Unsupported amount');
+  return decimal(String(value));
+}
+/**
+ * Kimi open platform GET /v1/users/me/balance (T10.1, D16). The currency comes from the site: CNY on the China
+ * site, USD on the international one (never converted). `available_balance` is required; voucher and cash are
+ * optional (missing stays unknown). Negative cash means arrears; then the platform counts only the voucher.
+ * @param {any} raw upstream JSON
+ * @param {'CNY'|'USD'} currency
+ */
+function normalizeKimi(raw, currency) {
+  const data = raw?.data;
+  if (!raw || raw.code !== 0 || !data || typeof data !== 'object' || Array.isArray(data))
+    throw new Error('Unsupported balance response');
+  if (!['CNY', 'USD'].includes(currency)) throw new Error('Unsupported currency');
+  const total = numberAmount(data.available_balance),
+    voucher = numberAmount(data.voucher_balance),
+    cash = numberAmount(data.cash_balance);
+  if (total === null) throw new Error('Missing amounts');
+  if (voucher !== null && voucher.startsWith('-')) throw new Error('Unsupported amount');
+  const positive = (/** @type {string} */ v) => !v.startsWith('-') && /[1-9]/.test(v);
+  return {
+    // The platform rejects inference calls when the available balance is zero or below.
+    isAvailable: positive(total),
+    balances: [{ currency, total, voucher, cash, arrears: cash !== null && cash.startsWith('-') }],
+    source: 'kimi-official-balance',
+  };
+}
+/**
  * @param {any} value
  * @returns {string}
  */
@@ -54,4 +90,4 @@ function formatAmount(value) {
   const [whole, fraction = ''] = /** @type {string} */ (amount).split('.');
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + fraction.padEnd(2, '0');
 }
-module.exports = { normalizeDeepSeek, formatAmount };
+module.exports = { normalizeDeepSeek, normalizeKimi, formatAmount };
