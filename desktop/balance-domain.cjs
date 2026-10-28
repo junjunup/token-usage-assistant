@@ -90,4 +90,4 @@ function formatAmount(value) {
   const [whole, fraction = ''] = /** @type {string} */ (amount).split('.');
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + fraction.padEnd(2, '0');
 }
-module.exports = { normalizeDeepSeek, normalizeKimi, formatAmount };
+module.exports = { normalizeDeepSeek, normalizeKimi, numberAmount, formatAmount };

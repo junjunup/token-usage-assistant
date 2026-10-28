@@ -37,6 +37,7 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Platform quota | OpenCode Go | Official usage API (percentages for three periods) | Sample-tested |
 | Balance | DeepSeek | Official balance API | Sample-tested |
 | Balance | Kimi open platform (China / international) | Official balance API | Sample-tested |
+| Key limit and spend | OpenRouter | Official key API (this key's limit, budgets, reported spend) | Sample-tested |
 | Subscription quota | ChatGPT · Codex | Read-only methods of the local official Codex program | Live-tested (Windows, read-only query of a Pro account) |
 | Subscription quota | Claude · Claude Code | Status line + local OTLP component | Live-tested (macOS, quota and usage sync; not reconciled with the website) |
 | Tool usage | Zcode | Read-only SQLite metadata | Live-tested (real database on Windows) |
@@ -87,7 +88,7 @@ Node 24.x, pnpm 11.19.0, Electron 44.9.3 (locked in `pnpm-lock.yaml`).
 ```bash
 pnpm install
 pnpm run dev               # browser preview (sample data)
-pnpm run test:desktop      # desktop and analytics tests (baseline: 383 pass / 0 fail / 6 skipped locally; 389 / 0 / 0 in CI with Harness runtimes)
+pnpm run test:desktop      # desktop and analytics tests (baseline: 390 pass / 0 fail / 6 skipped locally; 396 / 0 / 0 in CI with Harness runtimes)
 pnpm run lint              # ESLint
 pnpm run typecheck         # strict type check of the pure domain modules (required in CI)
 pnpm run format:check      # Prettier (pnpm run format to fix)

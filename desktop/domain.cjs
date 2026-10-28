@@ -281,6 +281,8 @@ function percentText(p) {
  * @param {number} [now]
  */
 function resetDescription(window, now = Date.now()) {
+  // T10.2: the platform says this limit never resets (OpenRouter limit_reset / reset_interval null).
+  if (window?.resetState === 'never') return '不重置';
   if (window?.unlimited) return '当前不设窗口限制';
   if (window?.resetState === 'unconfirmed') return '已用不足 1% · 窗口起点待确认';
   const at = window?.resetAt;

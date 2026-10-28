@@ -35,6 +35,7 @@
 | 平台额度 | OpenCode Go | 官方用量接口（三个周期的百分比） | 样例验证 |
 | 按量余额 | DeepSeek | 官方余额接口 | 样例验证 |
 | 按量余额 | Kimi 开放平台（国内 / 国际） | 官方余额接口 | 样例验证 |
+| Key 上限与花费 | OpenRouter | 官方 Key 信息接口（这把 Key 的上限、预算、已报告花费） | 样例验证 |
 | 订阅额度 | ChatGPT · Codex | 本机官方 Codex 程序的只读方法 | 已实测（Windows，Pro 账户只读查询） |
 | 订阅额度 | Claude · Claude Code | 状态栏 + 本机 OTLP 组件 | 已实测（Mac，额度与用量同步；未与官网核账） |
 | 工具用量 | Zcode | 只读 SQLite 元数据 | 已实测（Windows 真实数据库） |
@@ -85,7 +86,7 @@
 ```bash
 pnpm install
 pnpm run dev               # 浏览器预览（示例数据）
-pnpm run test:desktop      # 桌面与分析测试（基线：本机 383 通过 / 0 失败 / 6 跳过；CI 装了 Harness 运行时，389 / 0 / 0）
+pnpm run test:desktop      # 桌面与分析测试（基线：本机 390 通过 / 0 失败 / 6 跳过；CI 装了 Harness 运行时，396 / 0 / 0）
 pnpm run lint              # ESLint
 pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）

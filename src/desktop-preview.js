@@ -7,6 +7,7 @@ import {
   normalizeMiniMax,
   normalizeVolcengine,
   normalizeOpenCodeGo,
+  normalizeOpenRouter,
   quota,
 } from './generated/provider-domain.js';
 import { normalizeDeepSeek, normalizeKimi } from './generated/balance-domain.js';
@@ -112,6 +113,8 @@ for (const [provider, normalize] of Object.entries({
   volcengine: normalizeVolcengine,
   // OpenCode Go (beta.5) was missing here, so selecting its preview account blanked the page.
   'opencode-go': normalizeOpenCodeGo,
+  // T10.2: an OpenRouter key with a monthly limit and one member budget (official example shape).
+  openrouter: normalizeOpenRouter,
 })) {
   snapshots[provider] = {
     parts: { credits: normalize(fixtureBody(provider, now), now) },
@@ -359,6 +362,13 @@ if (selectedProvider === 'kimi' && ['arrears', 'exhausted', 'unknown'].includes(
     'CNY',
   );
 const balanceProvider = ['deepseek', 'kimi'].includes(selectedProvider);
+// T10.2: ?provider=openrouter&scenario=unlimited — a key without a spend limit and without budgets.
+if (selectedProvider === 'openrouter' && scenario === 'unlimited') {
+  const body = fixtureBody('openrouter', now);
+  state.data.parts.credits = normalizeOpenRouter({
+    data: { ...body.data, limit: null, limit_remaining: null, limit_reset: null, budgets: [] },
+  });
+}
 if (selectedProvider && !balanceProvider && scenario === 'unknown')
   state.data.parts.credits.windows.forEach((w) => {
     w.used = null;

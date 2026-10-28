@@ -1,5 +1,6 @@
 // @ts-check
 const { count, finite, text, timestamp } = require('./domain.cjs');
+const { numberAmount } = require('./balance-domain.cjs');
 // T5.5: JSDoc types only. Upstream JSON is `any` (validated at runtime here); derived numbers are `number|null`.
 /**
  * Quota window input: every value comes straight from upstream JSON and is validated by quota().
@@ -283,4 +284,140 @@ function normalizeOpenCodeGo(raw) {
       '按官方百分比显示，不换算为金额或 Token。若已在官方平台开启 Use balance，Go 用尽后仍可能使用 Zen 余额；本接口不返回余额及开关状态。',
   };
 }
-module.exports = { quota, normalizeGlm, normalizeMiniMax, normalizeVolcengine, normalizeOpenCodeGo, miniCounts };
+// T10.2 (D16 ③): OpenRouter GET /api/v1/key — limits and reported spend of THIS key (credits = USD), not an account
+// balance or a bill. Only whitelisted numbers are kept: the key label, user / organization / workspace ids and other
+// identity fields are never stored. The key's own limit also appears in `budgets` as scope key_limit; it is shown
+// once, as the key limit, taking its server-given resets_at (no countdown is computed here).
+const OPENROUTER_INTERVAL = Object.freeze({ daily: '每日', weekly: '每周', monthly: '每月' });
+const OPENROUTER_SCOPE = Object.freeze({
+  api_key: '这把 Key 的预算',
+  member: '成员预算',
+  workspace: '工作区预算',
+  workspace_default_member: '工作区成员默认预算',
+  workspace_default_key: '工作区 Key 默认预算',
+});
+/** @type {(value: any) => number|null} */
+const usdNumber = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('schema');
+  return value;
+};
+/** @type {(value: any) => string|null} ISO 8601 instant, or null */
+const isoInstant = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value) || !timestamp(value))
+    throw new Error('schema');
+  return value;
+};
+/**
+ * @param {{ id: string, label: string, group: string, limit: number, remaining: number, interval: any, resetsAt: any }} w
+ */
+function usdWindow({ id, label, group, limit, remaining, interval, resetsAt }) {
+  if (limit < 0) throw new Error('schema');
+  const window = quota({
+    id,
+    label,
+    group,
+    unit: 'USD',
+    // Remaining can be negative (over the limit); the share is clamped, the amounts stay as returned.
+    remainingPercent: limit > 0 ? Math.max(0, Math.min(100, (remaining / limit) * 100)) : 0,
+    resetAt: resetsAt,
+    exhausted: remaining <= 0,
+  });
+  window.used = limit - remaining;
+  window.cap = limit;
+  // The server's own remaining amount, shown instead of a value derived by float subtraction.
+  /** @type {any} */ (window).remainingAmount = remaining;
+  // T10.2: a limit that never resets says so instead of "reset time not returned".
+  if (interval === null) window.resetState = 'never';
+  return window;
+}
+/** @param {any} raw upstream /api/v1/key JSON */
+function normalizeOpenRouter(raw) {
+  const d = raw?.data;
+  if (!object(d) || !('limit' in d) || !('limit_remaining' in d)) throw new Error('schema');
+  const limit = usdNumber(d.limit),
+    remaining = usdNumber(d.limit_remaining),
+    reset = d.limit_reset ?? null;
+  if ((limit === null) !== (remaining === null)) throw new Error('schema');
+  if (reset !== null && !(typeof reset === 'string' && reset in OPENROUTER_INTERVAL)) throw new Error('schema');
+  const budgets = d.budgets === undefined ? null : d.budgets;
+  if (budgets !== null && (!Array.isArray(budgets) || budgets.length > 50)) throw new Error('schema');
+  /** @type {Array<{ scope: string, interval: string|null, limit: number, remaining: number, resetsAt: string|null }>} */
+  const rows = (budgets || []).map((/** @type {any} */ b) => {
+    if (!object(b) || typeof b.scope !== 'string') throw new Error('schema');
+    const interval = b.reset_interval ?? null;
+    if (interval !== null && !(typeof interval === 'string' && interval in OPENROUTER_INTERVAL))
+      throw new Error('schema');
+    const limitUsd = usdNumber(b.limit_usd),
+      spend = usdNumber(b.spend_usd),
+      left = usdNumber(b.remaining_usd);
+    if (limitUsd === null || spend === null || left === null) throw new Error('schema');
+    return { scope: b.scope, interval, limit: limitUsd, remaining: left, resetsAt: isoInstant(b.resets_at) };
+  });
+  const own = rows.find((b) => b.scope === 'key_limit');
+  const windows = [
+    limit === null || remaining === null
+      ? Object.assign(
+          quota({ id: 'openrouter:key', label: '花费上限', group: '这把 Key · USD', unit: 'USD', unlimited: true }),
+          { resetState: 'never' },
+        )
+      : usdWindow({
+          id: 'openrouter:key',
+          label: '花费上限' + (reset ? ' · ' + OPENROUTER_INTERVAL[/** @type {'daily'} */ (reset)] : ''),
+          group: '这把 Key · USD',
+          limit,
+          remaining,
+          interval: reset,
+          resetsAt: own && own.interval === reset ? own.resetsAt : null,
+        }),
+    ...rows
+      .filter((b) => b.scope !== 'key_limit')
+      .map((b, i) =>
+        usdWindow({
+          id: 'openrouter:budget:' + i,
+          label:
+            (OPENROUTER_SCOPE[/** @type {'member'} */ (b.scope)] || '预算') +
+            (b.interval ? ' · ' + OPENROUTER_INTERVAL[/** @type {'daily'} */ (b.interval)] : ''),
+          group: '预算 · USD',
+          limit: b.limit,
+          remaining: b.remaining,
+          interval: b.interval,
+          resetsAt: b.resetsAt,
+        }),
+      ),
+  ];
+  /** @type {(v: any) => string|null} */
+  const usd = (v) => {
+    try {
+      return numberAmount(v);
+    } catch {
+      throw new Error('schema');
+    }
+  };
+  return {
+    windows,
+    budgets: budgets === null ? null : windows.length - 1,
+    // Reported spend of this key in USD (UTC day / week from Monday / month; total since the key was created).
+    spend: {
+      daily: usd(d.usage_daily),
+      weekly: usd(d.usage_weekly),
+      monthly: usd(d.usage_monthly),
+      total: usd(d.usage),
+      byok: usd(d.byok_usage),
+    },
+    planName: 'OpenRouter · 这把 Key',
+    note: '上限和花费都只针对这把 Key',
+    noteDetail:
+      'OpenRouter 返回的是这把 Key 的花费上限与已报告花费（USD），不是账户余额，也不是账单；同一账户的其他 Key 不在内，各连接不相加。花费不含自带 Key（BYOK）的用量。',
+  };
+}
+module.exports = {
+  quota,
+  normalizeGlm,
+  normalizeMiniMax,
+  normalizeVolcengine,
+  normalizeOpenCodeGo,
+  normalizeOpenRouter,
+  miniCounts,
+};
