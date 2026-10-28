@@ -3,8 +3,16 @@ import { Disclosure } from './Disclosure.jsx';
 import { Coins, Info, WarningCircle, ArrowUpRight } from '@phosphor-icons/react';
 import { formatAmount } from './generated/balance-domain.js';
 import { quotaStatus } from './generated/domain.js';
+import { providerInfo } from './generated/provider-catalog.js';
 import './balance.css';
 const currencyName = (code) => (code === 'CNY' ? '人民币' : '美元');
+// T10.1: each balance platform's own names for the parts of its balance. DeepSeek: total = granted + topped up;
+// Kimi: available = cash + voucher, and negative cash (arrears) leaves only the voucher.
+const BRAND = { deepseek: 'DeepSeek', kimi: 'Kimi 开放平台' };
+const brand = (state) => BRAND[state.provider] || providerInfo(state.provider)?.name || '平台';
+const kimiRow = (row) => row && 'voucher' in row;
+const unavailableText = (state) =>
+  state.provider === 'kimi' ? '可用余额已用完，暂不能调用 API' : '当前余额不可用于 API 调用';
 export function BalanceDashboard({ state, onSettings, onTools }) {
   const { data } = state,
     balance = data.parts.balance,
@@ -17,7 +25,7 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
       <div className="account-line">
         <span>
           <span className={'status-dot ' + tone} />
-          {account?.label || 'DeepSeek'} · 官方按量账户
+          {account?.label || brand(state)} · 官方按量账户
         </span>
         <span>账户余额</span>
       </div>
@@ -48,37 +56,41 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
         </div>
         <p className="balance-availability">
           {balance
-            ? `${stale ? '上次返回' : '官方返回'}：${balance.isAvailable ? '有可供 API 调用的余额' : '当前余额不可用于 API 调用'}`
+            ? `${stale ? '上次返回' : '官方返回'}：${balance.isAvailable ? '有可供 API 调用的余额' : unavailableText(state)}`
             : '连接后查询官方账户余额'}{' '}
           · 各币种分别显示
         </p>
         <div className="balance-grid">
-          {rows.map((row) => (
-            <section className="balance-currency" key={row.currency} aria-label={row.currency + ' 余额'}>
-              <div className="micro-label">
-                {row.currency} / {currencyName(row.currency)}
-              </div>
-              <h2>{stale ? '上次可用余额' : '总可用余额'}</h2>
-              <strong className="balance-total mono">
-                {formatAmount(row.total)} <small>{row.currency}</small>
-              </strong>
-              <dl>
-                <div>
-                  <dt>赠金余额</dt>
-                  <dd className="mono">
-                    {formatAmount(row.granted)} <small>{row.currency}</small>
-                  </dd>
+          {rows.map((row) =>
+            kimiRow(row) ? (
+              <KimiBalance row={row} stale={stale} key={row.currency} />
+            ) : (
+              <section className="balance-currency" key={row.currency} aria-label={row.currency + ' 余额'}>
+                <div className="micro-label">
+                  {row.currency} / {currencyName(row.currency)}
                 </div>
-                <div>
-                  <dt>充值余额</dt>
-                  <dd className="mono">
-                    {formatAmount(row.toppedUp)} <small>{row.currency}</small>
-                  </dd>
-                </div>
-              </dl>
-              <p>总余额包含赠金与充值余额，三项不重复相加。</p>
-            </section>
-          ))}
+                <h2>{stale ? '上次可用余额' : '总可用余额'}</h2>
+                <strong className="balance-total mono">
+                  {formatAmount(row.total)} <small>{row.currency}</small>
+                </strong>
+                <dl>
+                  <div>
+                    <dt>赠金余额</dt>
+                    <dd className="mono">
+                      {formatAmount(row.granted)} <small>{row.currency}</small>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>充值余额</dt>
+                    <dd className="mono">
+                      {formatAmount(row.toppedUp)} <small>{row.currency}</small>
+                    </dd>
+                  </div>
+                </dl>
+                <p>总余额包含赠金与充值余额，三项不重复相加。</p>
+              </section>
+            ),
+          )}
         </div>
         {!rows.length && (
           <div className="provider-empty">
@@ -97,7 +109,13 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
         <div className="quota-footer">
           <Info size={14} />
           <span>
-            <Disclosure summary="余额变化不等于消费" detail="可能包含充值和赠金。缺失金额显示“—”，不默认换汇。" />
+            <Disclosure
+              summary="余额变化不等于消费"
+              detail={
+                (state.provider === 'kimi' ? '可能包含充值和代金券。' : '可能包含充值和赠金。') +
+                '缺失金额显示“—”，不默认换汇。'
+              }
+            />
           </span>
         </div>
       </section>
@@ -107,7 +125,7 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
           <p>
             <Disclosure
               summary="本机工具独立统计，费用为估算"
-              detail="可按人工确认的计费账户关联范围查看。费用来自已配置的模型单价，不是 DeepSeek 官方账单。"
+              detail={`可按人工确认的计费账户关联范围查看。费用来自已配置的模型单价，不是 ${brand(state)} 官方账单。`}
             />
           </p>
         </div>
@@ -128,6 +146,31 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
     </div>
   );
 }
+// T10.1 (D16 ②): the available balance is the main figure; voucher and cash go into the details. Negative cash is
+// arrears and stays visible (a warning is never folded away, T6.3).
+function KimiBalance({ row, stale }) {
+  return (
+    <section className="balance-currency" aria-label={row.currency + ' 余额'}>
+      <div className="micro-label">
+        {row.currency} / {currencyName(row.currency)}
+      </div>
+      <h2>
+        {stale ? '上次可用余额' : '可用余额'}
+        {row.arrears && <span className="status-tag amber balance-arrears">欠费</span>}
+      </h2>
+      <strong className="balance-total mono">
+        {formatAmount(row.total)} <small>{row.currency}</small>
+      </strong>
+      {row.arrears && <p className="balance-arrears-note">现金余额为负，可用余额只计代金券。</p>}
+      <p>
+        <Disclosure
+          summary="可用余额 = 现金余额 + 代金券余额"
+          detail={`代金券余额 ${formatAmount(row.voucher)} ${row.currency}；现金余额 ${formatAmount(row.cash)} ${row.currency}${row.arrears ? '（欠费）' : ''}。三项不重复相加。`}
+        />
+      </p>
+    </section>
+  );
+}
 export function BalanceWidget({ state }) {
   const balance = state.data.parts.balance,
     account = state.accounts?.find((a) => a.id === state.activeAccountId),
@@ -136,7 +179,7 @@ export function BalanceWidget({ state }) {
   return (
     <div className="balance-widget">
       <div className="provider-widget-account">
-        <strong>{account?.label || 'DeepSeek · 官方按量'}</strong>
+        <strong>{account?.label || providerInfo(state.provider)?.name || '按量余额'}</strong>
         <small>
           {status}
           {stale && balance ? ' · 上次余额' : ''}
@@ -147,10 +190,27 @@ export function BalanceWidget({ state }) {
           <div className="widget-row">
             <span>
               {row.currency} {currencyName(row.currency)}
+              {row.arrears ? ' · 欠费' : ''}
             </span>
             <strong className="mono">{formatAmount(row.total)}</strong>
           </div>
-          {state.settings.widgetExpanded && (
+          {state.settings.widgetExpanded && kimiRow(row) && (
+            <dl>
+              <div>
+                <dt>代金券</dt>
+                <dd>
+                  {formatAmount(row.voucher)} {row.currency}
+                </dd>
+              </div>
+              <div>
+                <dt>现金{row.arrears ? '（欠费）' : ''}</dt>
+                <dd>
+                  {formatAmount(row.cash)} {row.currency}
+                </dd>
+              </div>
+            </dl>
+          )}
+          {state.settings.widgetExpanded && !kimiRow(row) && (
             <dl>
               <div>
                 <dt>赠金</dt>

@@ -25,7 +25,7 @@ class ProviderError extends ApiError {
                     ? name + ' 服务暂时不可用。'
                     : code === 'upstream'
                       ? name +
-                        (provider === 'deepseek'
+                        (providerDefinition(provider)?.clientKind === 'balance'
                           ? ' 未能返回余额，请检查官方平台账户状态。'
                           : ' 未能提供套餐额度，请检查套餐、密钥类型及地区。')
                       : name + ' 连接失败，请检查网络或代理。';
@@ -147,7 +147,8 @@ class BalanceClient extends QuotaClient {
       const raw = await this.request(credential);
       let balance;
       try {
-        balance = providerDefinition(this.provider).normalize(raw, this.now());
+        // The region decides the currency for platforms whose response does not name it (Kimi, T10.1).
+        balance = providerDefinition(this.provider).normalize(raw, this.now(), this.region);
       } catch {
         throw new ProviderError(this.provider, 0, 'schema');
       }

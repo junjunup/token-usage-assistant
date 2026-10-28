@@ -134,3 +134,11 @@
     margin-left: 0;
   }
 }
+/* T10.1: Kimi arrears tag and note (negative cash). */
+.balance-arrears {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.balance-currency .balance-arrears-note {
+  color: var(--amber);
+}
