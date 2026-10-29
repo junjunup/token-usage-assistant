@@ -1,12 +1,12 @@
 # 项目交接：当前状态快照
 
-> 更新：2026-10-25。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
+> 更新：2026-10-29。本文只写**当前**状态；版本历史见 [CHANGELOG.md](CHANGELOG.md)，旧交接原文见 [docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md](docs/history/PROJECT_HANDOFF-through-1.8.0-beta.5.md)。
 > 规则见 [AGENTS.md](AGENTS.md)；进行中的工作见 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)；Mac 菜单栏状态与灵动岛设计见 [docs/island-1.9.0-design/HANDOFF.md](docs/island-1.9.0-design/HANDOFF.md)。
 
 ## 1. 当前版本与环境
 
 - 版本：`1.9.0-beta.6`（`package.json`）。2026-10-29 打标签 `v1.9.0-beta.6`（→ `f3f1bd2`）并发布到源码仓库与 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.6)（均为 prerelease）；内容为阶段 10 的 T10.1 Kimi 开放平台余额、T10.2 OpenRouter Key 上限与花费（两个平台都只做过样例验证）。上一个发布：2026-10-28 打标签 `v1.9.0-beta.5`（→ `9fa277c`）并发布到源码仓库与 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.5)（均为 prerelease）；内容为阶段 9 的 T9.1–T9.15，另含 T8.13 与 H3 说明更正；安装包仓库 README 同日按 `docs/installer-repo/README.md` 更新。上一个发布：2026-10-25 打标签 `v1.9.0-beta.4`（→ `d2174b1`）并发布到源码仓库与 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.4)（均为 prerelease）；内容为 T6.1 平台验证等级、T6.2 覆盖范围报告、T6.3 说明渐进披露。上一个发布：2026-10-25 打标签 `v1.9.0-beta.3`（→ `ce60aa7`）并发布到源码仓库与 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases/tag/v1.9.0-beta.3)（均为 prerelease）。稳固版：T8.1 Electron 44.9.3、T8.2 设置向前兼容、T8.3 锁屏兜底、T8.4 Claude 额度结构校验、T8.5 Claude 采集端口自动更换、T8.6 开发包检查更新与账户加载耗时、T8.7 许可证随包，以及 T8.10 发版流程加固。上一个发布：2026-10-23 打标签 `v1.9.0-beta.2`（→ `237987f`），源码仓库 Release 与安装包仓库 Release 均为 prerelease。
-- 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。
+- 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。用户另有一台 Windows 电脑（D17 ③），用于 Windows 真机验收；执行模型不能直接操作它。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.6`（上一个 `v1.9.0-beta.5`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.4（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1–beta.3；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
 - 测试基线：`pnpm run test:desktop` 共 396 项，本机 390 通过 / 0 失败 / 6 跳过（CI 装有两个已验证版本的 Harness 运行时，396 / 0 / 0）（本机未装 Harness 运行时）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
@@ -98,13 +98,14 @@
 - ~~告诉执行模型你在用的 Harness 版本~~（2026-10-25 执行模型只读查到）：DeepSeek Harness **0.2.1-rc.2**（另装有 DSH Desktop Beta 2.0.17-beta.1），而本项目的 Harness 支持锁定在 0.1.7-rc.1。T8.13 据此再定去留。
 - **在 DeepSeek Harness 里安装用量导出插件 1.5.0**（T8.13 完成后，可选）：插件已放在 `~/.token-usage-assistant/harness-plugin`。退出 DeepSeek Harness 后在终端运行 `npx --yes @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile desktop add "$HOME/.token-usage-assistant/harness-plugin"`，重新打开 Harness；再在助手「账户与设置 → 工具数据源」添加 DeepSeek Harness，选 `~/.token-usage-assistant/harness/usage.jsonl`。只统计安装之后的用量，不补历史。
 - **真机验收剩余项**（2026-10-25 Claude 已代测能做的部分，见验收清单第 13、16、17 项）：切换「系统设置 → 外观」看图标变化；用尽时的红色；录屏、会议共享、锁屏、快速切换用户；外接屏、多桌面、全屏应用中点图标；锁屏暂停与恢复（T4.4、T8.3）。
+- **阶段 11 会用到的（到版本节点时一次交给你，D17）**：在 Windows 电脑上按 `docs/WINDOWS-ACCEPTANCE-CHECKLIST.md`（T11.8 写好后）做真机验收；为 README 截 Windows 实机截图（示例数据，T11.10）；发版后在 linux.do、V2EX 发首发帖（执行模型写草稿）；首发之后申请 SignPath 免费开源签名（T11.7）。
 - **`PUBLIC_RELEASE_TOKEN` 于 2027-01-13 到期**：到期前重新生成并设置。
 
 ## 7. 下一步
 
 按 [IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md) 第 3 节的任务总览和推荐顺序执行；每个任务完成后更新该文件的执行记录。
 
-- 当前：阶段 10「更多平台」（2026-10-28，D16）：**T10.1、T10.2、T10.4 已完成，1.9.0-beta.6 已于 2026-10-29 发布**；只接 Kimi 开放平台余额（T10.1）与 OpenRouter Key 用量与上限（T10.2，先出 mock）；硅基流动暂不做；余额告警沿用 DeepSeek 规则；攒成一个 1.9.0-beta.6（T10.4）。顺序：T10.2 的 mock → 等确认期间做 T10.1 → T10.2 实现 → T10.4。用户另行告知手上有哪些真实账户。
-- 上一阶段：阶段 9「开源与增长」（2026-10-26，D14：开源积攒用户、攒一批再发、签名暂不花钱、做英文 README、新平台先只调研）。T9.1–T9.15 已全部完成，1.9.0-beta.5 已于 2026-10-28 发布（T9.9 的结论见 [PROVIDERS-2026-11](docs/research/PROVIDERS-2026-11.md)，是否实现待用户决定）；2026-10-27 加入 D15（跟随上游：信任结构契约而不是版本号），之后的顺序为 T9.12（与 T9.9 一起调研）→ T9.13 → T9.14 → T9.15 → T9.7 → T9.8 → T9.10 → T9.11（1.9.0-beta.5）。阶段 8 已全部完成；T4.2 暂不做，T7.2、增量一、增量二推迟，刘海悬停面板搁置。
+- 当前：阶段 11「看得全、装得上」（2026-10-29，D17：公开路线，定位「Windows 优先的中文工具，同时盯多个国内 Coding Plan 与余额账户」；D4 维持，不做 Mac 签名公证与 Homebrew；用户有 Windows 电脑；紧凑位置金额两位小数）。任务 T11.1–T11.10，顺序：T11.1 / T11.2 / T11.3 的浅色、深色草图一起交用户确认 → 等确认期间做 T11.5 测量、T11.6、T11.8 清单、T11.7 的清单文件与签名政策页 → 实现 T11.1 → T11.2 → T11.3 → T11.4 → T11.5 改动 → 用户做 T11.8 → T11.10 的 README 部分 → T11.9（达到门槛发 1.9.0，否则 1.9.0-beta.7）→ 用户发帖。
+- 上一阶段：阶段 10「更多平台」（2026-10-28，D16）：T10.1 Kimi 开放平台余额、T10.2 OpenRouter Key 用量与上限、T10.4 已完成，1.9.0-beta.6 已于 2026-10-29 发布；硅基流动（T10.3）暂不做。阶段 8、9 已全部完成；T4.2 暂不做，T7.2、增量一、增量二推迟，刘海悬停面板搁置。
 - 菜单栏：首版（T7.3–T7.8）以 1.9.0-beta.1 发布，真机验收后的改进（T7.9–T7.12）与 T4.7 以 1.9.0-beta.2 发布，均在 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases)。真机验收：第 3 项由用户填写；第 12、14、15 项为 ③（Claude 代测）；第 13 项与第 16、17 项的剩余部分待用户。
 - GitHub Actions：源码仓库 2026-10-18 公开后恢复运行（此前私有仓库因计费限制无法启动作业）。Release 工作流的 Artifacts 只保留 7 天。T7.5–T7.7 的 Windows 安装包随 T7.8 的 Release 补齐。
