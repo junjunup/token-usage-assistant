@@ -589,10 +589,9 @@ export const previewBridge = {
   saveDiagnostics: async () => ({ ok: true, value: true }),
 };
 
-// Popover panel preview (T7.6, ?surface=panel; ?theme=dark for the dark theme). The view model comes from the
-// same pure module as the desktop app (desktop/menubar-panel.cjs, generated), fed with the preview snapshots.
-function previewPanel() {
-  const summaries = state.accounts.map((a) => ({
+// Account summaries in the shape desktop/main.cjs builds for the panel (also used by the T11 design mock).
+export function previewSummaries() {
+  return state.accounts.map((a) => ({
     id: a.id,
     label: a.label,
     provider: a.provider,
@@ -602,6 +601,11 @@ function previewPanel() {
     parts: snapshots[a.provider]?.parts,
     updatedAt: snapshots[a.provider]?.updatedAt,
   }));
+}
+// Popover panel preview (T7.6, ?surface=panel; ?theme=dark for the dark theme). The view model comes from the
+// same pure module as the desktop app (desktop/menubar-panel.cjs, generated), fed with the preview snapshots.
+function previewPanel() {
+  const summaries = previewSummaries();
   const theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
   return {
     ...panelState(summaries, state.settings),
