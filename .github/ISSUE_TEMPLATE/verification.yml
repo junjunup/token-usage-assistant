@@ -1,0 +1,66 @@
+name: 平台验证报告 / Platform verification report
+description: 你用真实账户对照过某个平台的显示 / You compared a platform's numbers with its official console
+body:
+  - type: markdown
+    attributes:
+      value: |
+        表里标「样例验证」的平台，只用官方接口样例测试过，还没有和真实账户核对。如果你用自己的账户对照过应用里的数字和平台官方控制台，欢迎在这里告诉我们一致与否。
+        **不要贴 API Key、Cookie、账户邮箱或手机号，也不要贴截图里的账户信息（用户名、组织、余额以外的账单明细）。** 只需要写「一致 / 不一致在哪里」。
+        Platforms marked "Sample-tested" have only been tested with official API samples. If you compared the app's numbers with the platform's official console on your own account, tell us whether they match.
+        **Do not paste API keys, cookies, account emails or phone numbers, or account details from screenshots.** Saying what matches and what differs is enough.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 平台 / Platform
+      options:
+        - Command Code
+        - GLM Coding Plan
+        - MiniMax Token Plan
+        - 火山个人 Agent Plan / Volcengine Agent Plan
+        - OpenCode Go
+        - DeepSeek
+        - Kimi 开放平台 / Kimi open platform
+        - OpenRouter
+        - ChatGPT · Codex
+        - Claude · Claude Code
+        - 其他 / Other
+    validations:
+      required: true
+  - type: input
+    id: region
+    attributes:
+      label: 区域或站点 / Region or site
+      description: 例如 国内、国际、北京；只有一个站点的平台可以不填 / e.g. China, international, Beijing; leave empty if the platform has one site
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本与系统 / App version and OS
+      description: 「账户与设置」页面右上角，例如 1.9.0-beta.6 · Windows 11 / Top right of the settings page
+    validations:
+      required: true
+  - type: dropdown
+    id: match
+    attributes:
+      label: 应用的显示与官方控制台一致吗 / Does the app match the official console
+      options:
+        - 一致 / Yes
+        - 部分一致 / Partly
+        - 不一致 / No
+    validations:
+      required: true
+  - type: textarea
+    id: differences
+    attributes:
+      label: 对照了哪些项，差异在哪里 / What you compared, and what differs
+      description: |
+        例如「5 小时窗口剩余百分比一致，重置时间差 1 小时」「余额一致，代金券未显示」。写项目和差异即可，不要贴具体账户信息。
+        e.g. "5-hour window remaining matches, reset time is off by an hour", "balance matches, voucher missing". Items and differences only, no account details.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 确认 / Confirm
+      options:
+        - label: 我没有贴出 Key、Cookie、账户邮箱或截图里的账户信息 / I have not included keys, cookies, account emails or account details from screenshots
+          required: true
