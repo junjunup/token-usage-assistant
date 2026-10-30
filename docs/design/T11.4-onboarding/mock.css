@@ -1,0 +1,314 @@
+/* T11.4 mock-only styles; the real CSS is written after the user confirms. Colours come from .app / .app.dark. */
+body {
+  margin: 0;
+  overflow: auto !important;
+}
+.wz-panel {
+  padding: 22px 24px 24px;
+}
+.wz-steps {
+  display: flex;
+  gap: 22px;
+  list-style: none;
+  margin: 0 0 22px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.wz-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wz-steps li.current {
+  color: var(--fg);
+  font-weight: 500;
+}
+.wz-num {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font-size: 11px;
+}
+.wz-steps li.current .wz-num {
+  border-color: var(--fg);
+  background: var(--fg);
+  color: var(--bg);
+}
+.wz-steps li.done .wz-num {
+  border-color: var(--green);
+  color: var(--green);
+}
+.wz-lead {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+.wz-group {
+  margin-bottom: 16px;
+}
+.wz-group-title {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.wz-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+.wz-tile {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+.wz-tile:hover {
+  background: var(--soft);
+}
+.wz-tile.selected {
+  box-shadow: inset 0 0 0 1px var(--fg);
+  border-color: var(--fg);
+}
+.wz-tile-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.wz-tile-head b {
+  font-weight: 500;
+}
+.wz-tile-head em {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.wz-tile small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.wz-region {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.wz-chips {
+  display: flex;
+  gap: 8px;
+}
+.wz-chip {
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+}
+.wz-chip.selected {
+  border-color: var(--fg);
+  box-shadow: inset 0 0 0 1px var(--fg);
+}
+.wz-key {
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+}
+.wz-key label {
+  font-size: 12px;
+  margin-top: 6px;
+}
+.wz-key label span {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: 6px;
+}
+.wz-key input {
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+}
+.wz-picked {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+.wz-picked span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.wz-picked .panel-link {
+  margin-left: auto;
+}
+.wz-promise {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  background: var(--soft);
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.wz-promise li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.wz-promise svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--green);
+}
+.wz-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+}
+.wz-actions .panel-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.wz-done {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--green);
+  margin-bottom: 14px;
+}
+.wz-tools {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+.wz-tool {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.wz-tool > span {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+}
+.wz-tool b {
+  font-weight: 500;
+}
+.wz-tool small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.wz-found {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--green);
+  border: 1px solid var(--line);
+  padding: 1px 6px;
+}
+.wz-pin {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.wz-pin b {
+  font-weight: 500;
+  font-size: 13px;
+}
+.wz-pin p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+.wz-foot {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+/* settings */
+.st-ghost {
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  opacity: 0.55;
+}
+.st-ghost-body {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 14px 0 4px;
+}
+.st-advanced {
+  padding: 0;
+  margin-bottom: 18px;
+}
+.st-advanced-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 22px 8px;
+  background: none;
+  border: 0;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.st-advanced-sum {
+  font-size: 12px;
+  color: var(--muted);
+}
+.st-advanced-state {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.st-advanced-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+  padding: 0 22px 16px 47px;
+  line-height: 1.6;
+}
+.st-advanced-body {
+  border-top: 1px solid var(--line);
+  padding: 18px 22px 22px;
+}
+.st-advanced-body h2 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 10px 0 6px;
+}
+.st-advanced-body h3 {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 16px 0 0;
+}
