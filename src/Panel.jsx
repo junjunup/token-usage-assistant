@@ -11,7 +11,8 @@ import { resetDescription } from './generated/domain.js';
 import { providerInfo } from './generated/provider-catalog.js';
 import './panel.css';
 
-// Menu-bar popover panel (T7.6, macOS). Approved mock: docs/island-1.9.0-design/menubar-proposals.html (§三).
+// Menu-bar / tray popover panel (T7.6 macOS, T11.2 Windows). Approved mock: docs/island-1.9.0-design/menubar-proposals.html
+// (§三); Windows: docs/design/T11-glance/.
 // - Opens on the account the menu-bar icon shows; picking another account here only changes this panel.
 // - The three cells show the account's own interface data only; local tool statistics never appear here.
 const bridge = window.tokenAssistant || previewPanelBridge;
@@ -94,7 +95,8 @@ export function Panel() {
 
   return (
     <div className={'app panel-root' + (dark ? ' dark' : '')}>
-      <div className="panel-arrow" style={{ left: (view.anchorX ?? 180) - 6 }} />
+      {/* macOS points an arrow at the menu-bar icon; the Windows panel sits against the taskbar without one (T11.2). */}
+      {(view.arrow ?? 8) > 0 && <div className="panel-arrow" style={{ left: (view.anchorX ?? 180) - 6 }} />}
       <main className="panel-card" ref={card} style={{ marginTop: view.arrow ?? 8 }}>
         {!account ? (
           <section className="panel-empty">

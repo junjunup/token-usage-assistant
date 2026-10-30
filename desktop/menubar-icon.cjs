@@ -1,4 +1,6 @@
-// Menu-bar icon (T7.5, macOS only): show the status from menubar-status.cjs on the tray icon.
+// Menu-bar icon (T7.5, macOS) and Windows tray icon (T11.2): show the status from menubar-status.cjs on the tray icon.
+// Windows draws the ring only (no text), at 16 / 20 / 24 / 32 px for 100–200% scaling, coloured for the taskbar's
+// own light or dark mode; there is no notch there, so the visibility check is macOS only.
 // - Drawn on a canvas in a hidden, sandboxed renderer (option a, T7.3) and set as a 2x image; redrawn only when the
 //   content (or, for alert colours, the system appearance) changes. No animation.
 // - Normal states use template images (macOS tints them); amber / red use the app's colour tokens.
@@ -12,6 +14,9 @@ const { menubarStatus } = require('./menubar-status.cjs');
 const { log } = require('./logger.cjs');
 
 const RENDER_TIMEOUT = 5000;
+// T11.2: Windows tray icon sizes, one image representation per DPI scale.
+const TRAY_SCALES = [1, 1.25, 1.5, 2];
+const TRAY_SIZE = 16;
 const RETRY_AFTER = 30000;
 const RETRY_MAX = 600000;
 
@@ -50,6 +55,17 @@ function iconModel(status, { form = 'value', dark, alertColor = true }) {
     // Template images ignore the appearance; only alert colours depend on it.
     dark: template ? false : !!dark,
   };
+}
+
+/**
+ * What the Windows tray renderer draws (T11.2), or null for the static logo. The ring is the tightest account's
+ * remaining share (null: no gauge, the bare ring); alertColor false keeps every state monochrome.
+ * @param {import('./menubar-status.cjs').MenubarStatus|null} status
+ * @param {{ dark: boolean, alertColor?: boolean }} options dark: the taskbar's own mode
+ */
+function trayModel(status, { dark, alertColor = true }) {
+  if (!status) return null;
+  return { form: 'tray', ratio: status.ring, tone: status.tone, dark: !!dark, alertColor: alertColor !== false };
 }
 
 /**
@@ -93,7 +109,7 @@ function ringCentre(bitmap, width, height, ringWidth) {
 class MenubarIcon {
   /**
    * @param {{ tray: any, staticImage: any, form?: 'ring'|'value'|'two', onHidden?: (hidden: boolean|null) => void,
-   *   timeoutMs?: number, retryMs?: number }} o
+   *   timeoutMs?: number, retryMs?: number, platform?: string }} o
    */
   constructor({
     tray,
@@ -102,8 +118,10 @@ class MenubarIcon {
     onHidden = () => {},
     timeoutMs = RENDER_TIMEOUT,
     retryMs = RETRY_AFTER,
+    platform = process.platform,
   }) {
     Object.assign(this, { tray, staticImage, form, onHidden, timeoutMs, retryMs });
+    this.windows = platform === 'win32';
     this.failures = 0;
     this.status = null;
     this.key = undefined;
@@ -132,11 +150,16 @@ class MenubarIcon {
     const model =
       this.usage === false
         ? null
-        : iconModel(this.status, {
-            form: this.form,
-            dark: nativeTheme.shouldUseDarkColors,
-            alertColor: this.alertColor,
-          });
+        : this.windows
+          ? trayModel(this.status, {
+              dark: nativeTheme.shouldUseDarkColorsForSystemIntegratedUI,
+              alertColor: this.alertColor,
+            })
+          : iconModel(this.status, {
+              form: this.form,
+              dark: nativeTheme.shouldUseDarkColors,
+              alertColor: this.alertColor,
+            });
     const key = JSON.stringify(model);
     if (key === this.key) return this.settled;
     this.key = key;
@@ -164,23 +187,26 @@ class MenubarIcon {
     this.window = win;
     return win;
   }
-  /** @param {ReturnType<typeof iconModel>} model @param {string} key */
+  /** @param {ReturnType<typeof iconModel>|ReturnType<typeof trayModel>} model @param {string} key */
   async draw(model, key) {
     if (this.disposed || key !== this.key) return;
     if (!model) return this.useStatic();
     try {
       const started = Date.now();
       const win = await this.renderer();
-      const out = await within(
-        win.webContents.executeJavaScript('render(' + JSON.stringify(model) + ')'),
-        this.timeoutMs,
-      );
-      if (this.disposed || key !== this.key) return;
+      const run = (/** @type {any} */ m) =>
+        within(win.webContents.executeJavaScript('render(' + JSON.stringify(m) + ')'), this.timeoutMs);
       const image = nativeImage.createEmpty();
-      image.addRepresentation({ scaleFactor: 2, dataURL: out.dataURL });
-      image.setTemplateImage(model.template);
+      if (model.form === 'tray')
+        for (const scaleFactor of TRAY_SCALES) {
+          const out = await run({ ...model, size: Math.round(TRAY_SIZE * scaleFactor) });
+          image.addRepresentation({ scaleFactor, dataURL: out.dataURL });
+        }
+      else image.addRepresentation({ scaleFactor: 2, dataURL: (await run(model)).dataURL });
+      if (this.disposed || key !== this.key) return;
+      if (model.form !== 'tray') image.setTemplateImage(!!model.template);
       this.tray.setImage(image);
-      this.tray.setTitle('');
+      if (!this.windows) this.tray.setTitle('');
       this.image = image;
       if (this.mode !== 'dynamic') log.info('menubar', 'dynamic', { durationMs: Date.now() - started });
       this.mode = 'dynamic';
@@ -206,12 +232,13 @@ class MenubarIcon {
   useStatic() {
     if (this.disposed) return;
     this.tray.setImage(this.staticImage);
-    this.tray.setTitle('');
+    if (!this.windows) this.tray.setTitle('');
     this.image = null;
     this.mode = 'static';
     this.scheduleCheck(600);
   }
   scheduleCheck(delay) {
+    if (this.windows) return;
     clearTimeout(this.checkTimer);
     this.checkTimer = setTimeout(() => this.checkHidden(), delay);
     this.checkTimer.unref?.();
@@ -241,11 +268,12 @@ class MenubarIcon {
   async snapshot() {
     await this.settled;
     const size = this.image?.getSize();
+    const scale = this.windows ? 1 : 2;
     let centre = null;
     if (this.image && size) {
-      const width = size.width * 2,
-        height = size.height * 2;
-      centre = ringCentre(this.image.toBitmap({ scaleFactor: 2 }), width, height, 36);
+      const width = size.width * scale,
+        height = size.height * scale;
+      centre = ringCentre(this.image.toBitmap({ scaleFactor: scale }), width, height, this.windows ? width : 36);
     }
     return {
       mode: this.mode,
@@ -253,6 +281,7 @@ class MenubarIcon {
       size: size || null,
       centre,
       template: this.image?.isTemplateImage(),
+      scales: this.image ? this.image.getScaleFactors() : [],
     };
   }
   dispose() {
@@ -266,4 +295,4 @@ class MenubarIcon {
   }
 }
 
-module.exports = { MenubarIcon, iconModel, onscreenFor, ringCentre, ONSCREEN_JXA };
+module.exports = { MenubarIcon, iconModel, trayModel, onscreenFor, ringCentre, ONSCREEN_JXA, TRAY_SCALES };

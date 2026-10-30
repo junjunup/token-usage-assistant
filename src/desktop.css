@@ -549,3 +549,29 @@ body:has(.native-app) {
 .native-app.mac .version-tag {
   margin-right: 4px;
 }
+/* T11.2 (Windows): an informational note, not a warning — the pin-to-taskbar hint. Its own class, so that code
+   looking for the overview's warnings (.inline-warning) never finds it. */
+.inline-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  padding: 13px 15px;
+  margin-bottom: 15px;
+  color: var(--fg);
+  background: var(--soft);
+  border: 1px solid var(--line);
+}
+.inline-note button {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin-left: auto;
+  font-size: 10px;
+}
+.menubar-settings-note {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 6px;
+}

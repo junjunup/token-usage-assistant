@@ -46,7 +46,7 @@ const { buildDiagnostics } = require('./diagnostics.cjs');
 const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState } = require('./menubar-panel.cjs');
-const { accountOverview } = require('./account-overview.cjs');
+const { accountOverview, trayTooltip } = require('./account-overview.cjs');
 // T7.6: the popover panel may only use these channels (least privilege); everything else is refused.
 const PANEL_CHANNELS = new Set([
   'assistant:panel-state',
@@ -407,7 +407,7 @@ function windowText(w) {
 }
 function updateTray() {
   if (!tray || !settings) return;
-  // T7.5: the Mac menu-bar icon shows the most urgent account window (desktop/menubar-icon.cjs).
+  // T7.5 / T11.2: the menu-bar (Mac) or tray (Windows) icon shows the most urgent account window (menubar-icon.cjs).
   menubar?.update(accounts?.summaries() || [], settings);
   const credit = monitor?.state.parts.credits;
   const balance = monitor?.state.parts.balance;
@@ -425,7 +425,12 @@ function updateTray() {
             '月度剩余 ' + (typeof credit?.monthly === 'number' ? '$' + credit.monthly.toFixed(2) : '—'),
             '5 小时 ' + windowText(credit?.five) + ' · 每周 ' + windowText(credit?.week),
           ];
-  tray.setToolTip(['Token 用量助手', accounts?.active.entry.label || '未连接', ...lines].join('\n'));
+  // T11.2: on Windows the tooltip lists every account's tightest value, within the system's 127-character limit.
+  tray.setToolTip(
+    isMac
+      ? ['Token 用量助手', accounts?.active.entry.label || '未连接', ...lines].join('\n')
+      : trayTooltip(accountOverview(accounts?.summaries() || [], settings)),
+  );
   trayMenu = Menu.buildFromTemplate([
     ...(updates?.state.status === 'available'
       ? [
@@ -466,7 +471,7 @@ function updateTray() {
     },
   ]);
   // T7.6: on macOS the left click opens the popover panel and the right click shows this menu; setContextMenu would
-  // take the left click too. Windows keeps the menu as before.
+  // take the left click too. Windows keeps the menu on the right click (T11.2: the left click opens the panel).
   if (!(isMac && menubarPanel)) tray.setContextMenu(trayMenu);
 }
 // Panel payload (T7.6): every account's panel view model, the theme, and which accounts have an official page.
@@ -987,12 +992,9 @@ else {
         }
         // T7.3 POC only: let the POC status item stand in for this one to measure the real space.
         tray = menubarPoc && process.env.TUA_MENUBAR_REPLACE === '1' ? null : new Tray(icon);
-        if (tray && !isMac) {
-          tray.on('click', showMain);
-          tray.on('double-click', showMain);
-        }
-        if (tray && isMac) {
-          // Visibility changes (the system hides items next to the notch) reach the settings and overview notices.
+        if (tray) {
+          // macOS: visibility changes (the system hides items next to the notch) reach the settings and overview
+          // notices. Windows (T11.2): the same status as a ring-only tray icon, and the same panel on a left click.
           menubar = new MenubarIcon({ tray, staticImage: icon, onHidden: () => broadcast() });
           menubarPanel = new MenubarPopover({
             tray,
@@ -1003,7 +1005,12 @@ else {
             protect: () => settings?.panelProtect !== false,
           });
           tray.on('click', () => menubarPanel.toggle());
-          tray.on('right-click', () => trayMenu && tray.popUpContextMenu(trayMenu));
+          if (isMac) tray.on('right-click', () => trayMenu && tray.popUpContextMenu(trayMenu));
+          else
+            tray.on('double-click', () => {
+              menubarPanel.hide();
+              showMain();
+            });
         }
       } catch {
         log.warn('main', 'tray-failed');

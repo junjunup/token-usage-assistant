@@ -1,5 +1,6 @@
-// Menu-bar icon renderer (T7.5, macOS). Runs in a hidden, sandboxed window without a preload; desktop/menubar-icon.cjs
-// calls render(model) through executeJavaScript and turns the returned PNG into a 2x nativeImage for the tray.
+// Menu-bar icon renderer (T7.5, macOS; T11.2 adds the Windows tray form). Runs in a hidden, sandboxed window without a
+// preload; desktop/menubar-icon.cjs calls render(model) through executeJavaScript and turns the returned PNG into a
+// nativeImage for the tray (macOS: one 2x image; Windows: one image per DPI scale).
 // The ring is the approved brand mark: at 100% it is exactly the logo; the remaining share is lit clockwise from the
 // top gap and the rest stays dim. Template images are drawn in black only (macOS tints them for the menu bar).
 /* global document, MARK, Path2D */
@@ -13,6 +14,11 @@ const COLORS = {
   dark: { fg: 'rgba(255,255,255,0.9)', track: 'rgba(255,255,255,0.28)', amber: '#e3ad57', red: '#ee7580' },
 };
 const FONT = '-apple-system, "PingFang SC", system-ui, sans-serif';
+// T11.2 Windows tray (form 'tray'): the ring only, for light and dark taskbars.
+const TRAY = {
+  light: { fg: 'rgba(0,0,0,0.85)', track: 'rgba(0,0,0,0.26)', amber: '#ba7917', red: '#dc4c57' },
+  dark: { fg: '#ffffff', track: 'rgba(255,255,255,0.3)', amber: '#e3ad57', red: '#ee7580' },
+};
 
 /**
  * @param {{ form: 'ring'|'value'|'two', ratio: number|null, text: string, tone: string,
@@ -21,6 +27,7 @@ const FONT = '-apple-system, "PingFang SC", system-ui, sans-serif';
  */
 // eslint-disable-next-line no-unused-vars
 function render(m) {
+  if (m.form === 'tray') return renderTray(m);
   const palette = m.template ? { fg: '#000', track: 'rgba(0,0,0,0.28)' } : COLORS[m.dark ? 'dark' : 'light'];
   const tint = (tone) => (!m.template && (tone === 'amber' || tone === 'red') ? palette[tone] : palette.fg);
   const canvas = document.createElement('canvas');
@@ -77,4 +84,35 @@ function render(m) {
       ctx.fillText(l.text, RING + 4 + offset, y);
     });
   return { dataURL: canvas.toDataURL('image/png'), width, height: HEIGHT };
+}
+
+/**
+ * Windows tray icon (T11.2): the ring only, square, at one pixel size per DPI scale; no text, no template image.
+ * The lit share is the tightest account's remaining share. At 16 px a thin lit share is hard to see, so an alert
+ * also tints the whole track: below the threshold amber, exhausted all red; no data is the bare track.
+ * @param {{ size: number, ratio: number|null, tone: string, dark: boolean, alertColor: boolean }} m
+ */
+function renderTray(m) {
+  const p = TRAY[m.dark ? 'dark' : 'light'];
+  const alert = m.alertColor && (m.tone === 'amber' || m.tone === 'red') ? m.tone : null;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = m.size;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(m.size / 576, m.size / 576);
+  ctx.translate(32, 32);
+  const mark = new Path2D(MARK);
+  ctx.globalAlpha = alert === 'amber' ? 0.4 : 1;
+  ctx.fillStyle = alert ? p[alert] : p.track;
+  ctx.fill(mark, 'evenodd');
+  ctx.globalAlpha = 1;
+  if (typeof m.ratio === 'number' && m.ratio > 0) {
+    ctx.clip(mark, 'evenodd');
+    ctx.beginPath();
+    ctx.moveTo(256, 256);
+    ctx.arc(256, 256, 400, START, START + Math.min(1, m.ratio) * 2 * Math.PI);
+    ctx.closePath();
+    ctx.fillStyle = alert ? p[alert] : p.fg;
+    ctx.fill();
+  }
+  return { dataURL: canvas.toDataURL('image/png'), width: m.size, height: m.size };
 }

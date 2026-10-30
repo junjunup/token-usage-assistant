@@ -21,6 +21,7 @@
     "desktop/menubar-status.cjs",
     "desktop/menubar-panel.cjs",
     "desktop/account-overview.cjs",
+    "desktop/panel-placement.cjs",
     "desktop/coverage-report.cjs",
     "desktop/upstream-contracts.cjs"
   ]

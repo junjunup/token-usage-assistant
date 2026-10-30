@@ -57,4 +57,32 @@ function accountOverview(accounts, settings) {
   return { threshold, attention: rows.filter((r) => r.tone !== 'normal').length, rows };
 }
 
-module.exports = { accountOverview };
+/**
+ * Tray tooltip (T11.2, Windows): every account's tightest value, most urgent first, within the system's limit
+ * (a Windows notification-area tip holds 127 characters). Accounts that do not fit are counted as "另 N 个账户".
+ * @param {AccountOverview} overview
+ * @param {number} [limit]
+ * @returns {string}
+ */
+function trayTooltip(overview, limit = 127) {
+  const title = 'Token 用量助手';
+  const rows = overview?.rows || [];
+  if (!rows.length) return title + '\n未连接账户';
+  const lines = [title];
+  const fits = (/** @type {string[]} */ l) => l.join('\n').length <= limit;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const line = r.label + ' ' + (r.focus ? r.focus.text : '—') + (r.stale ? '（上次）' : '');
+    const left = rows.length - i - 1;
+    const next = [...lines, line];
+    // Keep room for the "others" line unless this is the last account.
+    if (fits(left ? [...next, '另 ' + left + ' 个账户'] : next)) lines.push(line);
+    else {
+      lines.push('另 ' + (rows.length - i) + ' 个账户');
+      break;
+    }
+  }
+  return fits(lines) ? lines.join('\n') : lines.join('\n').slice(0, limit);
+}
+
+module.exports = { accountOverview, trayTooltip };
