@@ -575,3 +575,9 @@ body:has(.native-app) {
   color: var(--muted);
   margin: 0 0 6px;
 }
+/* T11.3: the pace line in the overview's current-account area (styles in panel.css) */
+.overview-pace {
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  border: 1px solid var(--line);
+}

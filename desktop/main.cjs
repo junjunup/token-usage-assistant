@@ -47,6 +47,7 @@ const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState } = require('./menubar-panel.cjs');
 const { accountOverview, trayTooltip } = require('./account-overview.cjs');
+const { forecast } = require('./analytics-core.cjs');
 // T7.6: the popover panel may only use these channels (least privilege); everything else is refused.
 const PANEL_CHANNELS = new Set([
   'assistant:panel-state',
@@ -476,7 +477,14 @@ function updateTray() {
 }
 // Panel payload (T7.6): every account's panel view model, the theme, and which accounts have an official page.
 function panelPayload() {
-  const summaries = accounts?.summaries() || [];
+  const summaries = (accounts?.summaries() || []).map((a) => {
+    // T11.3: Command Code accounts carry the analytics forecast for the panel's pace line (no new prediction).
+    if (a.provider !== 'commandcode') return a;
+    const runtime = accounts.runtimes.get(a.id);
+    return runtime
+      ? { ...a, prediction: forecast(runtime.history.records, Date.now(), runtime.monitor.intervalSeconds) }
+      : a;
+  });
   const officials = {};
   for (const a of summaries) {
     const runtime = accounts.runtimes.get(a.id);

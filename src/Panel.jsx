@@ -4,6 +4,7 @@ import '@fontsource/geist/500.css';
 import '@fontsource/geist/600.css';
 import '@fontsource/geist-mono/400.css';
 import '@fontsource/geist-mono/500.css';
+import { Timer } from '@phosphor-icons/react';
 import { previewPanelBridge } from './desktop-preview.js';
 import { Bar } from './ProviderViews.jsx';
 import { Live } from './Live.jsx';
@@ -50,6 +51,20 @@ function Cell({ cell, token = false }) {
       <b className={(token && cell.value !== '—' ? 'token ' : '') + cell.tone}>{cell.value}</b>
       <em>{cell.note}</em>
     </div>
+  );
+}
+
+// T11.3: the analytics forecast in one line (Command Code only); unknown stays "—" with the forecast's reason.
+export function PaceLine({ pace, className = 'panel-section' }) {
+  return (
+    <section className={className + ' pace-line ' + pace.tone}>
+      <Timer size={14} />
+      <span>
+        <b>节奏</b>
+        {pace.text}
+        {pace.reason && <span className="pace-reason">{pace.reason}</span>}
+      </span>
+    </section>
   );
 }
 
@@ -142,11 +157,15 @@ export function Panel() {
                 <div className="panel-muted panel-more">还有 {account.more} 个窗口，在主窗口查看</div>
               )}
             </section>
-            <section className="panel-section panel-cells">
-              <Cell cell={account.cells.tokens} token />
-              <Cell cell={account.cells.cost} />
-              <Cell cell={account.cells.balance} />
-            </section>
+            {account.pace && <PaceLine pace={account.pace} />}
+            {/* T11.3: cells the platform does not provide are folded; none at all hides the block. */}
+            {account.shownCells.length > 0 && (
+              <section className={'panel-section panel-cells cells-' + account.shownCells.length}>
+                {account.shownCells.map((id) => (
+                  <Cell key={id} cell={account.cells[id]} token={id === 'tokens'} />
+                ))}
+              </section>
+            )}
             {accounts.length > 1 && (
               <section className="panel-section panel-chips" aria-label="切换面板中查看的账户">
                 {chips.map((a) => (
