@@ -46,6 +46,7 @@ const { buildDiagnostics } = require('./diagnostics.cjs');
 const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState } = require('./menubar-panel.cjs');
+const { accountOverview } = require('./account-overview.cjs');
 // T7.6: the popover panel may only use these channels (least privilege); everything else is refused.
 const PANEL_CHANNELS = new Set([
   'assistant:panel-state',
@@ -165,10 +166,13 @@ function state() {
     refreshInterval: accounts?.active?.monitor.intervalSeconds,
     // T7.7: whether the system hid the menu-bar icon next to the notch (true / false / null when unknown).
     menubar: menubar ? { hidden: menubar.hidden } : null,
+    // T11.1: every account, most urgent first (the menu-bar rule), for the overview grid and the widget.
+    overview: accountOverview(accounts?.summaries() || [], settings),
   };
 }
 function broadcast() {
   syncActive();
+  fitWidget();
   const s = state();
   for (const w of [mainWindow, widgetWindow]) if (w && !w.isDestroyed()) w.webContents.send('assistant:state', s);
   updateTray();
@@ -193,15 +197,29 @@ function rememberWindow(key, win) {
     }, 350);
   }
 }
+// T11.1: with two or more accounts the collapsed widget shows only the tightest account, so it is shorter.
+const WIDGET_GLANCE = 238;
 function widgetHeight() {
-  return settings?.widgetExpanded ? 552 : 366;
+  if (settings?.widgetExpanded) return 552;
+  return (accounts?.entries.length || 0) >= 2 ? WIDGET_GLANCE : 366;
+}
+// Resize the widget when its height changes (expanded, or the number of accounts), keeping its bottom edge (1.4.1).
+let widgetFit = null;
+function fitWidget() {
+  if (!widgetWindow || widgetWindow.isDestroyed()) return;
+  const height = widgetHeight();
+  if (height === widgetFit) return;
+  widgetFit = height;
+  const b = widgetWindow.getBounds();
+  widgetWindow.setBounds(resizedWidgetBounds(b, screen.getDisplayMatching(b).workArea, height));
 }
 function savedWidgetBounds(saved) {
   const area = screen.getDisplayMatching(saved).workArea,
     height = widgetHeight();
+  // Keep the saved bottom edge (1.4.1): the height can differ from the saved one (T11.1, several accounts).
   return {
     x: Math.max(area.x, Math.min(Math.round(saved.x), area.x + area.width - 324)),
-    y: Math.max(area.y, Math.min(Math.round(saved.y), area.y + area.height - height)),
+    y: Math.max(area.y, Math.min(Math.round(saved.y + saved.height - height), area.y + area.height - height)),
     width: 324,
     height,
   };
@@ -245,7 +263,7 @@ function secureWindow(kind) {
     show: false,
     ...windowChrome(kind),
     minWidth: kind === 'main' ? 780 : 324,
-    minHeight: kind === 'main' ? 640 : 366,
+    minHeight: kind === 'main' ? 640 : WIDGET_GLANCE,
     resizable: kind === 'main',
     maximizable: kind === 'main',
     skipTaskbar: kind === 'widget',
@@ -334,11 +352,7 @@ function applySettings(next) {
     throw inputError('设置无法保存，请检查应用数据目录');
   }
   widgetWindow?.setMovable(!settings.pinned);
-  if (previous.widgetExpanded !== settings.widgetExpanded && widgetWindow && !widgetWindow.isDestroyed()) {
-    const b = widgetWindow.getBounds(),
-      area = screen.getDisplayMatching(b).workArea;
-    widgetWindow.setBounds(resizedWidgetBounds(b, area, widgetHeight()));
-  }
+  fitWidget();
   if (settings.floating && !smoke) widgetWindow.showInactive();
   else widgetWindow?.hide();
   accounts.updateSettings(settings);
@@ -1036,6 +1050,7 @@ else {
         );
       mainWindow = secureWindow('main');
       widgetWindow = secureWindow('widget');
+      widgetFit = widgetHeight();
       installIpc();
       if (islandPoc) require(path.join(__dirname, 'island-poc', 'index.cjs')).start();
       if (menubarPoc) require(path.join(__dirname, 'menubar-poc', 'index.cjs')).start();

@@ -14,6 +14,7 @@ for (const name of [
   'provider-fixture',
   'menubar-status',
   'menubar-panel',
+  'account-overview',
   'coverage-report',
   'upstream-contracts',
 ]) {

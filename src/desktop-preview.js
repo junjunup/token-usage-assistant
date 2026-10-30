@@ -13,6 +13,7 @@ import {
 import { normalizeDeepSeek, normalizeKimi } from './generated/balance-domain.js';
 import { PROVIDERS } from './generated/provider-catalog.js';
 import { panelState } from './generated/menubar-panel.js';
+import { accountOverview } from './generated/account-overview.js';
 const now = Date.now();
 let state = {
   version: '1.2.0',
@@ -23,7 +24,8 @@ let state = {
   packaged: false,
   platform: 'preview',
   settings: {
-    theme: 'light',
+    // ?theme=dark opens the preview (including ?surface=widget) in the dark theme, like the panel preview.
+    theme: new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light',
     refreshSeconds: 60,
     threshold: 20,
     notifications: true,
@@ -393,8 +395,12 @@ if (selectedProvider && !balanceProvider && scenario === 'exhausted') {
 const listeners = new Set(),
   ok = (value) => ({ ok: true, value: structuredClone(value) }),
   publish = () => {
-    for (const cb of listeners) cb(structuredClone(state));
+    for (const cb of listeners) cb(structuredClone(snapshot()));
   };
+// The state main.cjs would send, with the all-accounts list derived from the preview snapshots (T11.1).
+function snapshot() {
+  return { ...state, overview: accountOverview(previewSummaries(), state.settings) };
+}
 const associationPreview = async () => ({ ok: false, error: '请在 Windows 应用中管理真实账户关联。' });
 // Preview of a failed account-list load (?desktop-preview=credential-issue): re-read succeeds after a moment.
 const credentialIssuePreview = new URLSearchParams(location.search).get('desktop-preview') === 'credential-issue';
@@ -471,11 +477,11 @@ export const previewBridge = {
   removeBillingGroup: associationPreview,
   saveAccountLink: associationPreview,
   removeAccountLink: associationPreview,
-  getState: async () => ok(state),
+  getState: async () => ok(snapshot()),
   selectAccount: async (id) => {
     selectPreview(id);
     publish();
-    return ok(state);
+    return ok(snapshot());
   },
   cancelAnalytics: async () => ok(true),
   updateToolSource: async (id, patch) => {
@@ -540,7 +546,7 @@ export const previewBridge = {
   setSettings: async (patch) => {
     state.settings = { ...state.settings, ...patch };
     publish();
-    return ok(state);
+    return ok(snapshot());
   },
   refresh: async () => {
     state.data.fetching = true;
@@ -552,7 +558,7 @@ export const previewBridge = {
       : { credits: Date.now(), summary: Date.now() };
     state.data.nextRefreshAt = Date.now() + state.settings.refreshSeconds * 1000;
     publish();
-    return ok(state);
+    return ok(snapshot());
   },
   window: async () => ({ ok: false, error: '该功能在 Windows 桌面应用中可用。' }),
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),

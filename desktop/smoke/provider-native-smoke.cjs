@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const { AccountManager } = require('../accounts.cjs');
 const { createClient } = require('../providers.cjs');
 const { fixtureFetch } = require('../provider-fixture.cjs');
+const { accountOverview } = require('../account-overview.cjs');
 async function until(win, expression) {
   const deadline = Date.now() + 4000;
   while (Date.now() < deadline) {
@@ -33,10 +34,18 @@ async function runProviderSmoke({ accounts, store, mainWindow, widgetWindow, set
         provider +
         " fixture')",
     );
-    await until(
-      widgetWindow,
-      "document.querySelector('.provider-widget-account')?.textContent.includes('" + provider + " fixture')",
-    );
+    // T11.1: with two or more accounts the widget follows the tightest account instead of the current one.
+    if (accounts.entries.length >= 2)
+      await until(
+        widgetWindow,
+        "document.querySelector('.aa-w-account .aa-name')?.textContent === " +
+          JSON.stringify(accountOverview(accounts.summaries(), settings).rows[0].label),
+      );
+    else
+      await until(
+        widgetWindow,
+        "document.querySelector('.provider-widget-account')?.textContent.includes('" + provider + " fixture')",
+      );
     const rows = await until(mainWindow, "document.querySelectorAll('.provider-quota-grid .quota-row').length");
     assert.equal(rows, c.windows.length);
     const text = await mainWindow.webContents.executeJavaScript(
@@ -54,7 +63,12 @@ async function runProviderSmoke({ accounts, store, mainWindow, widgetWindow, set
   }
   applySettings({ ...settings, theme: 'dark', widgetExpanded: true });
   await until(mainWindow, "document.querySelector('.native-app.dark')!==null");
-  await until(widgetWindow, "document.querySelectorAll('.provider-widget-quota').length===4");
+  await until(
+    widgetWindow,
+    accounts.entries.length >= 2
+      ? "document.querySelectorAll('.aa-w-row').length===" + (accounts.entries.length - 1)
+      : "document.querySelectorAll('.provider-widget-quota').length===4",
+  );
   const secretFile = fs.readFileSync(store.file('accounts.encrypted.json'), 'utf8');
   assert.ok(!secretFile.includes('native-synthetic'));
   const restored = new AccountManager({ store, settings, clientFactory: (p, r) => createClient(p, r, fixtureFetch) });

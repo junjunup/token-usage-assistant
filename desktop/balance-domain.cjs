@@ -90,4 +90,38 @@ function formatAmount(value) {
   const [whole, fraction = ''] = /** @type {string} */ (amount).split('.');
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + fraction.padEnd(2, '0');
 }
-module.exports = { normalizeDeepSeek, normalizeKimi, numberAmount, formatAmount };
+/**
+ * Compact places (D17 ④: tiles, chips, the widget): two decimals, rounded half away from zero on the decimal digits
+ * (no binary floating point). A non-zero amount that rounds to zero reads "<0.01", never "0.00"; details and storage
+ * keep every digit (formatAmount).
+ * @param {any} value a decimal string, or a finite number such as Command Code's monthly credits
+ * @returns {string}
+ */
+function compactAmount(value) {
+  if (value === null || value === undefined) return '—';
+  let amount;
+  try {
+    if (typeof value === 'number') {
+      if (!Number.isFinite(value)) return '—';
+      // String() switches to exponent form below 1e-6; such an amount is below 0.01 either way.
+      if (value !== 0 && Math.abs(value) < 1e-6) return (value < 0 ? '-' : '') + '<0.01';
+      amount = decimal(String(value));
+    } else amount = decimal(value);
+  } catch {
+    return '—';
+  }
+  const text = /** @type {string} */ (amount),
+    negative = text.startsWith('-'),
+    [whole, fraction = ''] = text.replace(/^-/, '').split('.');
+  let cents = BigInt(whole + fraction.slice(0, 2).padEnd(2, '0'));
+  if (fraction.length > 2 && fraction[2] >= '5') cents += 1n;
+  if (cents === 0n && /[1-9]/.test(fraction)) return (negative ? '-' : '') + '<0.01';
+  const digits = cents.toString().padStart(3, '0');
+  return (
+    (negative && cents > 0n ? '-' : '') +
+    digits.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, ',') +
+    '.' +
+    digits.slice(-2)
+  );
+}
+module.exports = { normalizeDeepSeek, normalizeKimi, numberAmount, formatAmount, compactAmount };

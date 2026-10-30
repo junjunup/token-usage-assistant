@@ -38,9 +38,13 @@ async function runOpenCodeSmoke({
   );
   applySettings({ ...settings, theme: 'light', widgetExpanded: false });
   await until(mainWindow, "document.querySelector('.native-app') && !document.querySelector('.native-app.dark')");
+  // T11.1: with two or more accounts the widget follows the tightest account instead of the current one.
+  const glance = accounts.entries.length >= 2;
   await until(
     widgetWindow,
-    "document.querySelectorAll('.provider-widget-quota').length===2 && document.querySelector('.provider-widget-quota')?.textContent.includes('本周额度')",
+    glance
+      ? "!!document.querySelector('.aa-w-account')"
+      : "document.querySelectorAll('.provider-widget-quota').length===2 && document.querySelector('.provider-widget-quota')?.textContent.includes('本周额度')",
   );
   const text = await mainWindow.webContents.executeJavaScript(
     "document.querySelector('.provider-dashboard').textContent",
@@ -52,7 +56,14 @@ async function runOpenCodeSmoke({
   await capture(widgetWindow, store.file('opencode-widget.png'));
   applySettings({ ...settings, theme: 'dark', widgetExpanded: true });
   await until(mainWindow, "document.querySelector('.native-app.dark')!==null");
-  await until(widgetWindow, "document.querySelectorAll('.provider-widget-quota').length===3");
+  await until(
+    widgetWindow,
+    glance
+      ? "document.querySelectorAll('.aa-w-row').length===" +
+          (accounts.entries.length - 1) +
+          " && document.querySelector('.widget-body').textContent.includes('37%')"
+      : "document.querySelectorAll('.provider-widget-quota').length===3",
+  );
   await capture(mainWindow, store.file('opencode-go-dark.png'));
   const before = JSON.stringify(accounts.active.monitor.state.parts.credits);
   accounts.active.monitor.receive({
