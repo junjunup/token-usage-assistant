@@ -64,6 +64,8 @@ function tick() {
   console.log(
     JSON.stringify({ ok: result.ok, version: result.version, exit: exited, timedOut, failedSections: failed }),
   );
+  // A smoke that threw has no sections, only the harness's own message (synthetic data, no credentials).
+  if (result.ok !== true && result.error) console.error(String(result.error) + ': ' + String(result.detail || ''));
   if (exited === null) child.kill();
   process.exit(result.ok === true && result.version === version ? 0 : 1);
 }
