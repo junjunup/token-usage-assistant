@@ -59,7 +59,7 @@
 
 完整步骤、升级、核对下载文件和常见问题见 **[安装与升级](docs/INSTALL.md)**（中英文）。
 
-- **Windows（x64）**：安装版 `TokenUsageAssistant-Setup-<版本>.exe` 或便携版 `TokenUsageAssistant-Portable-<版本>.exe`，不需要 Node.js。程序未签名，如果看到「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」。
+- **Windows（x64）**：安装版 `TokenUsageAssistant-Setup-<版本>.exe` 或便携版 `TokenUsageAssistant-Portable-<版本>.exe`，不需要 Node.js。程序未签名（见[代码签名说明](docs/CODE-SIGNING.md)），如果看到「Windows 已保护你的电脑」，点「更多信息 → 仍要运行」。
 - **macOS（Apple Silicon，macOS 13+）**：把 DMG 里的「Token 用量助手」拖进「应用程序」。首次打开时弹窗里没有「打开」按钮：关掉提示，到「系统设置 → 隐私与安全性」点「仍要打开」。同一版本只需操作一次；升级后可能弹一次钥匙串授权。
 
 ## 使用要点
