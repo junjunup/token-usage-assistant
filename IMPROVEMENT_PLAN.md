@@ -468,6 +468,7 @@
 | 2026-10-29 | T11.3（草图） | **节奏预测只覆盖 Command Code**：`analytics-core.cjs` 的 `forecast` 只看 `five` / `week` 两个按金额计的窗口，`analytics-service.cjs` 对其他平台直接返回 `prediction: null`。按 D17 的「不新增预测算法」，节奏行只会出现在 Command Code 账户上。 | 交用户决定：维持现状（只有 Command Code 显示节奏行，其他平台不显示这一行）；或把同一方法扩展到按百分比计的窗口（同一窗口、同一重置时间的连续新鲜样本，样本要求不变），算作 T11.3 的范围变化 | 待用户决定 |
 | 2026-10-30 | T11.1 | **单账户悬浮窗不再被原生 smoke 覆盖**：smoke 依次添加账户（最后共 8 个），两个及以上账户时悬浮窗改为「最紧账户 + 全部账户」，所以 GLM / MiniMax / 火山、DeepSeek 余额、OpenCode Go、Codex、Claude 各自的单账户悬浮窗（`ProviderWidget`、`BalanceWidget`）只在 smoke 开头之前可能出现，现在没有任何一步检查它们。原有检查已按账户数分支：一个账户时照旧，多个账户时改查全部账户列表。只有开头的 Command Code 单账户悬浮窗（366 / 552 高度）仍被检查。 | 在 T11.2 补 smoke 时加一步：临时只保留一个账户（或在独立的隔离目录里各起一次单账户 smoke），分别检查这几种单账户悬浮窗。 | 待处理 |
 
+| 2026-10-30 | T11.2 | **Harness 测试偶发失败（与本阶段改动无关）**：`tests/harness-plugin.test.cjs` 的「T8.13: an unverified runtime exports only while every event keeps the known structure」在本机两次各失败一回（`ENOTEMPTY: directory not empty, rmdir …/tua-harness-test-*`），重跑通过。看起来是测试收尾 `fs.rm` 删除临时目录时，导出器还在写最后一行。T11.6 时的那次 1 项失败没留下输出，很可能是同一个。 | 测试收尾先等导出器写完（或 `fs.rm` 带 `maxRetries`），另开小任务处理，不放宽断言。 | 待处理 |
 已关闭的问题见归档快照第 5 节。
 
 ---

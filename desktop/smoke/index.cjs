@@ -7,6 +7,7 @@ const { atomicWrite } = require('../store.cjs');
 const { log } = require('../logger.cjs');
 const { macSmokeName } = require('../platform.cjs');
 const isMac = process.platform === 'darwin';
+const isWin = process.platform === 'win32';
 const resultFile = () => path.join(app.getPath('userData'), 'smoke-result.json');
 
 // Command Code answers from the smoke fixture; other platforms use their synthetic fixture responses.
@@ -26,8 +27,10 @@ function startupFailed() {
 // - before any saved account exists it keeps the static logo;
 // - once accounts exist it becomes the dynamic icon matching the status projection, with the ring centred where the
 //   brand mark is (18, 22 px in the 2x image). Elsewhere the tray is unchanged.
+// T11.2: on Windows the same status becomes a ring-only tray icon, 16 px at 100% with one image per DPI scale
+// (16 / 20 / 24 / 32 px), the ring centred in it.
 async function menubarSmoke(ctx, phase) {
-  if (!isMac) return { ok: true, skipped: 'not-macos' };
+  if (!isMac && !isWin) return { ok: true, skipped: 'not-macos-or-windows' };
   if (!ctx.menubar) return { ok: false, error: 'menubar icon missing' };
   const { menubarStatus } = require('../menubar-status.cjs');
   let expected = null,
@@ -38,7 +41,9 @@ async function menubarSmoke(ctx, phase) {
     if ((expected?.text ?? null) === (snap.status?.text ?? null) && (expected ? snap.mode === 'dynamic' : true)) break;
     await new Promise((r) => setTimeout(r, 250));
   }
-  const centred = !!snap.centre && Math.abs(snap.centre.x - 18) <= 1.5 && Math.abs(snap.centre.y - 22) <= 1.5;
+  const [cx, cy, height] = isWin ? [8, 8, 16] : [18, 22, 22];
+  const centred = !!snap.centre && Math.abs(snap.centre.x - cx) <= 1.5 && Math.abs(snap.centre.y - cy) <= 1.5;
+  const scales = !isWin || JSON.stringify([...snap.scales].sort()) === JSON.stringify([1, 1.25, 1.5, 2]);
   const ok =
     phase === 'empty'
       ? expected === null && snap.mode === 'static'
@@ -46,7 +51,8 @@ async function menubarSmoke(ctx, phase) {
         snap.mode === 'dynamic' &&
         snap.status?.text === expected.text &&
         snap.status?.accountId === expected.accountId &&
-        snap.size?.height === 22 &&
+        snap.size?.height === height &&
+        scales &&
         centred;
   return {
     ok,
@@ -57,6 +63,7 @@ async function menubarSmoke(ctx, phase) {
     template: snap.template,
     size: snap.size,
     centre: snap.centre,
+    scales: snap.scales,
   };
 }
 // T11.1: with several accounts the overview lists every account in the menu-bar order, and the widget follows the
@@ -115,8 +122,9 @@ async function overviewSmoke(ctx) {
 // T7.6: the menu-bar popover panel (macOS). Opened without a click (same positioning code), it must be sandboxed,
 // content-protected, open on the account the icon shows, refuse IPC channels outside its allow-list, and hide again.
 // Light and dark captures of the real panel are kept in the isolated test directory for the D10 review.
+// T11.2: the same panel on Windows, placed against the taskbar inside the work area, without the arrow.
 async function panelSmoke(ctx) {
-  if (!isMac) return { ok: true, skipped: 'not-macos' };
+  if (!isMac && !isWin) return { ok: true, skipped: 'not-macos-or-windows' };
   const panel = ctx.menubarPanel;
   if (!panel) return { ok: false, error: 'panel missing' };
   const fs = require('node:fs');
@@ -143,6 +151,15 @@ async function panelSmoke(ctx) {
     return image.getSize();
   };
   const visible = win.isVisible();
+  const { screen } = require('electron');
+  const placed = win.getBounds(),
+    area = screen.getDisplayMatching(placed).workArea;
+  const inside =
+    placed.x >= area.x &&
+    placed.y >= area.y &&
+    placed.x + placed.width <= area.x + area.width &&
+    placed.y + placed.height <= area.y + area.height;
+  const arrow = await win.webContents.executeJavaScript('!!document.querySelector(".panel-arrow")');
   const theme = ctx.settings.theme;
   ctx.applySettings({ ...ctx.settings, theme: 'light' });
   await sleep(800);
@@ -166,6 +183,7 @@ async function panelSmoke(ctx) {
       name === expected &&
       denied === '不受信任的请求' &&
       allowed === true &&
+      (isMac || (inside && !arrow)) &&
       hidden,
     ready,
     visible,
@@ -175,6 +193,9 @@ async function panelSmoke(ctx) {
     account: name === expected,
     deniedOutsideAllowList: denied === '不受信任的请求',
     bounds: win.getBounds(),
+    inside,
+    arrow,
+    edge: panel.edge,
     light,
     dark,
     hidden,

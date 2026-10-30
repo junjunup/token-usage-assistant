@@ -1,13 +1,15 @@
-// Menu-bar popover panel (T7.6, macOS only): left-click on the menu-bar icon opens it right below the icon.
+// Tray / menu-bar popover panel: left-click on the icon opens it (T7.6 macOS: right below the menu-bar icon; T11.2
+// Windows: against the taskbar the tray icon is on, desktop/panel-placement.cjs).
 // Behaviour follows the T7.3 POC (docs/island-1.9.0-design/POC-REPORT-MENUBAR.md):
 // - closes on a second click on the icon, a click elsewhere (blur), Esc, or after opening the main window;
-// - shows above full-screen spaces; content protection is on (a setting in T7.7);
+// - shows above full-screen spaces (macOS) and other windows; content protection is on (a setting in T7.7);
 // - the renderer is the regular app page with ?surface=panel, sandboxed like the main window and the widget. Which
 //   IPC channels it may use is decided in main.cjs (a short allow-list).
 const { BrowserWindow, screen } = require('electron');
+const { panelPlacement, ARROW } = require('./panel-placement.cjs');
 
 const WIDTH = 360;
-const ARROW = 8; // points above the card for the arrow that points at the icon
+const isMac = process.platform === 'darwin';
 
 class MenubarPopover {
   /**
@@ -19,6 +21,7 @@ class MenubarPopover {
     this.window = null;
     this.lastBlurHide = 0;
     this.anchorX = WIDTH / 2;
+    this.arrow = isMac ? ARROW : 0;
     this.openedAt = 0;
   }
   create() {
@@ -34,7 +37,7 @@ class MenubarPopover {
       maximizable: false,
       fullscreenable: false,
       skipTaskbar: true,
-      type: 'panel',
+      ...(isMac ? { type: 'panel' } : {}),
       title: '用量面板',
       webPreferences: {
         preload: this.preload,
@@ -47,7 +50,7 @@ class MenubarPopover {
       },
     });
     win.setAlwaysOnTop(true, 'pop-up-menu');
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    if (isMac) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     // Electron 44 on macOS 15 cannot turn content protection off again once it was on (the window stays hidden
     // from capture and isContentProtected() stays true, T7.7), so the setting is fixed per window and a change
     // recreates the window (see send()).
@@ -86,19 +89,40 @@ class MenubarPopover {
   }
   show() {
     const win = this.window && !this.window.isDestroyed() ? this.window : this.create();
-    const b = this.tray.getBounds();
-    const area = screen.getDisplayNearestPoint({ x: Math.round(b.x + b.width / 2), y: Math.round(b.y) }).workArea;
-    const x = Math.min(
-      Math.max(Math.round(b.x + b.width / 2 - WIDTH / 2), area.x + 8),
-      area.x + area.width - WIDTH - 8,
-    );
-    this.anchorX = Math.round(b.x + b.width / 2 - x);
     this.openedAt = Date.now();
-    win.setPosition(x, Math.round(b.y + b.height + 6 - ARROW));
+    this.place();
     this.send();
     win.show();
     win.focus();
     this.onShow();
+  }
+  // The icon's bounds; Windows may report an empty rectangle (for example while the icon sits in the overflow
+  // area), then the cursor that clicked it stands in for the icon.
+  anchor() {
+    const b = this.tray.getBounds();
+    if (b && b.width > 0 && b.height > 0) return b;
+    const p = screen.getCursorScreenPoint();
+    return { x: p.x, y: p.y, width: 1, height: 1 };
+  }
+  place() {
+    const win = this.window;
+    if (!win || win.isDestroyed()) return;
+    const tray = this.anchor();
+    const display = screen.getDisplayNearestPoint({
+      x: Math.round(tray.x + tray.width / 2),
+      y: Math.round(tray.y + tray.height / 2),
+    });
+    const p = panelPlacement({
+      tray,
+      display,
+      width: WIDTH,
+      height: win.getBounds().height,
+      platform: process.platform,
+    });
+    this.anchorX = p.anchorX ?? WIDTH / 2;
+    this.arrow = p.arrow;
+    this.edge = p.edge;
+    win.setPosition(p.x, p.y);
   }
   hide() {
     if (this.isVisible()) this.window.hide();
@@ -106,11 +130,13 @@ class MenubarPopover {
   /** @param {number} height card height reported by the renderer, in points */
   resize(height) {
     if (!this.window || this.window.isDestroyed()) return;
-    const h = Math.round(Math.min(720, Math.max(120, Number(height) || 0)) + ARROW);
+    const h = Math.round(Math.min(720, Math.max(120, Number(height) || 0)) + this.arrow);
     this.window.setSize(WIDTH, h);
+    // Windows: the panel grows upward from a bottom taskbar, so its position depends on its height.
+    if (!isMac && this.isVisible()) this.place();
   }
   state() {
-    return { ...this.payload(), anchorX: this.anchorX, arrow: ARROW, openedAt: this.openedAt };
+    return { ...this.payload(), anchorX: this.anchorX, arrow: this.arrow, openedAt: this.openedAt };
   }
   send() {
     if (!this.webContents) return;

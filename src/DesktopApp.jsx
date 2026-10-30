@@ -103,50 +103,67 @@ const MENUBAR_FORMS = [
   { value: 'value', label: '② 刻度环 + 数值' },
   { value: 'two', label: '③ 两行小字' },
 ];
-function MenubarSettings({ state, settings, pref }) {
+// T7.7 (macOS menu bar); T11.2: the same settings for the Windows tray, without the icon form (ring only there).
+function MenubarSettings({ state, settings, pref, mac }) {
   const usage = settings.menubarUsage !== false;
+  const place = mac ? '菜单栏' : '托盘';
   return (
     <div className="menubar-settings" id="menubar-settings">
       <div className="settings-subhead">
         <AppWindow size={15} />
-        菜单栏图标与面板
+        {place}图标与面板
       </div>
-      {state.menubar?.hidden === true && usage && (
+      {!mac && (
+        <p className="menubar-settings-note">
+          托盘图标只画刻度环：亮起的部分是剩余最少的账户窗口，悬停可看各账户的数值，左键打开用量面板。Windows
+          可能把它收在任务栏的「^」里，想一直显示：任务栏设置 → 其他系统托盘图标（Windows 10
+          为「选择哪些图标显示在任务栏上」），打开「Token 用量助手」。
+        </p>
+      )}
+      {mac && state.menubar?.hidden === true && usage && (
         <div className="inline-warning" role="status">
           <WarningCircle size={16} />
           <span>菜单栏空间不足，图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。</span>
         </div>
       )}
+      {mac && (
+        <div className="setting-row">
+          <div>
+            <h2>图标形态</h2>
+            <p>
+              <Disclosure
+                summary="图标显示最紧急的账户窗口"
+                detail="① 约 34pt 宽；② 约 60–95pt、③ 约 75–100pt，随数值长短变化；放不下时系统会把图标藏到刘海后面。"
+              />
+            </p>
+          </div>
+          <Select
+            label="菜单栏图标形态"
+            value={settings.menubarForm || 'value'}
+            disabled={!usage}
+            onChange={(value) => pref({ menubarForm: value })}
+            menuWidth={180}
+            options={MENUBAR_FORMS}
+          />
+        </div>
+      )}
       <div className="setting-row">
         <div>
-          <h2>图标形态</h2>
+          <h2>{place}显示用量</h2>
           <p>
-            <Disclosure
-              summary="图标显示最紧急的账户窗口"
-              detail="① 约 34pt 宽；② 约 60–95pt、③ 约 75–100pt，随数值长短变化；放不下时系统会把图标藏到刘海后面。"
-            />
+            关闭后{place}只显示静态 Logo，适合屏幕共享或演示；{place}图标不受截屏保护。
           </p>
         </div>
-        <Select
-          label="菜单栏图标形态"
-          value={settings.menubarForm || 'value'}
-          disabled={!usage}
-          onChange={(value) => pref({ menubarForm: value })}
-          menuWidth={180}
-          options={MENUBAR_FORMS}
-        />
-      </div>
-      <div className="setting-row">
-        <div>
-          <h2>菜单栏显示用量</h2>
-          <p>关闭后菜单栏只显示静态 Logo，适合屏幕共享或演示；菜单栏图标不受截屏保护。</p>
-        </div>
-        <Toggle label="菜单栏显示用量" checked={usage} onChange={(v) => pref({ menubarUsage: v })} />
+        <Toggle label={place + '显示用量'} checked={usage} onChange={(v) => pref({ menubarUsage: v })} />
       </div>
       <div className="setting-row">
         <div>
           <h2>告警时变色</h2>
-          <p>剩余低于提醒阈值时显示琥珀色，额度用尽时显示红色；关闭后始终单色。</p>
+          <p>
+            {mac
+              ? '剩余低于提醒阈值时显示琥珀色，额度用尽时显示红色；关闭后始终单色。'
+              : '剩余低于提醒阈值时整个刻度环带琥珀色，额度用尽时整环变红；关闭后始终单色。'}
+          </p>
         </div>
         <Toggle
           label="告警时变色"
@@ -631,6 +648,19 @@ export function DesktopApp() {
                 )}
               </div>
             </div>
+            {view === 'overview' && state.platform === 'win32' && settings.trayPinHint !== false && (
+              <div className="inline-warning inline-note" role="status">
+                <PushPin size={16} />
+                <span>
+                  托盘图标可能收在任务栏的「^」里。想一直显示：任务栏设置 → 其他系统托盘图标，打开「Token
+                  用量助手」。左键点它打开用量面板。
+                </span>
+                <button onClick={() => pref({ trayPinHint: false })}>
+                  知道了
+                  <X size={13} />
+                </button>
+              </div>
+            )}
             {view === 'overview' && glance && (
               <AllAccountsGrid
                 overview={overview}
@@ -1160,7 +1190,9 @@ export function DesktopApp() {
                       onChange={(v) => pref({ theme: v ? 'dark' : 'light' })}
                     />
                   </div>
-                  {mac && <MenubarSettings state={state} settings={settings} pref={pref} />}
+                  {(mac || state.platform === 'win32') && (
+                    <MenubarSettings state={state} settings={settings} pref={pref} mac={mac} />
+                  )}
                   <div className="settings-bottom">
                     <span>
                       <Check size={14} />

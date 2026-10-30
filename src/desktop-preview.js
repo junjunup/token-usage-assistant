@@ -22,7 +22,8 @@ let state = {
   credentialIssue: '',
   connecting: false,
   packaged: false,
-  platform: 'preview',
+  // ?platform=win32 previews the Windows-only parts (T11.2 tray settings and the pin note).
+  platform: new URLSearchParams(location.search).get('platform') === 'win32' ? 'win32' : 'preview',
   settings: {
     // ?theme=dark opens the preview (including ?surface=widget) in the dark theme, like the panel preview.
     theme: new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light',
@@ -618,7 +619,8 @@ function previewPanel() {
     theme,
     officials: Object.fromEntries(summaries.map((a) => [a.id, true])),
     anchorX: 290,
-    arrow: 8,
+    // ?platform=win32: the Windows panel sits against the taskbar without the arrow (T11.2).
+    arrow: state.platform === 'win32' ? 0 : 8,
     openedAt: 1,
   };
 }

@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0）。项目路径：`~/Documents/commandcode-companion`。用户另有一台 Windows 电脑（D17 ③），用于 Windows 真机验收；执行模型不能直接操作它。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.6`（上一个 `v1.9.0-beta.5`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.4（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1–beta.3；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 403 项，本机 397 通过 / 0 失败 / 6 跳过（CI 装有两个已验证版本的 Harness 运行时，403 / 0 / 0）（本机未装 Harness 运行时）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 408 项，本机 402 通过 / 0 失败 / 6 跳过（CI 装有两个已验证版本的 Harness 运行时，408 / 0 / 0）（本机未装 Harness 运行时）。ESLint：0 个错误、35 个警告；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -50,8 +50,8 @@
 | `desktop/menubar-status.cjs` | 菜单栏状态投影（T7.4，纯模块、严格类型检查）：从各账户的数据决定菜单栏图标显示哪个账户 / 窗口、文字和告警色；同一账户内额度窗口优先、金额兜底（T7.9） |
 | `desktop/account-overview.cjs`、`src/AccountsOverview.jsx` | 全部账户视图（T11.1，纯模块、严格类型检查；也生成到 `src/generated/`）：按菜单栏同一规则（`menubar-status.cjs` 的 `rankAccounts`）排出所有账户，供总览顶部的卡片网格和多账户时的悬浮窗使用；金额按 D17 ④ 两位小数（`balance-domain.cjs` 的 `compactAmount`） |
 | `desktop/menubar-panel.cjs` | 菜单栏面板视图模型（T7.6，纯模块、严格类型检查；也生成到 `src/generated/` 供浏览器预览） |
-| `desktop/menubar-popover.cjs`、`src/Panel.jsx`、`src/panel.css` | Mac 菜单栏弹出面板（T7.6）：窗口定位与收起；渲染面 `?surface=panel`，只能调用 5 个面板专用 IPC |
-| `desktop/menubar-icon.cjs`、`desktop/menubar-render/` | Mac 菜单栏动态图标（T7.5）：隐藏渲染页用 canvas 画刻度环 + 数值，主进程设为托盘图标；检测图标是否被系统藏到刘海后面 |
+| `desktop/menubar-popover.cjs`、`desktop/panel-placement.cjs`、`src/Panel.jsx`、`src/panel.css` | 菜单栏 / 托盘弹出面板（T7.6 Mac；T11.2 Windows）：窗口与收起；定位是纯模块（Mac 在图标下方带箭头，Windows 贴托盘所在的任务栏边）；渲染面 `?surface=panel`，只能调用 5 个面板专用 IPC |
+| `desktop/menubar-icon.cjs`、`desktop/menubar-render/` | 菜单栏 / 托盘动态图标（T7.5 Mac；T11.2 Windows）：隐藏渲染页用 canvas 画刻度环（Mac 另有数值；Windows 只画环，16 / 20 / 24 / 32 px 各一张），主进程设为托盘图标；Mac 上检测图标是否被系统藏到刘海后面 |
 | `desktop/balance-domain.cjs` | DeepSeek 余额归一化与金额格式 |
 | `desktop/domain.cjs` | 通用额度状态与重置描述 |
 | `desktop/subscriptions.cjs`、`subscription-status.cjs` | Codex / Claude 订阅额度归一化与连接状态 |
