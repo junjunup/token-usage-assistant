@@ -99,7 +99,7 @@
 - ~~告诉执行模型你在用的 Harness 版本~~（2026-10-25 执行模型只读查到）：DeepSeek Harness **0.2.1-rc.2**（另装有 DSH Desktop Beta 2.0.17-beta.1），而本项目的 Harness 支持锁定在 0.1.7-rc.1。T8.13 据此再定去留。
 - **在 DeepSeek Harness 里安装用量导出插件 1.5.0**（T8.13 完成后，可选）：插件已放在 `~/.token-usage-assistant/harness-plugin`。退出 DeepSeek Harness 后在终端运行 `npx --yes @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile desktop add "$HOME/.token-usage-assistant/harness-plugin"`，重新打开 Harness；再在助手「账户与设置 → 工具数据源」添加 DeepSeek Harness，选 `~/.token-usage-assistant/harness/usage.jsonl`。只统计安装之后的用量，不补历史。
 - **真机验收剩余项**（2026-10-25 Claude 已代测能做的部分，见验收清单第 13、16、17 项）：切换「系统设置 → 外观」看图标变化；用尽时的红色；录屏、会议共享、锁屏、快速切换用户；外接屏、多桌面、全屏应用中点图标；锁屏暂停与恢复（T4.4、T8.3）。
-- **阶段 11 攒到节点、等你回来一起确认的（2026-10-30）**：① T11.1–T11.3 的实现截图（`docs/design/T11-glance/impl-*.png`，共 21 张，按已选方案 A 的草图实现；与草图的差异只有两处，见执行记录）；② T11.4 首次启动向导与设置「高级」区的草图（`docs/design/T11.4-onboarding/`，12 张，确认后才实现）；③ 首发帖草稿 `work/t11/launch-posts.md`（不入库）；④ T11.5：第 1、2 项改法已按你的同意实施（隐藏时暂停每秒倒计时、悬浮窗按需创建），开发版前后对比见 [性能基线第 4 节](docs/perf-baseline.md)；真实账户上的复测要等你在场（新包会弹一次钥匙串授权）。
+- **阶段 11 已确认（2026-10-31）**：你确认了 T11.1–T11.3 的实现截图（21 张）、T11.4 的草图（12 张）和首发帖草稿 `work/t11/launch-posts.md`（不入库），T11.4 据此实现。还要你在场的：T11.5 在真实账户上复测（新包会弹一次钥匙串授权），开发版前后对比见 [性能基线第 4 节](docs/perf-baseline.md)。
 - **阶段 11 会用到的（到版本节点时一次交给你，D17）**：在 Windows 电脑上按 [Windows 真机验收清单](docs/WINDOWS-ACCEPTANCE-CHECKLIST.md)（15 项，第 6、7 项要等 T11.2 进包）做真机验收；为 README 截 Windows 实机截图（示例数据，T11.10）；发版后在 linux.do、V2EX 发首发帖（执行模型写草稿）；首发之后申请 SignPath 免费开源签名（T11.7）。
 - **`PUBLIC_RELEASE_TOKEN` 于 2027-01-13 到期**：到期前重新生成并设置。
 
