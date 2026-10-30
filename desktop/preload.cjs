@@ -40,6 +40,12 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.on('assistant:panel', listener);
       return () => ipcRenderer.removeListener('assistant:panel', listener);
     },
+    // T11.5: whether this window is on screen (a hidden window still reports document.visibilityState "visible").
+    onVisibility: (callback) => {
+      const listener = (_event, value) => callback(value);
+      ipcRenderer.on('assistant:visibility', listener);
+      return () => ipcRenderer.removeListener('assistant:visibility', listener);
+    },
     onState: (callback) => {
       const listener = (_event, value) => callback(value);
       ipcRenderer.on('assistant:state', listener);

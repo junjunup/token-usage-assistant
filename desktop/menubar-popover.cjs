@@ -7,6 +7,7 @@
 //   IPC channels it may use is decided in main.cjs (a short allow-list).
 const { BrowserWindow, screen } = require('electron');
 const { panelPlacement, ARROW } = require('./panel-placement.cjs');
+const { reportVisibility } = require('./window-visibility.cjs');
 
 const WIDTH = 360;
 const isMac = process.platform === 'darwin';
@@ -71,6 +72,7 @@ class MenubarPopover {
       this.lastBlurHide = Date.now();
       this.hide();
     });
+    reportVisibility(win);
     win.loadURL(this.url);
     this.window = win;
     return win;

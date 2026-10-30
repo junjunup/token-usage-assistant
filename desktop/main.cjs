@@ -47,6 +47,7 @@ const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState } = require('./menubar-panel.cjs');
 const { accountOverview, trayTooltip } = require('./account-overview.cjs');
+const { reportVisibility } = require('./window-visibility.cjs');
 const { forecast } = require('./analytics-core.cjs');
 // T7.6: the popover panel may only use these channels (least privilege); everything else is refused.
 const PANEL_CHANNELS = new Set([
@@ -302,12 +303,13 @@ function secureWindow(kind) {
     if (kind === 'main') win.hide();
     else {
       settings.floating = false;
-      win.hide();
       savePreferences();
+      syncWidget();
       broadcast();
     }
   });
   rememberWindow(kind, win);
+  reportVisibility(win);
   win.loadURL(`${APP_ORIGIN}/index.html?surface=${kind}`);
   win.once('ready-to-show', () => {
     if (smoke) return;
@@ -319,6 +321,24 @@ function secureWindow(kind) {
     if (kind === 'widget' && settings.floating) win.showInactive();
   });
   return win;
+}
+// T11.5: the widget exists only while it is switched on (about 95 MB for a hidden renderer otherwise). Switching it
+// off destroys it; its position was saved on every move, so it comes back in the same place (bottom edge kept,
+// 1.4.1). The smoke keeps one hidden widget throughout, as before (it checks the widget without showing it).
+function syncWidget() {
+  const alive = !!widgetWindow && !widgetWindow.isDestroyed();
+  if (settings.floating || smoke) {
+    if (!alive) {
+      widgetWindow = secureWindow('widget');
+      widgetFit = widgetHeight();
+      return; // shown on ready-to-show
+    }
+    if (settings.floating && !smoke) widgetWindow.showInactive();
+    else widgetWindow.hide();
+  } else if (alive) {
+    widgetWindow.destroy();
+    widgetWindow = null;
+  }
 }
 function showMain() {
   if (!mainWindow || mainWindow.isDestroyed()) mainWindow = secureWindow('main');
@@ -352,10 +372,9 @@ function applySettings(next) {
     }
     throw inputError('设置无法保存，请检查应用数据目录');
   }
+  syncWidget();
   widgetWindow?.setMovable(!settings.pinned);
   fitWidget();
-  if (settings.floating && !smoke) widgetWindow.showInactive();
-  else widgetWindow?.hide();
   accounts.updateSettings(settings);
   if (previous.updateCheck !== settings.updateCheck) setUpdateCheck();
   broadcast();
@@ -1064,8 +1083,7 @@ else {
           ]),
         );
       mainWindow = secureWindow('main');
-      widgetWindow = secureWindow('widget');
-      widgetFit = widgetHeight();
+      syncWidget();
       installIpc();
       if (islandPoc) require(path.join(__dirname, 'island-poc', 'index.cjs')).start();
       if (menubarPoc) require(path.join(__dirname, 'menubar-poc', 'index.cjs')).start();
