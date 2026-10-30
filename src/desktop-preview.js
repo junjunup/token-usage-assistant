@@ -612,7 +612,12 @@ export function previewSummaries() {
 // Popover panel preview (T7.6, ?surface=panel; ?theme=dark for the dark theme). The view model comes from the
 // same pure module as the desktop app (desktop/menubar-panel.cjs, generated), fed with the preview snapshots.
 function previewPanel() {
-  const summaries = previewSummaries();
+  // T11.3: like main.cjs, Command Code carries the (sample) forecast for the pace line.
+  const summaries = previewSummaries().map((a) =>
+    a.provider === 'commandcode'
+      ? { ...a, prediction: demoAnalytics({ source: 'account', range: 'today' }, state).prediction }
+      : a,
+  );
   const theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
   return {
     ...panelState(summaries, state.settings),

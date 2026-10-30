@@ -17,7 +17,8 @@ const { formatAmount, compactAmount } = require('./balance-domain.cjs');
  *   WindowInfo the raw fields resetDescription() needs (T7.6 panel)
  * @typedef {{ id: string, label: string, provider: string, active: boolean,
  *   capabilities?: { quota?: boolean, balance?: boolean } | null,
- *   status?: string, parts?: any, updatedAt?: any }} AccountSummary
+ *   status?: string, parts?: any, updatedAt?: any, prediction?: any }} AccountSummary prediction: the analytics
+ *   forecast, added by main.cjs for the panel's pace line (Command Code only, T11.3)
  * @typedef {{ accountId: string, accountLabel: string, windowId: string, windowLabel: string,
  *   ring: number|null, text: string, tone: Tone, lines: { label: string, text: string, tone: Tone }[],
  *   stale: boolean }} MenubarStatus
@@ -253,9 +254,10 @@ function menubarStatus(accounts, settings) {
     windowId: focus.id,
     windowLabel: focus.label,
     ring: focus.kind === 'window' || focus.id === 'monthly' ? focus.ratio : null,
-    text: focus.text,
+    // The menu-bar icon is a compact place (D17 ④): money at two decimals or "<0.01".
+    text: focus.compact,
     tone: focus.tone,
-    lines: shown.map((s) => ({ label: s.short, text: s.text, tone: s.tone })),
+    lines: shown.map((s) => ({ label: s.short, text: s.compact, tone: s.tone })),
     stale,
   };
 }

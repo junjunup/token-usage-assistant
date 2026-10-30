@@ -5,6 +5,8 @@
 // - The three cells only show what the account's own interface returns (Token / cost / balance); local tool
 //   statistics are never shown here (tool records belong to no account by default). Missing is "—" with a reason.
 // - Switching accounts inside the panel is local to the panel; it opens on the account the menu-bar icon shows.
+// T11.3 (D17): cells the platform does not provide are folded; the window the chip stands for is always listed; chip
+// amounts are compact (two decimals, D17 ④); Command Code gets a one-line pace summary of the existing forecast.
 const { menubarStatus, slotsOf, focusOf } = require('./menubar-status.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 
@@ -17,17 +19,57 @@ const { formatAmount } = require('./balance-domain.cjs');
  * @typedef {{ id: string, label: string, provider: string, stale: boolean, notice: string|null, status: string,
  *   chip: { text: string, tone: Tone }, rows: Row[], more: number,
  *   balances: { currency: string, text: string }[], available: boolean|null,
- *   cells: { tokens: Cell, cost: Cell, balance: Cell }, updatedAt: number|null }} PanelAccount
+ *   cells: { tokens: Cell, cost: Cell, balance: Cell }, shownCells: ('tokens'|'cost'|'balance')[],
+ *   pace: Pace|null, updatedAt: number|null }} PanelAccount
+ * @typedef {{ tone: 'normal'|'amber'|'red', text: string, reason: string|null }} Pace text "—" with a reason when
+ *   the forecast cannot say anything
  * @typedef {{ defaultAccountId: string|null, threshold: number, accounts: PanelAccount[] }} PanelState
  */
 
 const ROWS = 3;
 const SYMBOL = /** @type {Record<string, string>} */ ({ CNY: '¥', USD: '$' });
 const STALE = ['stale', 'offline', 'auth-error', 'partial'];
-const LEVEL = { normal: 0, amber: 1, red: 2 };
 
 /** @param {any} v */
 const finiteNumber = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/** @param {number} m minutes */
+const duration = (m) => {
+  const n = Math.ceil(m);
+  return n >= 60 ? Math.floor(n / 60) + ' 小时 ' + (n % 60) + ' 分钟' : n + ' 分钟';
+};
+const WINDOW_NAME = /** @type {Record<string, string>} */ ({ five: '5 小时窗口', week: '每周窗口' });
+
+/**
+ * One line from the analytics forecast (analytics-core.cjs forecast(), the "PACE & FORECAST" section): the most
+ * urgent window's outlook. No new prediction: unknown stays "—" with the forecast's own reason; the estimate always
+ * says which recent span it is based on, and never invents a countdown (T11.3, D17).
+ * @param {any} p forecast() result, or null when the account has none
+ * @returns {Pace|null}
+ */
+function paceLine(p) {
+  if (!p) return null;
+  if (!p.available) return { tone: 'normal', text: '—', reason: String(p.reason || '账户采样不足') };
+  /** @type {{ key: string, status: string, minutesToCap?: number|null }[]} */
+  const windows = Array.isArray(p.windows) ? p.windows : [];
+  const span = '按最近 ' + Math.round(p.minutes) + ' 分钟的速度，';
+  const atLimit = windows.find((w) => w.status === 'at-limit');
+  if (atLimit) return { tone: 'red', text: (WINDOW_NAME[atLimit.key] || '窗口') + '已达上限', reason: null };
+  const soon = windows
+    .filter((w) => w.status === 'before-reset' && typeof w.minutesToCap === 'number')
+    .sort((x, y) => Number(x.minutesToCap) - Number(y.minutesToCap))[0];
+  if (soon)
+    return {
+      tone: 'amber',
+      text:
+        span + (WINDOW_NAME[soon.key] || '窗口') + '约 ' + duration(Number(soon.minutesToCap)) + '后触顶（早于重置）',
+      reason: null,
+    };
+  const known = windows.filter((w) => w.status === 'after-reset' || w.status === 'idle');
+  if (!known.length) return { tone: 'normal', text: '—', reason: '窗口的连续样本不足' };
+  if (known.every((w) => w.status === 'idle')) return { tone: 'normal', text: '近期未新增消耗', reason: null };
+  return { tone: 'normal', text: span + '重置前不会触顶', reason: null };
+}
 
 /** @param {number} v */
 function compact(v) {
@@ -75,9 +117,10 @@ function panelAccount(a, threshold) {
   const windows = slots.filter((s) => s.kind === 'window');
   // The chip says what the menu-bar icon would say for this account (T7.11, same rule as T7.9).
   const focus = focusOf(slots);
-  // Up to three windows in the platform's order; the most urgent one is always shown.
+  // Up to three windows in the platform's order; the most urgent one (the one the chip stands for when it is a
+  // window, by the same rule) is always shown (T11.3: it could hide behind "还有 N 个窗口" before).
   let shown = windows.slice(0, ROWS);
-  const urgent = [...windows].sort((x, y) => LEVEL[y.tone] - LEVEL[x.tone])[0];
+  const urgent = focusOf(windows);
   if (urgent && !shown.includes(urgent)) shown = [...shown.slice(0, ROWS - 1), urgent];
   const balanceOnly = !!a.capabilities?.balance && !a.capabilities?.quota;
   const rows = shown.map((s) => ({
@@ -108,7 +151,8 @@ function panelAccount(a, threshold) {
       tone: parts.balance?.isAvailable === false ? 'amber' : 'normal',
     };
   const monthly = slots.find((s) => s.id === 'monthly');
-  if (monthly) balance = { value: monthly.text, unit: '月度余额', note: '账户接口', tone: monthly.tone };
+  if (monthly) balance = { value: monthly.compact, unit: '月度余额', note: '账户接口', tone: monthly.tone };
+  const cells = { tokens: summary.tokens, cost: summary.cost, balance };
   const stamps = Object.values(a.updatedAt || {}).filter((v) => typeof v === 'number' && v > 0);
   const stale = STALE.includes(String(a.status || ''));
   return {
@@ -119,7 +163,8 @@ function panelAccount(a, threshold) {
     stale,
     // T7.10: an account that never synced has no earlier values to fall back on.
     notice: !stale ? null : stamps.length ? '数据未更新，显示的是上次成功的值。' : '尚未同步成功，暂无数据。',
-    chip: focus ? { text: focus.text, tone: focus.tone } : { text: '—', tone: 'normal' },
+    // Compact place (D17 ④): money at two decimals or "<0.01"; the rows and cells keep every digit.
+    chip: focus ? { text: focus.compact, tone: focus.tone } : { text: '—', tone: 'normal' },
     rows,
     more: Math.max(0, windows.length - rows.length),
     balances,
@@ -128,7 +173,12 @@ function panelAccount(a, threshold) {
         ? parts.balance.isAvailable
         : null
       : null,
-    cells: { tokens: summary.tokens, cost: summary.cost, balance },
+    cells,
+    // Cells the platform does not provide are folded, not shown as empty boxes (T11.3).
+    shownCells: /** @type {('tokens'|'cost'|'balance')[]} */ (['tokens', 'cost', 'balance']).filter(
+      (k) => cells[k].note !== '平台未提供',
+    ),
+    pace: a.provider === 'commandcode' ? paceLine(a.prediction ?? null) : null,
     updatedAt: stamps.length ? Math.max(...stamps) : null,
   };
 }
@@ -148,4 +198,4 @@ function panelState(accounts, settings) {
   };
 }
 
-module.exports = { panelState, panelAccount, summaryCells, compact };
+module.exports = { panelState, panelAccount, summaryCells, compact, paceLine };

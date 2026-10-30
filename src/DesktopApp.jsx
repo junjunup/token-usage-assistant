@@ -48,6 +48,8 @@ import { AnalyticsPage, RangeControl, HealthStrip } from './AnalyticsPage.jsx';
 import { ToolSources } from './ToolSources.jsx';
 import { AccountLinks, ReconciliationPage } from './AccountLinks.jsx';
 import { AllAccountsGrid, GlanceWidget, attentionText } from './AccountsOverview.jsx';
+import { PaceLine } from './Panel.jsx';
+import { paceLine } from './generated/menubar-panel.js';
 
 const bridge = window.tokenAssistant || previewBridge;
 const browserPreview = !window.tokenAssistant;
@@ -735,6 +737,10 @@ export function DesktopApp() {
                       </Live>
                     </span>
                   </div>
+                  {/* T11.3: the forecast below in one line, for the current Command Code account. */}
+                  {state.hasCredential && analysis.report?.prediction && (
+                    <PaceLine pace={paceLine(analysis.report.prediction)} className="overview-pace" />
+                  )}
                   {mac && state.menubar?.hidden === true && settings.menubarUsage !== false && (
                     <div className="inline-warning" role="status">
                       <WarningCircle size={17} />
