@@ -438,7 +438,7 @@
 - 代码签名政策页：新增 `docs/CODE-SIGNING.md`（现状：未签名；怎样核对 SHA256；计划在首发后申请 SignPath Foundation），README 与安装说明链接过去。SignPath 的申请由用户亲手做（D13 第三档）。
 
 **T11.8 Windows 真机验收（用户亲手，D13 第三档）**
-- 执行模型参照 `docs/MAC-ACCEPTANCE-CHECKLIST.md` 写 `docs/WINDOWS-ACCEPTANCE-CHECKLIST.md`：全新安装与 SmartScreen、覆盖安装升级保留账户与设置、开机自启、托盘图标 / 面板 / 右键菜单、悬浮窗（多显示器、125% / 150% 缩放）、睡眠唤醒后刷新、通知、真实 Codex / Zcode 等工具同步、便携版、卸载后数据保留、连续使用一周。
+- 执行模型参照 `docs/MAC-ACCEPTANCE-CHECKLIST.md` 写 `docs/WINDOWS-ACCEPTANCE-CHECKLIST.md`（2026-10-30 已写好，共 15 项）：全新安装与 SmartScreen、覆盖安装升级保留账户与设置、开机自启、托盘图标 / 面板 / 右键菜单、悬浮窗（多显示器、125% / 150% 缩放）、睡眠唤醒后刷新、通知、真实 Codex / Zcode 等工具同步、便携版、卸载后数据保留、连续使用一周。
 - 用户在自己的 Windows 电脑上执行，结果计为 ③；未通过的项进第 5 节。
 
 **T11.9 1.9.0 正式版（或 1.9.0-beta.7）收尾与发版**
