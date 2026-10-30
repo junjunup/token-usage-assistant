@@ -34,7 +34,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "typescript": "7.0.2",
-    "vite": "6.4.2"
+    "vite": "6.4.4"
   },
   "main": "desktop/main.cjs",
   "description": "多平台额度、余额和本机用量桌面助手",
