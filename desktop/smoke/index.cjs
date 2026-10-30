@@ -83,6 +83,8 @@ async function overviewSmoke(ctx) {
   const tilesShown = await until(
     async () => (await main.executeJavaScript('document.querySelectorAll(".aa-tile").length')) === count,
   );
+  // T11.2: on Windows the overview starts with the pin-to-taskbar note, apart from the warnings.
+  const pinNote = await main.executeJavaScript('!!document.querySelector(".inline-note")');
   const order = await main.executeJavaScript(
     '[...document.querySelectorAll(".aa-tile .aa-name")].map((e) => e.textContent)',
   );
@@ -108,7 +110,8 @@ async function overviewSmoke(ctx) {
       Math.abs(restored.height - collapsedHeight) <= 8 &&
       Math.abs(expanded.y + expanded.height - (before.y + before.height)) <= 8 &&
       listed &&
-      glance,
+      glance &&
+      pinNote === isWin,
     accounts: count,
     tilesShown,
     order: JSON.stringify(order) === JSON.stringify(expected),
@@ -117,6 +120,7 @@ async function overviewSmoke(ctx) {
     restoredHeight: restored.height,
     bottomKept: Math.abs(expanded.y + expanded.height - (before.y + before.height)) <= 8,
     listed,
+    pinNote,
   };
 }
 // T7.6: the menu-bar popover panel (macOS). Opened without a click (same positioning code), it must be sandboxed,

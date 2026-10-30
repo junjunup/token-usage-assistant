@@ -651,7 +651,7 @@ export function DesktopApp() {
               </div>
             </div>
             {view === 'overview' && state.platform === 'win32' && settings.trayPinHint !== false && (
-              <div className="inline-warning inline-note" role="status">
+              <div className="inline-note" role="status">
                 <PushPin size={16} />
                 <span>
                   托盘图标可能收在任务栏的「^」里。想一直显示：任务栏设置 → 其他系统托盘图标，打开「Token
