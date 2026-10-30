@@ -20,6 +20,7 @@
     "desktop/association-rules.cjs",
     "desktop/menubar-status.cjs",
     "desktop/menubar-panel.cjs",
+    "desktop/account-overview.cjs",
     "desktop/coverage-report.cjs",
     "desktop/upstream-contracts.cjs"
   ]

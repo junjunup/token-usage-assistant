@@ -1,0 +1,164 @@
+/* T11.1 all-accounts view: grid at the top of the overview (layout A) and the floating widget's account list. */
+.aa-section {
+  margin-bottom: 30px;
+}
+.aa-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+.aa-summary {
+  font-size: 11px;
+  color: var(--muted);
+}
+.aa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.aa-tile {
+  display: grid;
+  gap: 8px;
+  padding: 13px 14px 12px;
+  text-align: left;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  min-width: 0;
+  cursor: pointer;
+}
+.aa-tile:hover:not(:disabled) {
+  background: var(--soft);
+}
+.aa-tile:disabled {
+  cursor: default;
+}
+.aa-tile.selected {
+  box-shadow: inset 0 0 0 1px var(--fg);
+  cursor: default;
+}
+.aa-tile:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: -2px;
+}
+.aa-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  min-width: 0;
+}
+.aa-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.aa-stale {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--amber);
+  white-space: nowrap;
+}
+.aa-tile-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.aa-label {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aa-tile-value strong {
+  font-size: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.aa-nobar {
+  height: 6px;
+  border-bottom: 1px dashed var(--line);
+}
+.aa-reset {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aa-reset svg {
+  flex-shrink: 0;
+}
+
+/* Floating widget with two or more accounts */
+.aa-w-account {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.aa-w-account > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.aa-w-account small {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 0 5px;
+}
+.aa-w-list {
+  margin-top: 14px;
+}
+.aa-w-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+}
+.aa-w-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.aa-w-name .aa-name {
+  font-weight: 400;
+}
+.aa-w-label {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.aa-w-label.stale {
+  color: var(--amber);
+}
+.aa-w-row b {
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}

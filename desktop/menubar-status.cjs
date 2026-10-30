@@ -6,12 +6,13 @@
 // - Missing data is "—", never 0; resetAt=0 is "未启用"; balances keep their own currency and are never a gauge.
 // - Within an account, quota windows come first and money is the fallback (T7.9, see focusOf).
 const { monthlyQuota, percentText } = require('./domain.cjs');
-const { formatAmount } = require('./balance-domain.cjs');
+const { formatAmount, compactAmount } = require('./balance-domain.cjs');
 
 /**
  * @typedef {'normal'|'amber'|'red'} Tone
  * @typedef {{ id: string, label: string, short: string, kind: 'window'|'balance', ratio: number|null,
- *   percent: number|null, text: string, tone: Tone, resetAt: number|null, window?: WindowInfo }} Slot
+ *   percent: number|null, text: string, compact: string, tone: Tone, resetAt: number|null, window?: WindowInfo }} Slot
+ *   `compact` is the text for compact places (D17 ④): money at two decimals or "<0.01"; windows read as `text`.
  * @typedef {{ resetAt: number|null, resetState: string, used: number|null, unlimited: boolean, exceeded: boolean }}
  *   WindowInfo the raw fields resetDescription() needs (T7.6 panel)
  * @typedef {{ id: string, label: string, provider: string, active: boolean,
@@ -73,17 +74,19 @@ function windowSlot(id, label, w, threshold) {
     exceeded: !!w.exceeded,
   };
   const base = { id, label, short: shortLabel(label), kind: /** @type {'window'} */ ('window'), window: info };
-  if (w.unlimited) return { ...base, ratio: null, percent: null, text: '不限', tone: 'normal', resetAt: null };
+  if (w.unlimited)
+    return { ...base, ratio: null, percent: null, text: '不限', compact: '不限', tone: 'normal', resetAt: null };
   const p = typeof w.remainingPercent === 'number' && Number.isFinite(w.remainingPercent) ? w.remainingPercent : null;
   const tone = w.exceeded ? 'red' : p !== null && p < threshold ? 'amber' : 'normal';
   // resetAt=0: the window is explicitly not running; never invent a countdown or a gauge for it.
   if (w.resetState === 'idle' && !w.exceeded)
-    return { ...base, ratio: null, percent: null, text: '未启用', tone: 'normal', resetAt: null };
+    return { ...base, ratio: null, percent: null, text: '未启用', compact: '未启用', tone: 'normal', resetAt: null };
   return {
     ...base,
     ratio: p === null ? null : Math.max(0, Math.min(1, p / 100)),
     percent: p,
     text: percentText(p),
+    compact: percentText(p),
     tone,
     resetAt: typeof w.resetAt === 'number' && w.resetAt > 0 ? w.resetAt : null,
   };
@@ -103,7 +106,8 @@ function slotsOf(a, threshold) {
   if (balanceOnly) {
     const b = parts.balance;
     for (const row of Array.isArray(b?.balances) ? b.balances : []) {
-      const amount = formatAmount(row.total);
+      const amount = formatAmount(row.total),
+        symbol = SYMBOL[row.currency] || row.currency + ' ';
       slots.push({
         id: 'balance:' + row.currency,
         label: row.currency + ' 余额',
@@ -111,7 +115,8 @@ function slotsOf(a, threshold) {
         kind: 'balance',
         ratio: null,
         percent: null,
-        text: amount === '—' ? '—' : (SYMBOL[row.currency] || row.currency + ' ') + amount,
+        text: amount === '—' ? '—' : symbol + amount,
+        compact: amount === '—' ? '—' : symbol + compactAmount(row.total),
         // The platform's own availability flag; balance thresholds come after the first version (③).
         tone: b.isAvailable === false ? 'amber' : 'normal',
         resetAt: null,
@@ -147,6 +152,7 @@ function slotsOf(a, threshold) {
       ratio: p === null ? null : Math.max(0, Math.min(1, p / 100)),
       percent: p,
       text: '$' + c.monthly.toFixed(2),
+      compact: '$' + compactAmount(c.monthly),
       tone: c.monthly <= 0 ? 'red' : p !== null && p < threshold ? 'amber' : 'normal',
       resetAt: m.resetAt,
     });
@@ -181,6 +187,42 @@ function focusOf(slots) {
 }
 
 /**
+ * @typedef {{ a: AccountSummary, order: number, slots: Slot[], focus: Slot|null }} RankedAccount
+ */
+
+/**
+ * Accounts most urgent first: the menu-bar icon shows the first one (T7.4), the all-accounts view lists them all
+ * in this order (T11.1). `preferActive` breaks remaining ties in favour of the current account (the icon only); the
+ * list leaves it out so that choosing an account never reorders the list.
+ * @param {AccountSummary[]} accounts
+ * @param {number} threshold
+ * @param {{ preferActive?: boolean }} [options]
+ * @returns {RankedAccount[]}
+ */
+function rankAccounts(accounts, threshold, options = {}) {
+  const ranked = (Array.isArray(accounts) ? accounts : []).map((a, order) => {
+    const slots = slotsOf(a, threshold);
+    return { a, order, slots, focus: focusOf(slots) };
+  });
+  const level = (/** @type {RankedAccount} */ r) => (r.focus ? LEVEL[r.focus.tone] : 0);
+  const windowLeft = (/** @type {RankedAccount} */ r) =>
+    r.slots
+      .filter((s) => s.kind === 'window' && s.percent !== null)
+      .reduce((m, s) => Math.min(m, s.percent ?? m), Infinity);
+  return ranked.sort(
+    (x, y) =>
+      // Alerts first: red over amber, then the one that resets first (④).
+      level(y) - level(x) ||
+      (level(x) > 0 ? cmp(x.focus?.resetAt ?? Infinity, y.focus?.resetAt ?? Infinity) : 0) ||
+      // No alert: the window with the least left.
+      cmp(windowLeft(x), windowLeft(y)) ||
+      // Otherwise the current account (icon only), then list order.
+      (options.preferActive ? Number(y.a.active) - Number(x.a.active) : 0) ||
+      x.order - y.order,
+  );
+}
+
+/**
  * @param {AccountSummary[]} accounts
  * @param {{ threshold: number }} settings
  * @returns {MenubarStatus|null} null when there is nothing to show (no accounts): the icon stays the static logo.
@@ -188,28 +230,7 @@ function focusOf(slots) {
 function menubarStatus(accounts, settings) {
   if (!Array.isArray(accounts) || !accounts.length) return null;
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
-  const ranked = accounts.map((a, order) => {
-    const slots = slotsOf(a, threshold);
-    const focus = focusOf(slots);
-    return { a, order, slots, focus };
-  });
-  const level = (/** @type {typeof ranked[number]} */ r) => (r.focus ? LEVEL[r.focus.tone] : 0);
-  const windowLeft = (/** @type {typeof ranked[number]} */ r) =>
-    r.slots
-      .filter((s) => s.kind === 'window' && s.percent !== null)
-      .reduce((m, s) => Math.min(m, s.percent ?? m), Infinity);
-  const pick = [...ranked].sort(
-    (x, y) =>
-      // Alerts first: red over amber, then the one that resets first (④).
-      level(y) - level(x) ||
-      (level(x) > 0 ? cmp(x.focus?.resetAt ?? Infinity, y.focus?.resetAt ?? Infinity) : 0) ||
-      // No alert: the window with the least left.
-      cmp(windowLeft(x), windowLeft(y)) ||
-      // Otherwise the current account, then list order.
-      Number(y.a.active) - Number(x.a.active) ||
-      x.order - y.order,
-  )[0];
-  const { a, slots, focus } = pick;
+  const { a, slots, focus } = rankAccounts(accounts, threshold, { preferActive: true })[0];
   const stale = STALE.includes(String(a.status || ''));
   if (!focus)
     return {
@@ -239,4 +260,4 @@ function menubarStatus(accounts, settings) {
   };
 }
 
-module.exports = { menubarStatus, slotsOf, shortLabel, focusOf };
+module.exports = { menubarStatus, rankAccounts, slotsOf, shortLabel, focusOf };

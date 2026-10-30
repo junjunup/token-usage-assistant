@@ -47,6 +47,7 @@ import { useAnalytics } from './useAnalytics.js';
 import { AnalyticsPage, RangeControl, HealthStrip } from './AnalyticsPage.jsx';
 import { ToolSources } from './ToolSources.jsx';
 import { AccountLinks, ReconciliationPage } from './AccountLinks.jsx';
+import { AllAccountsGrid, GlanceWidget, attentionText } from './AccountsOverview.jsx';
 
 const bridge = window.tokenAssistant || previewBridge;
 const browserPreview = !window.tokenAssistant;
@@ -191,6 +192,21 @@ function Segments({ value, label, tone = 'green', small = false }) {
   );
 }
 
+// T11.1 widget status line: collapsed, how the other accounts stand; expanded, when the top account last synced.
+function GlanceStatus({ overview, expanded }) {
+  const [top, ...rest] = overview.rows,
+    warn = rest.filter((r) => r.tone !== 'normal').length,
+    level = rest.some((r) => r.tone === 'red') ? 'red' : warn ? 'amber' : '';
+  return (
+    <div className="widget-status">
+      <span className={`status-dot ${expanded ? '' : level}`} />
+      {expanded
+        ? (top.stale && top.synced ? '上次数据 · ' : '') + '额度更新 ' + time(top.updatedAt)
+        : `另 ${rest.length} 个账户${warn ? '，其中 ' + attentionText(warn) : attentionText(0)}`}
+    </div>
+  );
+}
+
 export function DesktopApp() {
   const [state, setState] = useState(null),
     [view, setView] = useState('overview'),
@@ -326,6 +342,9 @@ export function DesktopApp() {
     { id: 'five', title: '5 小时窗口', en: '5-HOUR WINDOW', value: c?.five },
     { id: 'week', title: '每周窗口', en: 'WEEKLY WINDOW', value: c?.week },
   ];
+  // T11.1: with two or more accounts the overview lists them all and the widget follows the tightest one.
+  const overview = state.overview,
+    glance = (overview?.rows?.length || 0) >= 2;
   const changeTheme = () => pref({ theme: dark ? 'light' : 'dark' });
   const refresh = () => action(() => bridge.refresh());
   // Diagnostics export (T3.3): show everything that would be saved, then save exactly that.
@@ -380,7 +399,9 @@ export function DesktopApp() {
             </div>
           </div>
           <div className="widget-body">
-            {balanceOnly ? (
+            {glance ? (
+              <GlanceWidget overview={overview} expanded={!!settings.widgetExpanded} />
+            ) : balanceOnly ? (
               <BalanceWidget state={state} />
             ) : generic ? (
               <ProviderWidget state={state} />
@@ -450,17 +471,27 @@ export function DesktopApp() {
               </>
             )}
           </div>
-          <div className="widget-status" title={status}>
-            <span className={`status-dot ${tone}`} />
-            {stale('credits') && c ? '上次数据 · ' : ''}
-            {status}
-          </div>
+          {glance ? (
+            <GlanceStatus overview={overview} expanded={!!settings.widgetExpanded} />
+          ) : (
+            <div className="widget-status" title={status}>
+              <span className={`status-dot ${tone}`} />
+              {stale('credits') && c ? '上次数据 · ' : ''}
+              {status}
+            </div>
+          )}
           <div className="widget-footer">
             <button
               aria-expanded={!!settings.widgetExpanded}
               onClick={() => pref({ widgetExpanded: !settings.widgetExpanded })}
             >
-              {settings.widgetExpanded ? '收起数据' : '展开数据'}
+              {glance
+                ? settings.widgetExpanded
+                  ? '收起'
+                  : '展开全部账户'
+                : settings.widgetExpanded
+                  ? '收起数据'
+                  : '展开数据'}
               <CaretDown size={13} style={{ transform: settings.widgetExpanded ? 'rotate(180deg)' : undefined }} />
             </button>
             <button onClick={() => action(() => bridge.window('show-main'))}>
@@ -600,6 +631,13 @@ export function DesktopApp() {
                 )}
               </div>
             </div>
+            {view === 'overview' && glance && (
+              <AllAccountsGrid
+                overview={overview}
+                disabled={state.connecting}
+                onSelect={(id) => action(() => bridge.selectAccount(id))}
+              />
+            )}
             {view !== 'reconciliation' && (
               <AccountSwitcher
                 state={state}

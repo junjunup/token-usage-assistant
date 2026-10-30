@@ -59,6 +59,59 @@ async function menubarSmoke(ctx, phase) {
     centre: snap.centre,
   };
 }
+// T11.1: with several accounts the overview lists every account in the menu-bar order, and the widget follows the
+// tightest one: shorter while collapsed, every other account listed when expanded, its bottom edge kept (1.4.1).
+async function overviewSmoke(ctx) {
+  const { accountOverview } = require('../account-overview.cjs');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const until = async (test, ms = 10000) => {
+    for (const end = Date.now() + ms; Date.now() < end; await sleep(100)) if (await test()) return true;
+    return false;
+  };
+  const count = ctx.accounts.entries.length;
+  const expected = accountOverview(ctx.accounts.summaries(), ctx.settings).rows.map((r) => r.label);
+  const main = ctx.mainWindow.webContents,
+    widget = ctx.widgetWindow;
+  await main.executeJavaScript('document.querySelector(\'[aria-label="用量总览"]\')?.click()');
+  const tilesShown = await until(
+    async () => (await main.executeJavaScript('document.querySelectorAll(".aa-tile").length')) === count,
+  );
+  const order = await main.executeJavaScript(
+    '[...document.querySelectorAll(".aa-tile .aa-name")].map((e) => e.textContent)',
+  );
+  ctx.applySettings({ ...ctx.settings, widgetExpanded: false });
+  const before = widget.getBounds();
+  const collapsedHeight = before.height;
+  ctx.applySettings({ ...ctx.settings, widgetExpanded: true });
+  const listed = await until(
+    async () =>
+      (await widget.webContents.executeJavaScript('document.querySelectorAll(".aa-w-row").length')) === count - 1,
+  );
+  const expanded = widget.getBounds();
+  ctx.applySettings({ ...ctx.settings, widgetExpanded: false });
+  const restored = widget.getBounds();
+  const glance = await widget.webContents.executeJavaScript('!!document.querySelector(".aa-w-account")');
+  return {
+    ok:
+      count >= 2 &&
+      tilesShown &&
+      JSON.stringify(order) === JSON.stringify(expected) &&
+      Math.abs(collapsedHeight - 238) <= 8 &&
+      Math.abs(expanded.height - 552) <= 8 &&
+      Math.abs(restored.height - collapsedHeight) <= 8 &&
+      Math.abs(expanded.y + expanded.height - (before.y + before.height)) <= 8 &&
+      listed &&
+      glance,
+    accounts: count,
+    tilesShown,
+    order: JSON.stringify(order) === JSON.stringify(expected),
+    collapsedHeight,
+    expandedHeight: expanded.height,
+    restoredHeight: restored.height,
+    bottomKept: Math.abs(expanded.y + expanded.height - (before.y + before.height)) <= 8,
+    listed,
+  };
+}
 // T7.6: the menu-bar popover panel (macOS). Opened without a click (same positioning code), it must be sandboxed,
 // content-protected, open on the account the icon shows, refuse IPC channels outside its allow-list, and hide again.
 // Light and dark captures of the real panel are kept in the isolated test directory for the D10 review.
@@ -304,6 +357,7 @@ function attach(ctx) {
       });
       const menubarAccounts = await menubarSmoke(ctx, 'accounts');
       report.menubar = { ok: menubarEmpty.ok && menubarAccounts.ok, empty: menubarEmpty, accounts: menubarAccounts };
+      report.overview = await overviewSmoke(ctx);
       report.panel = await panelSmoke(ctx);
       report.menubarSettings = await menubarSettingsSmoke(ctx);
       report.branding = await require('./branding-native-smoke.cjs').runBrandingSmoke({
@@ -314,6 +368,7 @@ function attach(ctx) {
       });
       report.ok =
         report.menubar.ok &&
+        report.overview.ok &&
         report.panel.ok &&
         report.menubarSettings.ok &&
         report.opencode.ok &&

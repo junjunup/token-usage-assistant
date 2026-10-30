@@ -111,9 +111,14 @@ async function runSubscriptionSmoke({
     checks.autoConnectWithoutPicker = true;
     await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="用量总览"]\').click()');
     await until(mainWindow, "document.querySelector('.provider-dashboard')?.textContent.includes('ChatGPT pro')");
+    // T11.1: with two or more accounts the expanded widget lists every account instead of the current one.
+    const glance = accounts.entries.length >= 2;
+    if (glance) applySettings({ ...settings, widgetExpanded: true });
     await until(
       widgetWindow,
-      "document.querySelector('.provider-widget-account')?.textContent.includes('GPT Pro native fixture')",
+      glance
+        ? "document.querySelector('.widget-body')?.textContent.includes('GPT Pro native fixture')"
+        : "document.querySelector('.provider-widget-account')?.textContent.includes('GPT Pro native fixture')",
     );
     assert.equal(accounts.active.monitor.state.parts.credits.windows.length, 2);
     checks.codexQuotaAndWidget = true;
@@ -124,9 +129,12 @@ async function runSubscriptionSmoke({
       mainWindow,
       "document.querySelector('.local-connection-status')?.textContent.includes('组件已就绪 · 等待首次额度')",
     );
+    // Before the first quota the account shows a dash in the widget list, never 0.
     await until(
       widgetWindow,
-      "document.querySelector('.provider-widget-account')?.textContent.includes('等待首次额度')",
+      glance
+        ? "[...document.querySelectorAll('.aa-w-row')].some((r) => r.textContent.includes('Claude native fixture') && r.querySelector('b').textContent === '—')"
+        : "document.querySelector('.provider-widget-account')?.textContent.includes('等待首次额度')",
     );
     checks.claudeWaitingBeforeFirstQuota = true;
     assert.equal(

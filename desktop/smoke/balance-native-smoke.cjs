@@ -79,7 +79,11 @@ async function runBalanceSmoke({ accounts, analytics, store, mainWindow, widgetW
       "document.querySelector('.connect-actions button[type=submit]').click()",
     );
     await until(mainWindow, "document.querySelectorAll('.balance-currency').length===2");
-    await until(widgetWindow, "document.querySelectorAll('.balance-widget-currency').length===2");
+    // T11.1: with two or more accounts the widget lists every account, money at two decimals (D17 ④).
+    if (accounts.entries.length >= 2) {
+      applySettings({ ...settings, widgetExpanded: true });
+      await until(widgetWindow, "document.querySelector('.widget-body')?.textContent.includes('¥110.00')");
+    } else await until(widgetWindow, "document.querySelectorAll('.balance-widget-currency').length===2");
     checks.realFormToBalance = true;
     assert.equal(accounts.active.monitor.state.status, 'connected');
     assert.equal(
@@ -100,7 +104,12 @@ async function runBalanceSmoke({ accounts, analytics, store, mainWindow, widgetW
     await capture(mainWindow, store.file('balance-multi-light.png'));
     await capture(widgetWindow, store.file('balance-widget-compact.png'));
     applySettings({ ...settings, theme: 'dark', widgetExpanded: true });
-    await until(widgetWindow, "document.querySelectorAll('.balance-widget dl').length===2");
+    await until(
+      widgetWindow,
+      accounts.entries.length >= 2
+        ? "document.querySelectorAll('.aa-w-row').length===" + (accounts.entries.length - 1)
+        : "document.querySelectorAll('.balance-widget dl').length===2",
+    );
     await capture(mainWindow, store.file('balance-multi-dark.png'));
     await capture(widgetWindow, store.file('balance-widget-expanded.png'));
     checks.themesAndWidget = true;
