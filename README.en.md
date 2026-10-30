@@ -61,7 +61,7 @@ What is read, where it is stored and which addresses are contacted: **[Privacy](
 
 Full steps, upgrades, checking downloads and FAQ: **[Install and upgrade](docs/INSTALL.md#english)**.
 
-- **Windows (x64)**: `TokenUsageAssistant-Setup-<version>.exe` or `TokenUsageAssistant-Portable-<version>.exe`; no Node.js needed. The program is unsigned; if you see "Windows protected your PC", click **More info → Run anyway**.
+- **Windows (x64)**: `TokenUsageAssistant-Setup-<version>.exe` or `TokenUsageAssistant-Portable-<version>.exe`; no Node.js needed. The program is unsigned (see [Code signing](docs/CODE-SIGNING.md#english)); if you see "Windows protected your PC", click **More info → Run anyway**.
 - **macOS (Apple Silicon, macOS 13+)**: drag "Token 用量助手" from the DMG into Applications. On first launch the dialog has no Open button: close it, then click **Open Anyway** in **System Settings → Privacy & Security**. Once per version; an upgrade may ask for Keychain access once.
 
 ## Using it

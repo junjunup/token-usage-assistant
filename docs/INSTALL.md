@@ -32,7 +32,7 @@ Windows 可用：`certutil -hashfile TokenUsageAssistant-Setup-<版本>.exe SHA2
 
 ### 常见问题
 
-**为什么没有签名？安全吗？** 签名需要付费的开发者证书，目前没有购买。应用是开源的（MIT），安装包由 GitHub Actions 从公开的源码构建，哈希可以对照 `SHA256SUMS.txt`。应用读什么、不读什么、联网访问哪里，见 [隐私说明](PRIVACY.md)。
+**为什么没有签名？安全吗？** 签名需要付费的开发者证书，目前没有购买。应用是开源的（MIT），安装包由 GitHub Actions 从公开的源码构建，哈希可以对照 `SHA256SUMS.txt`。应用读什么、不读什么、联网访问哪里，见 [隐私说明](PRIVACY.md)；签名的现状与计划见 [代码签名说明](CODE-SIGNING.md)。
 
 **会自动更新吗？** 不会。应用启动时和每 24 小时检查一次新版本，有新版时提示你，由你下载安装（可在「账户与设置」里关闭检查）。
 
@@ -73,7 +73,7 @@ Each release includes `SHA256SUMS.txt`. Compute the file's SHA256 and compare it
 
 ### FAQ
 
-**Why unsigned? Is it safe?** Signing requires paid developer certificates, which the project does not have yet. The app is open source (MIT); installers are built from the public source by GitHub Actions, and their hashes are listed in `SHA256SUMS.txt`. What the app reads and connects to is described in [Privacy](PRIVACY.md).
+**Why unsigned? Is it safe?** Signing requires paid developer certificates, which the project does not have yet. The app is open source (MIT); installers are built from the public source by GitHub Actions, and their hashes are listed in `SHA256SUMS.txt`. What the app reads and connects to is described in [Privacy](PRIVACY.md); signing status and plans are in [Code signing](CODE-SIGNING.md#english).
 
 **Does it update itself?** No. It checks for new versions at start and every 24 hours and tells you; you download and install (the check can be turned off in settings).
 

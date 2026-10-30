@@ -94,3 +94,25 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  # T11.7 (D17 ②): the generated winget manifest must pass winget's own validation. Placeholder hash, so this checks
+  # the schema and fields only; the real hashes come from the release's SHA256SUMS.txt (T11.9).
+  winget-manifest:
+    name: winget manifest (windows-latest)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.12.0
+
+      - name: Validate the generated winget manifest
+        shell: pwsh
+        run: |
+          $v = node -p "require('./package.json').version"
+          node scripts/distribution-manifests.cjs --version $v --placeholder --out distribution-out
+          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { throw 'winget is not available on this runner image' }
+          winget --version
+          winget validate --manifest "distribution-out/winget/manifests/j/junjunup/TokenUsageAssistant/$v" --disable-interactivity
+          if ($LASTEXITCODE -ne 0) { throw "winget validate failed ($LASTEXITCODE)" }
