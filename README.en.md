@@ -26,7 +26,7 @@ Current version: **1.9.0-beta.6** (beta, not signed or notarized). History: [CHA
 
 ## Supported platforms and tools
 
-Verification levels: **Live-tested** = verified read-only against a real account; **Sample-tested** = tested only with official API samples or synthetic data, not reconciled against a real account. The app shows the same label next to each platform.
+Verification levels: **Live-tested** = verified read-only against a real account; **Sample-tested** = tested only with official API samples or synthetic data, not reconciled against a real account. The app shows the same label next to each platform. Compared a platform with your own account? Please send a [platform verification report](https://github.com/junjunup/token-usage-assistant/issues/new?template=verification.yml): just whether it matches and what differs, no keys or account details.
 
 | Kind | Name | How it reads | Verification |
 |---|---|---|---|

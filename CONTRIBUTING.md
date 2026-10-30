@@ -43,6 +43,10 @@ pnpm run format:check   # Prettier（pnpm run format 自动格式化）
 
 先开「新平台请求」issue，附官方只读接口的文档。实现时要有：固定的官方地址、合成样例的契约测试（不用真实账户数据）、验证等级（只有用真实账户核对过才能标「已实测」）、PRIVACY 更新。
 
+### 平台验证报告
+
+表里标「样例验证」的平台还没和真实账户核对过。如果你用自己的账户对照过应用和平台官方控制台，请用「平台验证报告」issue 模板告诉我们一致与否、差异在哪里；不要贴 Key、Cookie、账户邮箱或截图里的账户信息。维护者会据此复核，验证等级是否调整由维护者确认。
+
 ### 语言
 
 界面和文档以中文为主；README 与隐私、安全说明有英文版。issue 和 PR 用中文或英文都可以。
@@ -76,6 +80,10 @@ The native smoke test must use a fresh isolated directory: `pnpm exec electron .
 ### Data rules (full version in [AGENTS.md](AGENTS.md), Chinese)
 
 Missing values show "—", never 0; failed queries never become 0. Currencies are never converted or added; a balance change is not spending; platform totals and local tool statistics are never added together. Costs are local estimates, not bills. Conversation content, prompts, replies, tool content, raw requests, raw errors and credentials are never read, logged or exported; third-party databases are opened read-only. Only official read-only endpoints are used: no model calls, no quota spent, no account changes.
+
+### Platform verification reports
+
+Platforms marked "Sample-tested" have not been checked against a real account. If you compared the app with a platform's official console on your own account, use the "platform verification report" issue template to say whether it matches and what differs; do not paste keys, cookies, account emails or account details from screenshots. The maintainer reviews each report and decides whether a verification level changes.
 
 ### New platforms
 
