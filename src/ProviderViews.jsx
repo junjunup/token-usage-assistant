@@ -8,6 +8,7 @@ import {
   Plug,
   SignOut,
   ArrowUpRight,
+  ArrowRight,
   WarningCircle,
   Receipt,
 } from '@phosphor-icons/react';
@@ -393,11 +394,12 @@ export function LocalConnectionStatus({ state }) {
     </div>
   );
 }
-export function ConnectionForm({ state, preview, action, onConnected, onRemove }) {
-  const active = state.accounts?.find((a) => a.id === state.activeAccountId);
+export function ConnectionForm({ state, preview, action, onConnected, onRemove, wizard = null }) {
+  // In the wizard (T11.4) every connection is a new one; updating or removing stays in settings.
+  const active = wizard ? null : state.accounts?.find((a) => a.id === state.activeAccountId);
   const [mode, setMode] = useState('add'),
-    [provider, setProvider] = useState('glm'),
-    [region, setRegion] = useState('cn'),
+    [provider, setProvider] = useState(wizard?.provider || 'glm'),
+    [region, setRegion] = useState(wizard?.region || 'cn'),
     [label, setLabel] = useState(''),
     [apiKey, setKey] = useState(''),
     [accessKeyId, setAk] = useState(''),
@@ -482,6 +484,183 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove }
       : info.credential === 'aksk'
         ? !!accessKeyId.trim() && !!secretKey.trim()
         : !!apiKey.trim();
+  const disabled =
+    !hasSecret || busy || preview || !!state.credentialIssue || (provider === 'codex' && !!profiles && !profileId);
+  const submitLabel = busy
+    ? '正在验证连接'
+    : provider === 'claude'
+      ? '连接并生成采集配置'
+      : provider === 'codex'
+        ? profiles
+          ? '连接所选配置'
+          : '连接本机 Codex'
+        : wizard
+          ? '连接并继续'
+          : mode === 'update'
+            ? '验证并更新连接'
+            : '验证并添加账户';
+  const fields = (
+    <>
+      <label htmlFor="account-label">
+        账户备注 <span>可选，方便区分多个连接</span>
+      </label>
+      <input
+        id="account-label"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        maxLength={60}
+        placeholder={info.name}
+        disabled={busy}
+      />
+      {info.credential === 'local' ? (
+        <div className="analysis-callout">
+          <Info size={17} />
+          <span>
+            {provider === 'codex' ? (
+              <Disclosure
+                summary="自动识别本机的 Codex 配置"
+                detail="通过官方客户端读取当前登录订阅。有多个配置时可选择，也可手动指定目录。套餐额度与工具明细分别显示状态。"
+              />
+            ) : (
+              <Disclosure
+                summary={
+                  '连接后用生成的 ' +
+                  (state.platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1') +
+                  ' 启动 Claude Code'
+                }
+                detail="在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。"
+              />
+            )}
+          </span>
+        </div>
+      ) : info.credential === 'aksk' ? (
+        <>
+          <label htmlFor="access-key-id">Access Key ID</label>
+          <input
+            id="access-key-id"
+            type="password"
+            value={accessKeyId}
+            onChange={(e) => setAk(e.target.value)}
+            disabled={busy || preview}
+            autoComplete="off"
+            spellCheck={false}
+            required
+            minLength={8}
+            maxLength={4096}
+          />
+          <label htmlFor="secret-access-key">Secret Access Key</label>
+          <input
+            id="secret-access-key"
+            type="password"
+            value={secretKey}
+            onChange={(e) => setSk(e.target.value)}
+            disabled={busy || preview}
+            autoComplete="off"
+            spellCheck={false}
+            required
+            minLength={8}
+            maxLength={4096}
+          />
+        </>
+      ) : (
+        <>
+          <label htmlFor="api-key">{info.name} API Key</label>
+          <input
+            id="api-key"
+            type="password"
+            value={apiKey}
+            onChange={(e) => setKey(e.target.value)}
+            disabled={busy || preview}
+            autoComplete="off"
+            spellCheck={false}
+            required
+            minLength={8}
+            maxLength={4096}
+            placeholder={
+              info.capabilities.balance && !info.capabilities.quota ? '在本机粘贴官方 API Key' : '在本机粘贴套餐密钥'
+            }
+          />
+        </>
+      )}
+      {provider === 'commandcode' && (
+        <>
+          <label htmlFor="org-id">
+            组织 ID <span>可选</span>
+          </label>
+          <input
+            id="org-id"
+            value={orgId}
+            onChange={(e) => setOrg(e.target.value)}
+            maxLength={128}
+            disabled={busy || preview}
+          />
+        </>
+      )}
+      {provider === 'codex' && profiles && (
+        <div className="codex-profile-choice">
+          <p role="status">{profiles.message}</p>
+          <Select
+            label="选择 Codex 配置"
+            value={profileId}
+            onChange={setProfileId}
+            disabled={busy}
+            menuWidth={520}
+            options={profiles.profiles.map((p) => ({ value: p.id, label: p.label, description: p.home }))}
+          />
+          <small>确认所选位置后读取登录状态；配置位置不代表已登录账户。</small>
+        </div>
+      )}
+    </>
+  );
+  const manualButton = provider === 'codex' && (
+    <button
+      className="button"
+      type="button"
+      disabled={busy || preview || !!state.credentialIssue}
+      onClick={(e) => submit(e, true)}
+    >
+      手动选择目录
+    </button>
+  );
+  // T11.4: step 2 of the first-run wizard: the platform and region were picked in step 1.
+  if (wizard)
+    return (
+      <form className="wz-key" onSubmit={submit}>
+        <div className="wz-picked">
+          <b>{info.name}</b>
+          <span>{info.regions.find((r) => r.id === region)?.name}</span>
+          <button type="button" className="panel-link" disabled={busy} onClick={wizard.onBack}>
+            换一个
+          </button>
+        </div>
+        <p className="provider-form-note">{info.note}</p>
+        {fields}
+        <ul className="wz-promise">
+          <li>
+            <ShieldCheck size={15} />
+            {provider === 'codex'
+              ? '不需要填写 Key：通过本机官方 Codex 客户端读取订阅额度，助手不保存它的登录凭据。'
+              : provider === 'claude'
+                ? '不需要填写 Key：由 Claude Code 把额度和用量报告给本机组件，助手不读取 Claude 的登录凭据。'
+                : `${info.credential === 'aksk' ? '密钥' : 'Key '}只加密保存在这台电脑（${
+                    state.platform === 'darwin' ? 'macOS 钥匙串' : 'Windows 系统加密'
+                  }），只发给 ${info.name} 自己的接口，不写进日志。`}
+          </li>
+          <li>
+            <ShieldCheck size={15} />
+            只做官方只读查询：不调用模型、不消耗额度、不修改账户。
+          </li>
+        </ul>
+        {state.credentialIssue && <p className="form-error">{state.credentialIssue}</p>}
+        <div className="wz-actions">
+          <span>{manualButton}</span>
+          <button className="button primary" type="submit" disabled={disabled}>
+            {submitLabel}
+            {!busy && <ArrowRight size={15} />}
+          </button>
+        </div>
+      </form>
+    );
   return (
     <section className="panel connection-panel">
       <div className="section-title">
@@ -541,154 +720,17 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove }
             {info.verification.note}（{info.verification.date}）
           </p>
         )}
-        <label htmlFor="account-label">
-          账户备注 <span>可选，方便区分多个连接</span>
-        </label>
-        <input
-          id="account-label"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          maxLength={60}
-          placeholder={info.name}
-          disabled={busy}
-        />
-        {info.credential === 'local' ? (
-          <div className="analysis-callout">
-            <Info size={17} />
-            <span>
-              {provider === 'codex' ? (
-                <Disclosure
-                  summary="自动识别本机的 Codex 配置"
-                  detail="通过官方客户端读取当前登录订阅。有多个配置时可选择，也可手动指定目录。套餐额度与工具明细分别显示状态。"
-                />
-              ) : (
-                <Disclosure
-                  summary={
-                    '连接后用生成的 ' +
-                    (state.platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1') +
-                    ' 启动 Claude Code'
-                  }
-                  detail="在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。"
-                />
-              )}
-            </span>
-          </div>
-        ) : info.credential === 'aksk' ? (
-          <>
-            <label htmlFor="access-key-id">Access Key ID</label>
-            <input
-              id="access-key-id"
-              type="password"
-              value={accessKeyId}
-              onChange={(e) => setAk(e.target.value)}
-              disabled={busy || preview}
-              autoComplete="off"
-              spellCheck={false}
-              required
-              minLength={8}
-              maxLength={4096}
-            />
-            <label htmlFor="secret-access-key">Secret Access Key</label>
-            <input
-              id="secret-access-key"
-              type="password"
-              value={secretKey}
-              onChange={(e) => setSk(e.target.value)}
-              disabled={busy || preview}
-              autoComplete="off"
-              spellCheck={false}
-              required
-              minLength={8}
-              maxLength={4096}
-            />
-          </>
-        ) : (
-          <>
-            <label htmlFor="api-key">{info.name} API Key</label>
-            <input
-              id="api-key"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setKey(e.target.value)}
-              disabled={busy || preview}
-              autoComplete="off"
-              spellCheck={false}
-              required
-              minLength={8}
-              maxLength={4096}
-              placeholder={
-                info.capabilities.balance && !info.capabilities.quota ? '在本机粘贴官方 API Key' : '在本机粘贴套餐密钥'
-              }
-            />
-          </>
-        )}
-        {provider === 'commandcode' && (
-          <>
-            <label htmlFor="org-id">
-              组织 ID <span>可选</span>
-            </label>
-            <input
-              id="org-id"
-              value={orgId}
-              onChange={(e) => setOrg(e.target.value)}
-              maxLength={128}
-              disabled={busy || preview}
-            />
-          </>
-        )}
-        {provider === 'codex' && profiles && (
-          <div className="codex-profile-choice">
-            <p role="status">{profiles.message}</p>
-            <Select
-              label="选择 Codex 配置"
-              value={profileId}
-              onChange={setProfileId}
-              disabled={busy}
-              menuWidth={520}
-              options={profiles.profiles.map((p) => ({ value: p.id, label: p.label, description: p.home }))}
-            />
-            <small>确认所选位置后读取登录状态；配置位置不代表已登录账户。</small>
-          </div>
-        )}
+        {fields}
         <p className="credential-note">
           <ShieldCheck size={14} />
           凭据使用{state.platform === 'darwin' ? ' macOS 钥匙串' : ' Windows 系统加密'}保存在本机，仅用于官方只读查询。
         </p>
         <div className="connect-actions">
-          <button
-            className="button primary"
-            type="submit"
-            disabled={
-              !hasSecret ||
-              busy ||
-              preview ||
-              !!state.credentialIssue ||
-              (provider === 'codex' && !!profiles && !profileId)
-            }
-          >
+          <button className="button primary" type="submit" disabled={disabled}>
             <Plug size={15} />
-            {busy
-              ? '正在验证连接'
-              : provider === 'claude'
-                ? '连接并生成采集配置'
-                : provider === 'codex'
-                  ? profiles
-                    ? '连接所选配置'
-                    : '连接本机 Codex'
-                  : mode === 'update'
-                    ? '验证并更新连接'
-                    : '验证并添加账户'}
+            {submitLabel}
           </button>
-          {provider === 'codex' && (
-            <button
-              className="button"
-              type="button"
-              disabled={busy || preview || !!state.credentialIssue}
-              onClick={(e) => submit(e, true)}
-            >
-              手动选择目录
-            </button>
-          )}
+          {manualButton}
           {active && (
             <button className="text-button disconnect" type="button" disabled={busy} onClick={onRemove}>
               <SignOut size={14} />

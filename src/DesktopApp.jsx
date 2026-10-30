@@ -50,6 +50,8 @@ import { AccountLinks, ReconciliationPage } from './AccountLinks.jsx';
 import { AllAccountsGrid, GlanceWidget, attentionText } from './AccountsOverview.jsx';
 import { PaceLine } from './Panel.jsx';
 import { paceLine } from './generated/menubar-panel.js';
+import { AdvancedSettings, SetupHeading, SetupWizard } from './Onboarding.jsx';
+import { wizardPending } from './generated/onboarding.js';
 
 const bridge = window.tokenAssistant || previewBridge;
 const browserPreview = !window.tokenAssistant;
@@ -232,7 +234,8 @@ export function DesktopApp() {
     [used, setUsed] = useState(false),
     [details, setDetails] = useState(false),
     [toast, setToast] = useState(null),
-    [dialog, setDialog] = useState(null);
+    [dialog, setDialog] = useState(null),
+    [wizardOpen, setWizardOpen] = useState(false);
   const dialogRef = useRef();
   const [diagnostics, setDiagnostics] = useState('');
   const [range, setRange] = useState('today'),
@@ -339,6 +342,12 @@ export function DesktopApp() {
     s = view === 'overview' && range !== 'billing' ? analysis.report?.summary : parts.summary,
     sub = parts.subscription,
     identity = parts.identity;
+  // T11.4: the first-run wizard opens by itself only on a fresh start, then stays while it is used (connecting an
+  // account in step 2 must not close it) until it is finished or skipped.
+  if (!wizardOpen && !widget && wizardPending(state)) setWizardOpen(true);
+  const setup = view === 'overview' && wizardOpen && settings.setupWizard !== false;
+  const skipSetup = () => pref({ setupWizard: false });
+  const finishSetup = () => pref({ setupWizard: false, ...(state.platform === 'win32' ? { trayPinHint: false } : {}) });
   const [status, tone] = quotaStatus(state),
     dark = settings.theme === 'dark',
     mac = state.platform === 'darwin';
@@ -604,53 +613,57 @@ export function DesktopApp() {
             </div>
           </header>
           <main className="main-content" aria-label="详细面板内容">
-            <div className="page-heading">
-              <div>
-                <div className="eyebrow">YOUR USAGE, AT A GLANCE</div>
-                <h1>
-                  <span>//</span>{' '}
-                  {view === 'overview'
-                    ? '用量总览'
-                    : view === 'analytics'
-                      ? '用量分析'
-                      : view === 'reconciliation'
-                        ? '覆盖范围报告'
-                        : '账户与设置'}
-                </h1>
-                <p>
-                  {view === 'overview'
-                    ? '掌握使用节奏，安心专注下一次创作。'
-                    : view === 'analytics'
-                      ? '看清消耗的变化，也看清每一份用量的去向。'
-                      : view === 'reconciliation'
-                        ? '看清本机记录覆盖了哪些时段、缺了什么，以及哪些记录已归入账户。'
-                        : '本机连接账户，让助手按你的节奏工作。'}
-                </p>
-              </div>
-              <div className="heading-actions">
-                {view === 'overview' ? (
-                  <>
-                    <button className="button" disabled={!state.hasCredential || data.fetching} onClick={refresh}>
-                      <ArrowsClockwise size={16} className={data.fetching ? 'spin' : ''} />
-                      {data.fetching ? '正在刷新' : '刷新'}
+            {setup ? (
+              <SetupHeading mac={mac} onSkip={skipSetup} />
+            ) : (
+              <div className="page-heading">
+                <div>
+                  <div className="eyebrow">YOUR USAGE, AT A GLANCE</div>
+                  <h1>
+                    <span>//</span>{' '}
+                    {view === 'overview'
+                      ? '用量总览'
+                      : view === 'analytics'
+                        ? '用量分析'
+                        : view === 'reconciliation'
+                          ? '覆盖范围报告'
+                          : '账户与设置'}
+                  </h1>
+                  <p>
+                    {view === 'overview'
+                      ? '掌握使用节奏，安心专注下一次创作。'
+                      : view === 'analytics'
+                        ? '看清消耗的变化，也看清每一份用量的去向。'
+                        : view === 'reconciliation'
+                          ? '看清本机记录覆盖了哪些时段、缺了什么，以及哪些记录已归入账户。'
+                          : '本机连接账户，让助手按你的节奏工作。'}
+                  </p>
+                </div>
+                <div className="heading-actions">
+                  {view === 'overview' ? (
+                    <>
+                      <button className="button" disabled={!state.hasCredential || data.fetching} onClick={refresh}>
+                        <ArrowsClockwise size={16} className={data.fetching ? 'spin' : ''} />
+                        {data.fetching ? '正在刷新' : '刷新'}
+                      </button>
+                      <button
+                        className={`button primary ${settings.floating ? 'selected' : ''}`}
+                        onClick={() => pref({ floating: !settings.floating })}
+                      >
+                        <PushPin size={16} />
+                        {settings.floating ? '收起悬浮窗' : '显示悬浮窗'}
+                      </button>
+                    </>
+                  ) : (
+                    <button className="button" onClick={() => setView('overview')}>
+                      返回总览
+                      <ArrowUpRight size={16} />
                     </button>
-                    <button
-                      className={`button primary ${settings.floating ? 'selected' : ''}`}
-                      onClick={() => pref({ floating: !settings.floating })}
-                    >
-                      <PushPin size={16} />
-                      {settings.floating ? '收起悬浮窗' : '显示悬浮窗'}
-                    </button>
-                  </>
-                ) : (
-                  <button className="button" onClick={() => setView('overview')}>
-                    返回总览
-                    <ArrowUpRight size={16} />
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-            {view === 'overview' && state.platform === 'win32' && settings.trayPinHint !== false && (
+            )}
+            {view === 'overview' && !setup && state.platform === 'win32' && settings.trayPinHint !== false && (
               <div className="inline-note" role="status">
                 <PushPin size={16} />
                 <span>
@@ -663,21 +676,30 @@ export function DesktopApp() {
                 </button>
               </div>
             )}
-            {view === 'overview' && glance && (
+            {setup && (
+              <SetupWizard
+                state={state}
+                preview={browserPreview}
+                connect={(value) => action(() => bridge.connect(value), '本机连接已保存。')}
+                addSource={(kind, label) => action(() => bridge.addToolSource({ kind, label }))}
+                finish={finishSetup}
+              />
+            )}
+            {view === 'overview' && !setup && glance && (
               <AllAccountsGrid
                 overview={overview}
                 disabled={state.connecting}
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
               />
             )}
-            {view !== 'reconciliation' && (
+            {view !== 'reconciliation' && !setup && (
               <AccountSwitcher
                 state={state}
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
                 onManage={() => setView('settings')}
               />
             )}
-            {view === 'overview' ? (
+            {setup ? null : view === 'overview' ? (
               balanceOnly ? (
                 <BalanceDashboard
                   state={state}
@@ -1087,10 +1109,12 @@ export function DesktopApp() {
                   onRemove={(id) => action(() => bridge.removeToolSource(id))}
                   onSync={(id) => action(() => bridge.syncToolSource(id))}
                 />
-                <AccountLinks
-                  state={state}
-                  run={(kind, value) => action(() => bridge[kind](value), '账户关联已更新。')}
-                />
+                <AdvancedSettings associations={state.associations}>
+                  <AccountLinks
+                    state={state}
+                    run={(kind, value) => action(() => bridge[kind](value), '账户关联已更新。')}
+                  />
+                </AdvancedSettings>
                 <section className="settings-panel panel">
                   <Section icon={GearSix}>PREFERENCES</Section>
                   {[

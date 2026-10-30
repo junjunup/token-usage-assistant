@@ -5,7 +5,7 @@ import { Database, Folder, Plus, ArrowClockwise, WarningCircle, Trash, Check, In
 import { Select } from './Select.jsx';
 import './tool-sources.css';
 
-const kindName = (kind) =>
+export const kindName = (kind) =>
   ({ opencode: 'OpenCode', harness: 'DeepSeek Harness', zcode: 'Zcode', codex: 'Codex', 'claude-code': 'Claude Code' })[
     kind
   ] || kind;
