@@ -24,6 +24,9 @@ function session(id = 'session-1', extra = {}) {
 function event(seq, type, data) {
   return { seq, time: BASE + seq, type, data };
 }
+// An exporter may still be appending its last line when a test ends; retry the removal instead of failing on
+// ENOTEMPTY (seen twice locally, 2026-10-30). Assertions are unchanged.
+const CLEANUP = { recursive: true, force: true, maxRetries: 10, retryDelay: 50 };
 async function setup(t, options = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'tua-harness-test-'));
   t.after(async () => {
@@ -32,7 +35,7 @@ async function setup(t, options = {}) {
       !path.basename(directory).startsWith('tua-harness-test-')
     )
       throw new Error('Unexpected test directory');
-    await fs.rm(directory, { recursive: true, force: true });
+    await fs.rm(directory, CLEANUP);
   });
   const { UsageExporter, HARNESS_VERSION } = await plugin;
   const exporter = new UsageExporter({
@@ -313,7 +316,7 @@ test('T8.13: an unverified runtime exports only while every event keeps the know
 test('T8.13: updating the plugin or Harness keeps the source created by the 1.4.0 exporter; a foreign marker still conflicts', async (t) => {
   const { UsageExporter } = await plugin;
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'tua-harness-test-'));
-  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  t.after(() => fs.rm(directory, CLEANUP));
   const old = {
     schema: 'token-usage-assistant.harness-source',
     schemaVersion: 1,
@@ -339,7 +342,7 @@ test('T8.13: updating the plugin or Harness keeps the source created by the 1.4.
     { harnessCommit: 'x' },
   ]) {
     const foreign = await fs.mkdtemp(path.join(os.tmpdir(), 'tua-harness-test-'));
-    t.after(() => fs.rm(foreign, { recursive: true, force: true }));
+    t.after(() => fs.rm(foreign, CLEANUP));
     await fs.writeFile(path.join(foreign, 'source.json'), JSON.stringify({ ...old, ...patch }));
     const conflicted = new UsageExporter({ outputDirectory: foreign, runtimeVersion: '0.2.1-rc.2', now: () => BASE });
     await conflicted.ready;
