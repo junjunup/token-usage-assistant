@@ -20,7 +20,7 @@
 
 ### 安装包从哪里来
 
-- 安装包由 GitHub Actions 的 Release 工作流从本仓库打了标签的公开源码构建（Windows 在 `windows-latest`、macOS 在 `macos-14` 上），构建时运行打包后的原生自检、核对包内版本、许可证文件和 Electron 安全开关（fuses）；发布步骤见 [RELEASING](RELEASING.md)（中文）。
+- 安装包由 GitHub Actions 的 Release 工作流从本仓库打了标签的公开源码构建（Windows 在 `windows-latest`、macOS 在 `macos-15` 上），构建时运行打包后的原生自检、核对包内版本、许可证文件和 Electron 安全开关（fuses）；发布步骤见 [RELEASING](RELEASING.md)（中文）。
 - 源码仓库的 Release 附带这批安装包和核对报告；公开下载放在 [安装包仓库](https://github.com/junjunup/TokenUsageAssistant/releases)，由 Publish 工作流把源码仓库 Release 里的同一批文件原样复制过去（不重新构建），并生成 `SHA256SUMS.txt`。
 - 应用读取什么、不读取什么、访问哪些地址，见 [隐私说明](PRIVACY.md)。
 
@@ -46,7 +46,7 @@
 
 ### Where the installers come from
 
-- They are built by the GitHub Actions Release workflow from tagged public source in this repository (`windows-latest` and `macos-14`), with a packaged native self-test and checks of the packaged version, license files and Electron fuses; see [RELEASING](RELEASING.md) (Chinese).
+- They are built by the GitHub Actions Release workflow from tagged public source in this repository (`windows-latest` and `macos-15`), with a packaged native self-test and checks of the packaged version, license files and Electron fuses; see [RELEASING](RELEASING.md) (Chinese).
 - The source repository's release carries these installers and the verification reports; the Publish workflow copies the same files unchanged (no rebuild) to the [installer repository](https://github.com/junjunup/TokenUsageAssistant/releases) for public download and writes `SHA256SUMS.txt`.
 - What the app reads and connects to: [Privacy](PRIVACY.md).
 
