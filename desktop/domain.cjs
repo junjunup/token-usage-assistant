@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean }} Settings */
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -39,6 +39,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   panelProtect: true,
   // T11.2 (Windows): show the note on how to keep the tray icon on the taskbar until the user dismisses it.
   trayPinHint: true,
+  // T11.4: open the first-run wizard while there is no account or tool source, until it is finished or skipped.
+  setupWizard: true,
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>

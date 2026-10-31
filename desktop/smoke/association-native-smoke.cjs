@@ -58,7 +58,17 @@ async function runAssociationSmoke({
   await until(mainWindow, "!!document.querySelector('.reconciliation-empty')");
   checks.emptyState = true;
   await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户与设置"]\').click()');
-  await until(mainWindow, "!!document.querySelector('.account-links-panel')");
+  // T11.4: account links sit in the "advanced" area, collapsed while nothing needs re-confirming.
+  await until(mainWindow, "!!document.querySelector('.st-advanced-head')");
+  assert.equal(
+    await mainWindow.webContents.executeJavaScript(
+      "document.querySelector('.st-advanced-head').getAttribute('aria-expanded')==='false' && !document.querySelector('.account-links-panel')",
+    ),
+    true,
+  );
+  checks.advancedCollapsed = true;
+  await mainWindow.webContents.executeJavaScript("document.querySelector('.st-advanced-head').click()");
+  await until(mainWindow, "!!document.querySelector('.st-advanced-body .account-links-panel')");
   await input(mainWindow, '计费账户名称', '我的 DeepSeek 计费账户');
   for (const entry of [first, second]) {
     const i = accounts.entries.indexOf(entry);

@@ -15,6 +15,7 @@ for (const name of [
   'menubar-status',
   'menubar-panel',
   'account-overview',
+  'onboarding',
   'coverage-report',
   'upstream-contracts',
 ]) {
