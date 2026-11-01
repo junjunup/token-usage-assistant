@@ -254,8 +254,9 @@ async function menubarSettingsSmoke(ctx) {
   };
 }
 // Starts the smoke run once both renderers are ready (finish), with a 45 s handshake timeout.
+// T11.4: the synthetic Command Code key is configured only after the first-run wizard section, which needs the
+// empty profile a new user sees.
 function attach(ctx) {
-  ctx.monitor.configure('local-smoke-key');
   let started = false;
   const handshake = setTimeout(() => {
     atomicWrite(resultFile(), {
@@ -273,7 +274,18 @@ function attach(ctx) {
     // The handshake succeeded: its timeout must not exit the app while the smoke checks are still running.
     clearTimeout(handshake);
     try {
+      const onboarding = await require('./onboarding-native-smoke.cjs').runOnboardingSmoke({
+        accounts: ctx.accounts,
+        toolSources: ctx.toolSources,
+        mainWindow: ctx.mainWindow,
+        settings: () => ctx.settings,
+        applySettings: ctx.applySettings,
+      });
+      ctx.monitor.configure('local-smoke-key');
       await ctx.monitor.refresh();
+      // The widget was empty until now: wait for the Command Code widget before measuring it.
+      for (let end = Date.now() + 10000; Date.now() < end; await new Promise((r) => setTimeout(r, 100)))
+        if (Math.abs(ctx.widgetWindow.getBounds().height - 366) <= 8) break;
       const analyticsResult = await ctx.analytics.get({ source: 'local', range: '7d' });
       const accountResult = await ctx.analytics.get({ source: 'account', range: 'today' });
       const compactHeight = ctx.widgetWindow.getBounds().height,
@@ -323,6 +335,7 @@ function attach(ctx) {
         hasCredits: !!ctx.monitor.state.parts.credits,
         hasSummary: !!ctx.monitor.state.parts.summary,
       };
+      report.onboarding = onboarding;
       const menubarEmpty = await menubarSmoke(ctx, 'empty');
       report.providers = await require('./provider-native-smoke.cjs').runProviderSmoke({
         accounts: ctx.accounts,
@@ -391,7 +404,16 @@ function attach(ctx) {
         settings: ctx.settings,
         applySettings: ctx.applySettings,
       });
+      report.singleWidgets = await require('./single-widget-native-smoke.cjs').runSingleWidgetSmoke({
+        accounts: ctx.accounts,
+        widgetWindow: ctx.widgetWindow,
+        store: ctx.store,
+        settings: () => ctx.settings,
+        applySettings: ctx.applySettings,
+      });
       report.ok =
+        report.onboarding.ok &&
+        report.singleWidgets.ok &&
         report.menubar.ok &&
         report.overview.ok &&
         report.panel.ok &&
