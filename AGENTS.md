@@ -3,7 +3,7 @@
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
 - 当前版本：**1.9.0-beta.6**（阶段 10「更多平台」T10.1 Kimi 开放平台余额、T10.2 OpenRouter Key 上限与花费；2026-10-29 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
-- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D19）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D20）
 - 工作方式：**追赶模式**（D18，2026-11-03）——快速迭代、大刀阔斧改进，红线不让步，见第 7 节
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
@@ -42,7 +42,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 
 - 不读取、不记录、不导出对话正文、提示词、回复、工具内容、原始请求载荷、原始错误文本、原始 stderr 或凭据。日志、诊断包、导出、索引和发布证据同样遵守。
 - 第三方 SQLite（Zcode、OpenCode）只读，只投影白名单中的元数据叶子字段。
-- 只读：不调用模型生成；不调用任何改变登录状态、购买、修改账户或消耗额度（包括重置额度）的接口；不修改第三方工具的数据库或全局配置。助手只写自己的索引和配置。
+- 只读：不调用模型生成；不调用任何改变登录状态、购买、修改账户或消耗额度（包括重置额度）的接口；不修改第三方工具的数据库或全局配置。助手只写自己的索引和配置。唯一例外（D20 ②，T13.1）：用户在应用里点确认后，可以把助手的状态栏组件写进 `~/.claude/settings.json` 的 `statusLine`，写前备份、可一键还原、原有 statusLine 串联保留、其他字段原样不动、看不懂的文件不写。
 - 凭据只在应用内由用户在本机配置，不通过聊天传递，不写入日志。
 - 不开放任意网络地址；本机文件来源只通过原生选择器选择。自动发现（T12.6）只检查各工具默认位置是否存在、不读内容，找到后仍由原生选择器（打开在该位置）让用户确认。
 - 真实用户数据、凭据（包括 Windows 凭据）不得进入仓库、产物或测试 fixture。
