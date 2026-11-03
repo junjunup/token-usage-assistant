@@ -284,6 +284,129 @@ function normalizeOpenCodeGo(raw) {
       '按官方百分比显示，不换算为金额或 Token。若已在官方平台开启 Use balance，Go 用尽后仍可能使用 Zen 余额；本接口不返回余额及开关状态。',
   };
 }
+// T12.2 (D19 ②): Kimi Code subscription — GET /coding/v1/usages. No official documentation: the shape below comes
+// from third-party tools that read it (CodexBar, CodeBurn). Two shapes are known: ratio pools under `usages`
+// (limit_5h / limit_7d / limit_month_total, used_ratio 0–1 and reset_time) and the older counts (`usage` = the weekly
+// quota, `limits[]` with a window duration and time unit). Numbers arrive as JSON numbers or numeric strings. At
+// least one window must decode, otherwise the format is incompatible (nothing is guessed). Percentages only: what
+// the counts count is not documented.
+const KIMI_UNITS = /** @type {Record<string, number>} */ ({
+  TIME_UNIT_MINUTE: 1,
+  TIME_UNIT_HOUR: 60,
+  TIME_UNIT_DAY: 1440,
+});
+// Names from the official V1 membership catalog (as CodexBar maps them); unknown levels are not shown.
+const KIMI_LEVELS = /** @type {Record<string, string>} */ ({
+  LEVEL_FREE: 'Adagio',
+  LEVEL_TRIAL: 'Andante',
+  LEVEL_BASIC: 'Moderato',
+  LEVEL_INTERMEDIATE: 'Allegretto',
+  LEVEL_ADVANCED: 'Allegro',
+});
+/** @type {(value: any) => number|null} a JSON number or a plain decimal string; anything else is a schema error */
+const kimiNumber = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return Number(value);
+  throw new Error('schema');
+};
+/** @type {(row: any) => number|null} reset as an ISO 8601 instant or epoch seconds, under any of four names */
+const kimiReset = (row) => {
+  const value = row.reset_time ?? row.resetTime ?? row.reset_at ?? row.resetAt;
+  if (value === null || value === undefined || value === '') return null;
+  const raw = String(value).trim();
+  const ms = /^\d+(\.\d+)?$/.test(raw)
+    ? Number(raw) * 1000
+    : /^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:?\d\d)$/.test(raw)
+      ? Date.parse(raw)
+      : NaN;
+  if (!Number.isFinite(ms) || ms <= 0) throw new Error('schema');
+  return ms;
+};
+/** @type {(value: number) => number} drops binary noise such as 44.99999999999999 */
+const kimiPercent = (value) => Math.round(value * 1e6) / 1e6;
+/** @type {(minutes: number) => string} */
+const kimiWindowLabel = (minutes) =>
+  minutes === 300
+    ? '5 小时窗口'
+    : minutes === 10080
+      ? '每周额度'
+      : minutes % 1440 === 0
+        ? minutes / 1440 + ' 天窗口'
+        : minutes % 60 === 0
+          ? minutes / 60 + ' 小时窗口'
+          : minutes + ' 分钟窗口';
+/** @param {any} raw upstream JSON */
+function normalizeKimiCode(raw) {
+  if (!object(raw)) throw new Error('schema');
+  if (raw.usages != null && !object(raw.usages)) throw new Error('schema');
+  if (raw.limits != null && !Array.isArray(raw.limits)) throw new Error('schema');
+  /** @type {Map<string, any>} */
+  const windows = new Map();
+  const pools = /** @type {[string, string, string][]} */ ([
+    ['limit_5h', '5 小时窗口', 'Kimi Code'],
+    ['limit_7d', '每周额度', 'Kimi Code'],
+    ['limit_month_total', '每月总额度', '会员总额度（与其他 Kimi 功能共用）'],
+  ]);
+  for (const [key, label, group] of pools) {
+    const pool = raw.usages?.[key];
+    if (pool === null || pool === undefined) continue;
+    if (!object(pool)) throw new Error('schema');
+    const ratio = kimiNumber(pool.used_ratio);
+    if (ratio === null || ratio < 0) throw new Error('schema');
+    windows.set(
+      key,
+      quota({
+        id: 'kimi-code:' + key,
+        label,
+        group,
+        remainingPercent: kimiPercent(100 - Math.min(1, ratio) * 100),
+        resetAt: kimiReset(pool),
+      }),
+    );
+  }
+  // Older counts: only for the windows the ratio pools do not give.
+  /** @type {(key: string, label: string, detail: any) => void} */
+  const legacy = (key, label, detail) => {
+    if (windows.has(key)) return;
+    if (!object(detail)) throw new Error('schema');
+    const limit = kimiNumber(detail.limit),
+      remaining = kimiNumber(detail.remaining),
+      used = kimiNumber(detail.used) ?? (limit !== null && remaining !== null ? limit - remaining : null);
+    if (limit === null || limit <= 0 || used === null) throw new Error('schema');
+    const left = kimiPercent(Math.max(0, Math.min(100, ((limit - used) / limit) * 100)));
+    windows.set(
+      key,
+      quota({ id: 'kimi-code:' + key, label, group: 'Kimi Code', remainingPercent: left, resetAt: kimiReset(detail) }),
+    );
+  };
+  for (const item of raw.limits || []) {
+    if (!object(item) || !object(item.window)) throw new Error('schema');
+    const duration = kimiNumber(item.window.duration),
+      unit = KIMI_UNITS[item.window.timeUnit];
+    if (duration === null || duration <= 0 || !unit) throw new Error('schema');
+    const minutes = duration * unit;
+    legacy(
+      minutes === 300 ? 'limit_5h' : minutes === 10080 ? 'limit_7d' : 'm' + minutes,
+      kimiWindowLabel(minutes),
+      item.detail,
+    );
+  }
+  if (raw.usage !== null && raw.usage !== undefined) legacy('limit_7d', '每周额度', raw.usage);
+  if (!windows.size) throw new Error('schema');
+  const order = ['limit_5h', 'limit_7d', 'limit_month_total'];
+  const level = typeof raw.user?.membership?.level === 'string' ? KIMI_LEVELS[raw.user.membership.level] : undefined;
+  const v1 = raw.version === undefined || raw.version === null || raw.version === 'GOODS_VERSION_V1';
+  return {
+    windows: [...windows.entries()]
+      .sort(([a], [b]) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99))
+      .map(([, w]) => w),
+    planName: level && v1 ? 'Kimi Code · ' + level : 'Kimi Code',
+    note: '非官方接口：Kimi 没有公开这个用量接口的文档，格式变化时会显示「格式不兼容」',
+    noteDetail:
+      '字段来自多个第三方工具的整理，只按平台给出的百分比显示，不换算为次数或 Token。「每月总额度」与 Kimi 的其他功能（对话、Agent 等）共用，和 5 小时、每周窗口同时约束，不能相加。',
+  };
+}
 // T10.2 (D16 ③): OpenRouter GET /api/v1/key — limits and reported spend of THIS key (credits = USD), not an account
 // balance or a bill. Only whitelisted numbers are kept: the key label, user / organization / workspace ids and other
 // identity fields are never stored. The key's own limit also appears in `budgets` as scope key_limit; it is shown
@@ -419,5 +542,6 @@ module.exports = {
   normalizeVolcengine,
   normalizeOpenCodeGo,
   normalizeOpenRouter,
+  normalizeKimiCode,
   miniCounts,
 };

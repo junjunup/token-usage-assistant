@@ -35,6 +35,7 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Platform quota | MiniMax Token Plan (China / international) | Official quota API | Sample-tested |
 | Platform quota | Volcengine personal Agent Plan (Beijing) | Official AFP quota API | Sample-tested |
 | Platform quota | OpenCode Go | Official usage API (percentages for three periods) | Sample-tested |
+| Platform quota | Kimi Code subscription (China / international) | **Unofficial endpoint** (Kimi publishes no documentation; 5-hour, weekly and monthly percentages) | Sample-tested (samples from third-party tools) |
 | Balance | DeepSeek | Official balance API | Sample-tested |
 | Balance | Kimi open platform (China / international) | Official balance API | Sample-tested |
 | Key limit and spend | OpenRouter | Official key API (this key's limit, budgets, reported spend) | Sample-tested |

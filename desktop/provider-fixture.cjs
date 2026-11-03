@@ -131,6 +131,16 @@ function fixtureBody(provider, now = NOW) {
         },
       ],
     };
+  // T12.2: Kimi Code ratio pools, shaped like the samples third-party tools document (no official sample exists).
+  if (provider === 'kimi-code')
+    return {
+      user: { membership: { level: 'LEVEL_INTERMEDIATE' } },
+      usages: {
+        limit_5h: { used_ratio: 0.38, reset_time: new Date(now + 9000000).toISOString() },
+        limit_7d: { used_ratio: 0.55, reset_time: new Date(now + 302400000).toISOString() },
+        limit_month_total: { used_ratio: 0.21, reset_time: new Date(now + 1296000000).toISOString() },
+      },
+    };
   if (provider === 'volcengine')
     return {
       ResponseMetadata: { Action: 'GetAFPUsage', Version: '2024-01-01' },
@@ -152,15 +162,17 @@ async function fixtureFetch(url) {
         ? 'deepseek'
         : url.includes('api.moonshot.')
           ? 'kimi'
-          : url === 'https://openrouter.ai/api/v1/key'
-            ? 'openrouter'
-            : url.includes('bigmodel') || url.includes('api.z.ai')
-              ? 'glm'
-              : url.includes('minimax')
-                ? 'minimax'
-                : url.includes('volcengineapi')
-                  ? 'volcengine'
-                  : null;
+          : url.includes('/coding/v1/usages')
+            ? 'kimi-code'
+            : url === 'https://openrouter.ai/api/v1/key'
+              ? 'openrouter'
+              : url.includes('bigmodel') || url.includes('api.z.ai')
+                ? 'glm'
+                : url.includes('minimax')
+                  ? 'minimax'
+                  : url.includes('volcengineapi')
+                    ? 'volcengine'
+                    : null;
   return new Response(JSON.stringify(fixtureBody(provider, Date.now())), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
