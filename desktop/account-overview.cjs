@@ -85,4 +85,42 @@ function trayTooltip(overview, limit = 127) {
   return fits(lines) ? lines.join('\n') : lines.join('\n').slice(0, limit);
 }
 
-module.exports = { accountOverview, trayTooltip };
+/**
+ * Claude Code status line (T12.7, D19 ④, format C): this session's tighter Claude window, then the tightest other
+ * account by the menu-bar rule. Unknown parts are left out (never invented); with nothing known the line is ''.
+ * @param {AccountOverview} overview
+ * @param {Record<string, { used_percentage?: unknown }|undefined>|null} windows this status-line call's rate limits
+ * @returns {string}
+ */
+function claudeStatusLine(overview, windows) {
+  const parts = [];
+  const claude = /** @type {[string, string][]} */ ([
+    ['five_hour', '5h'],
+    ['seven_day', '7d'],
+  ])
+    .map(([key, name]) => {
+      const used = windows?.[key]?.used_percentage;
+      return typeof used === 'number' && Number.isFinite(used) && used >= 0 && used <= 100
+        ? { name, left: Math.round(100 - used) }
+        : null;
+    })
+    .filter((w) => w !== null)
+    .sort((a, b) => /** @type {{ left: number }} */ (a).left - /** @type {{ left: number }} */ (b).left)[0];
+  if (claude) parts.push('Claude ' + claude.name + ' ' + claude.left + '%');
+  const other = (overview?.rows || []).find((r) => r.provider !== 'claude' && r.focus);
+  if (other?.focus) {
+    // A user-entered label: one line, at most 20 characters.
+    // eslint-disable-next-line no-control-regex -- control characters are matched on purpose (one-line output)
+    const label = other.label.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+    parts.push(
+      '最紧 ' +
+        (label.length > 20 ? label.slice(0, 19) + '…' : label) +
+        ' ' +
+        other.focus.text +
+        (other.stale ? '（上次）' : ''),
+    );
+  }
+  return parts.join(' · ');
+}
+
+module.exports = { accountOverview, trayTooltip, claudeStatusLine };

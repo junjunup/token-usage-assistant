@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean }} Settings */
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -41,6 +41,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   trayPinHint: true,
   // T11.4: open the first-run wizard while there is no account or tool source, until it is finished or skipped.
   setupWizard: true,
+  // T12.7 (D19 ④): show this session's Claude quota and the tightest other account in Claude Code's status line.
+  claudeStatusQuota: false,
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>

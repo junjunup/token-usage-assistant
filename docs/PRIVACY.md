@@ -22,7 +22,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 | OpenCode Go | 三个周期的用量百分比 | `opencode.ai` |
 | Kimi Code 订阅 | 5 小时、每周与每月额度的百分比和重置时间、会员等级；**非官方接口**（Kimi 没有公开文档，字段来自第三方工具的整理） | 国内 `api.kimi.com` / 国际 `api.kimi.ai`（按你选的站点） |
 | Codex 订阅 | 账户与额度窗口 | 不联网；只调用本机官方 Codex 程序的 4 个只读方法 |
-| Claude 订阅 | 额度窗口 | 不联网；来自你用生成的启动脚本运行的 Claude Code 状态栏 |
+| Claude 订阅 | 额度窗口 | 不联网；来自你用生成的启动脚本运行的 Claude Code 状态栏。开启「Claude Code 状态栏」设置后（默认关闭），本机助手把算好的一行文字（本会话额度和最紧的其他账户，例如「Claude 5h 60% · 最紧 GLM 62%」）回给状态栏显示，只在本机回环地址之间传递 |
 
 **本机编程工具**（只读，只取白名单里的元数据：时间、模型、项目目录、会话标识、Token 计数、请求状态）：
 
@@ -85,7 +85,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 | OpenCode Go | usage percentages of three periods | `opencode.ai` |
 | Kimi Code subscription | percentages and reset times of the 5-hour, weekly and monthly quotas, membership level; an **unofficial endpoint** (Kimi publishes no documentation; the fields come from third-party tools) | China `api.kimi.com` / international `api.kimi.ai` (the site you choose) |
 | Codex subscription | account and quota windows | no network; four read-only methods of the official local Codex program |
-| Claude subscription | quota windows | no network; from the Claude Code status line when you start it with the generated launcher |
+| Claude subscription | quota windows | no network; from the Claude Code status line when you start it with the generated launcher. With the "Claude Code status line" setting on (off by default), the assistant sends a computed line back for the status line to show (this session's quota and the tightest other account, e.g. "Claude 5h 60% · 最紧 GLM 62%"), over the loopback address only. |
 
 **Local coding tools** — read-only, an allowlist of metadata only (time, model, project folder, session id, token counts, request status):
 

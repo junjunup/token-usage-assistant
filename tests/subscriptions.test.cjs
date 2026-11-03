@@ -393,6 +393,27 @@ test('Claude loopback authenticates, rejects browser origin, records only metada
       (await fetch(url + '/v1/logs', { method: 'POST', headers, body: JSON.stringify(otel()) })).status,
       200,
     );
+  // T12.7: the quota reply carries the status-line text while the setting is on ('{}' otherwise).
+  const quotaBody = JSON.stringify({
+    version: '2.1.251',
+    sessionId: 'claude-q',
+    windows: { five_hour: { used_percentage: 40, resets_at: 2e9 } },
+  });
+  assert.equal(await (await fetch(url + '/quota', { method: 'POST', headers, body: quotaBody })).text(), '{}');
+  let seen = null;
+  c.statusLine = (windows) => {
+    seen = windows;
+    return 'Claude 5h 60% · 最紧 GLM 62%';
+  };
+  assert.deepEqual(await (await fetch(url + '/quota', { method: 'POST', headers, body: quotaBody })).json(), {
+    line: 'Claude 5h 60% · 最紧 GLM 62%',
+  });
+  assert.deepEqual(seen, { five_hour: { used_percentage: 40, resets_at: 2e9 } });
+  c.statusLine = () => {
+    throw new Error('boom');
+  };
+  assert.equal(await (await fetch(url + '/quota', { method: 'POST', headers, body: quotaBody })).text(), '{}');
+  c.statusLine = null;
   c.receiveQuota({ version: '2.1.251', sessionId: 'claude-s', project: 'D:/late-project', windows: {} });
   const r = scanClaude(null, { file: path.join(home, 'usage.jsonl'), id: 'test' }, range);
   assert.equal(r.rows.length, 1);

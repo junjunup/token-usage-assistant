@@ -1173,6 +1173,18 @@ export function DesktopApp() {
                       key: 'updateCheck',
                       label: '开启检查更新',
                     },
+                    {
+                      // T12.7 (D19 ④): format C, e.g. "Claude 5h 60% · 最紧 OpenRouter 35%".
+                      title: 'Claude Code 状态栏',
+                      note: (
+                        <Disclosure
+                          summary="在 Claude Code 底部显示本会话额度和最紧的其他账户"
+                          detail="只对用助手生成的启动脚本打开的 Claude Code 会话生效，例如「Claude 5h 60% · 最紧 OpenRouter 35%」。文字由本机助手算好后交给状态栏，不联网；关闭时状态栏照旧只显示采集状态。"
+                        />
+                      ),
+                      key: 'claudeStatusQuota',
+                      label: '在 Claude Code 状态栏显示额度',
+                    },
                   ].map((item) => (
                     <div className="setting-row" key={item.key}>
                       <div>

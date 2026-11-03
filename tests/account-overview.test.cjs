@@ -197,3 +197,49 @@ test('D17 ④: compact amounts round half away from zero to two decimals; non-ze
   // Details keep every digit.
   assert.equal(formatAmount('49.58894'), '49.58894');
 });
+
+// T12.7 (D19 ④, format C): Claude Code's status line.
+test('T12.7: the Claude status line shows the tighter Claude window and the tightest other account', () => {
+  const { claudeStatusLine } = require('../desktop/account-overview.cjs');
+  const claudeAccount = quota('claude', [win('claude:five', '5 小时', 10)], { provider: 'claude', label: 'Claude' });
+  const overview = accountOverview(
+    [
+      quota('GLM 主号', [win('g', '5 小时窗口', 62)]),
+      quota('OpenRouter 很长很长很长很长很长的名字\n第二行', [win('o', '花费上限', 35)]),
+      claudeAccount,
+    ],
+    settings,
+  );
+  // The 7-day window is tighter here (12 % left) than the 5-hour one (60 %); Claude's own account is not "other".
+  assert.equal(
+    claudeStatusLine(overview, { five_hour: { used_percentage: 40 }, seven_day: { used_percentage: 88 } }),
+    'Claude 7d 12% · 最紧 OpenRouter 很长很长很长很长… 35%',
+  );
+  assert.equal(
+    claudeStatusLine(overview, { five_hour: { used_percentage: 40.4 } }),
+    'Claude 5h 60% · 最紧 OpenRouter 很长很长很长很长… 35%',
+  );
+  // Unknown or out-of-range Claude values are left out, never shown as 0 %.
+  assert.equal(
+    claudeStatusLine(overview, { five_hour: { used_percentage: null }, seven_day: { used_percentage: 140 } }),
+    '最紧 OpenRouter 很长很长很长很长… 35%',
+  );
+  // A stale account says so; with nothing known the line is empty (the script then shows its plain marker).
+  const stale = accountOverview([quota('GLM', [win('g', '5 小时窗口', 50)], { status: 'stale' })], settings);
+  assert.equal(claudeStatusLine(stale, null), '最紧 GLM 50%（上次）');
+  assert.equal(claudeStatusLine(accountOverview([claudeAccount], settings), {}), '');
+});
+
+test('T12.7: the status-line script prints only a short single line from the collector reply', () => {
+  const { statusText } = require('../desktop/claude-statusline.cjs');
+  assert.equal(statusText(JSON.stringify({ line: 'Claude 5h 60% · 最紧 GLM 62%' })), 'Claude 5h 60% · 最紧 GLM 62%');
+  for (const reply of [
+    '{}',
+    '',
+    'not json',
+    JSON.stringify({ line: 'a\nb' }),
+    JSON.stringify({ line: 'x'.repeat(201) }),
+    JSON.stringify({ line: 3 }),
+  ])
+    assert.equal(statusText(reply), '');
+});

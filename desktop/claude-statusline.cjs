@@ -18,17 +18,28 @@ function quotaMetadata(text) {
   for (const key of ['five_hour', 'seven_day']) if (v.rate_limits?.[key] != null) windows[key] = v.rate_limits[key];
   return { version: v.version, sessionId: v.session_id, project: v.workspace?.current_dir, windows };
 }
+/** The one-line text in the collector's reply, or '' (anything else is ignored). */
+function statusText(reply) {
+  try {
+    const line = JSON.parse(reply)?.line;
+    // eslint-disable-next-line no-control-regex -- control characters are matched on purpose (one-line output)
+    return typeof line === 'string' && line.length <= 200 && !/[\u0000-\u001f\u007f]/.test(line) ? line : '';
+  } catch {
+    return '';
+  }
+}
 function run() {
   let done = false,
     chunks = [],
     size = 0,
     request;
-  const finish = (ok) => {
+  const finish = (ok, line = '') => {
     if (done) return;
     done = true;
     clearTimeout(deadline);
     request?.destroy();
-    process.stdout.write(ok ? 'Token usage: local collector' : 'Token usage: collector offline');
+    // T12.7: the assistant's quota line when it sends one (the setting is on), otherwise the plain marker.
+    process.stdout.write(ok && line ? line : ok ? 'Token usage: local collector' : 'Token usage: collector offline');
     process.exit(0);
   };
   const deadline = setTimeout(() => finish(false), 1800);
@@ -58,8 +69,12 @@ function run() {
           },
         },
         (res) => {
-          res.resume();
-          res.on('end', () => finish(res.statusCode === 200));
+          let reply = '';
+          res.setEncoding('utf8');
+          res.on('data', (d) => {
+            if (reply.length < 2000) reply += d;
+          });
+          res.on('end', () => finish(res.statusCode === 200, statusText(reply)));
         },
       );
       request.on('error', () => finish(false));
@@ -71,4 +86,4 @@ function run() {
   });
 }
 if (require.main === module) run();
-module.exports = { quotaMetadata };
+module.exports = { quotaMetadata, statusText };

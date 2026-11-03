@@ -47,7 +47,7 @@ const { buildDiagnostics } = require('./diagnostics.cjs');
 const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState, paceLine } = require('./menubar-panel.cjs');
-const { accountOverview, trayTooltip } = require('./account-overview.cjs');
+const { accountOverview, trayTooltip, claudeStatusLine } = require('./account-overview.cjs');
 const { reportVisibility } = require('./window-visibility.cjs');
 const { forecast } = require('./analytics-core.cjs');
 // T7.6: the popover panel may only use these channels (least privilege); everything else is refused.
@@ -173,6 +173,12 @@ function state() {
     overview: accountOverview(accounts?.summaries() || [], settings),
     pace: activePace(),
   };
+}
+// T12.7 (D19 ④): Claude Code's status line asks for this on each repaint; '' while the setting is off.
+function claudeStatusText(windows) {
+  return settings.claudeStatusQuota && accounts
+    ? claudeStatusLine(accountOverview(accounts.summaries(), settings), windows)
+    : '';
 }
 // T12.1: the current account's pace line for the platform dashboards (Command Code's comes with its analytics, and
 // balance-only accounts have none).
@@ -734,6 +740,7 @@ function installIpc() {
       if (value?.provider === 'claude') {
         const home = store.file('claude-collector');
         claudeCollector ||= new (require('./claude-collector.cjs').ClaudeCollector)(home);
+        claudeCollector.statusLine = claudeStatusText;
         try {
           await claudeCollector.start();
           claudeCollector.generateLauncher();
@@ -1015,6 +1022,7 @@ else {
       analytics.tools = toolSources;
       if (!smoke && fs.existsSync(store.file('claude-collector/collector.json'))) {
         claudeCollector = new (require('./claude-collector.cjs').ClaudeCollector)(store.file('claude-collector'));
+        claudeCollector.statusLine = claudeStatusText;
         try {
           await claudeCollector.start();
           claudeCollector.generateLauncher();
