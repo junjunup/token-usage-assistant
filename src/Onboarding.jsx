@@ -17,6 +17,7 @@ const TOOLS = [
   ['opencode', '选择 opencode.db，只读用量元数据'],
   ['zcode', '选择 Zcode 的用量数据库，只读用量元数据'],
   ['harness', '先在 Harness 里启用用量导出插件，再选择导出的 usage.jsonl'],
+  ['gemini-cli', '选择 Gemini CLI 目录（通常是 ~/.gemini），只读会话里的用量计数'],
 ];
 
 // The browser preview can open a later step (?desktop-preview=empty&step=2) for screenshots.
