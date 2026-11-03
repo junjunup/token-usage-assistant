@@ -146,3 +146,55 @@ test('AccountManager uses the history database and closes it on dispose', () => 
   assert.match(source, /this\.historyDb\.close\(\);/);
   assert.match(source, /runtime\.history\.purge\(\)/);
 });
+
+// T12.1: other platforms' quota windows are sampled as the used share of each window, in both stores alike.
+test('T12.1: window samples keep only windows with a known reset, in SQLite and JSON alike', (t) => {
+  const databases = [],
+    dir = temp(t, databases),
+    now = Date.UTC(2026, 10, 3, 10),
+    database = new HistoryDatabase(path.join(dir, 'history.sqlite'));
+  databases.push(database);
+  const json = new HistoryStore(path.join(dir, 'old.json')),
+    sqlite = createHistory(database, path.join(dir, 'new.json'));
+  json.configure('fp');
+  sqlite.configure('fp');
+  const w = (id, remainingPercent, extra = {}) => ({
+    id,
+    label: id + ' 窗口',
+    group: '共享额度',
+    remainingPercent,
+    resetAt: now + 3600000,
+    applicable: true,
+    unlimited: false,
+    ...extra,
+  });
+  const at = (time, windows) => ({ parts: { credits: { windows } }, updatedAt: { credits: time } });
+  const steps = [
+    at(now, [
+      w('five', 80),
+      w('none', null),
+      w('off', 50, { applicable: false }),
+      w('free', 100, { unlimited: true }),
+      w('later', 90, { resetAt: 0 }),
+    ]),
+    at(now + 30000, [w('five', 79)]), // same minute: replaces the previous sample
+    at(now + MINUTE, [w('none', null)]), // nothing usable: no sample
+    at(now + 2 * MINUTE, [w('five', 70)]),
+    { parts: { credits: null }, updatedAt: {} },
+  ];
+  for (const step of steps) {
+    json.appendWindows(step);
+    sqlite.appendWindows(step);
+    assert.deepEqual(sqlite.records, json.records);
+  }
+  assert.deepEqual(
+    json.records.map((r) => [r.t, Object.keys(r.windows), r.windows.five.used, r.summary, r.creditAt]),
+    [
+      [now + 30000, ['five'], 21, null, now + 30000],
+      [now + 2 * MINUTE, ['five'], 30, null, now + 2 * MINUTE],
+    ],
+  );
+  const reopened = new SqliteHistoryStore(database, path.join(dir, 'new.json'));
+  reopened.configure('fp');
+  assert.deepEqual(reopened.records, json.records);
+});

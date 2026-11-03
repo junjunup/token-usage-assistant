@@ -45,7 +45,7 @@ const { log } = require('./logger.cjs');
 const { buildDiagnostics } = require('./diagnostics.cjs');
 const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
-const { panelState } = require('./menubar-panel.cjs');
+const { panelState, paceLine } = require('./menubar-panel.cjs');
 const { accountOverview, trayTooltip } = require('./account-overview.cjs');
 const { reportVisibility } = require('./window-visibility.cjs');
 const { forecast } = require('./analytics-core.cjs');
@@ -170,7 +170,16 @@ function state() {
     menubar: menubar ? { hidden: menubar.hidden } : null,
     // T11.1: every account, most urgent first (the menu-bar rule), for the overview grid and the widget.
     overview: accountOverview(accounts?.summaries() || [], settings),
+    pace: activePace(),
   };
+}
+// T12.1: the current account's pace line for the platform dashboards (Command Code's comes with its analytics, and
+// balance-only accounts have none).
+function activePace() {
+  const runtime = accounts?.runtimes.get(accounts.activeId);
+  if (!runtime || runtime.entry.provider === 'commandcode' || !runtime.monitor.state.parts.credits?.windows?.length)
+    return null;
+  return paceLine(forecast(runtime.history.records, Date.now(), runtime.monitor.intervalSeconds));
 }
 function broadcast() {
   syncActive();
@@ -497,8 +506,7 @@ function updateTray() {
 // Panel payload (T7.6): every account's panel view model, the theme, and which accounts have an official page.
 function panelPayload() {
   const summaries = (accounts?.summaries() || []).map((a) => {
-    // T11.3: Command Code accounts carry the analytics forecast for the panel's pace line (no new prediction).
-    if (a.provider !== 'commandcode') return a;
+    // T11.3 / T12.1: each account carries the analytics forecast for the panel's pace line (no new prediction).
     const runtime = accounts.runtimes.get(a.id);
     return runtime
       ? { ...a, prediction: forecast(runtime.history.records, Date.now(), runtime.monitor.intervalSeconds) }

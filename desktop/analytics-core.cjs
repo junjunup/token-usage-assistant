@@ -356,10 +356,15 @@ function forecast(records, now = Date.now(), interval = 60) {
     valid && numeric(a.summary[key]) && numeric(b.summary[key]) && b.summary[key] >= a.summary[key]
       ? (b.summary[key] - a.summary[key]) / minutes
       : null;
-  const windows = ['five', 'week'].map((key) => {
-    const eligible = tail.filter((r) => r.credits && r.creditAt === r.t),
-      end = eligible.at(-1),
-      last = end?.credits[key];
+  /**
+   * One window's outlook from the samples that carry it (`get` reads the window from a sample).
+   * @param {string} key
+   * @param {any[]} eligible
+   * @param {(r: any) => any} get
+   */
+  const outlook = (key, eligible, get) => {
+    const end = eligible.at(-1),
+      last = end && get(end);
     if (
       !last ||
       !last.cap ||
@@ -369,10 +374,10 @@ function forecast(records, now = Date.now(), interval = 60) {
     )
       return { key, status: 'insufficient' };
     const start = eligible.find(
-      (r) => r.credits[key]?.cap === last.cap && r.credits[key]?.resetAt === last.resetAt && end.t - r.t >= 10 * 60000,
+      (r) => get(r)?.cap === last.cap && get(r)?.resetAt === last.resetAt && end.t - r.t >= 10 * 60000,
     );
     if (!start) return { key, status: 'insufficient' };
-    const first = start.credits[key],
+    const first = get(start),
       minutes = (end.t - start.t) / 60000,
       delta = last.used - first.used;
     if (!numeric(first.used) || !numeric(last.used) || !numeric(delta) || delta < 0)
@@ -396,7 +401,31 @@ function forecast(records, now = Date.now(), interval = 60) {
               ? 'before-reset'
               : 'after-reset',
     };
-  });
+  };
+  // Command Code's five-hour and weekly windows (money); T12.1: every other platform's windows by id (percent of
+  // the window, history.cjs windowRecord), with the same sample rules.
+  const fixed = tail.some((r) => r.credits)
+    ? ['five', 'week'].map((key) =>
+        outlook(
+          key,
+          tail.filter((r) => r.credits && r.creditAt === r.t),
+          (r) => r.credits[key],
+        ),
+      )
+    : [];
+  const ids = [...new Set(tail.flatMap((r) => (r.windows ? Object.keys(r.windows) : [])))];
+  const windows = [
+    ...fixed,
+    ...ids.map((id) => {
+      const eligible = tail.filter((r) => r.windows?.[id] && r.creditAt === r.t),
+        named = eligible.at(-1)?.windows[id];
+      return {
+        ...outlook(id, eligible, (r) => r.windows?.[id]),
+        label: named?.label ?? null,
+        group: named?.group ?? null,
+      };
+    }),
+  ];
   return {
     available: true,
     minutes,

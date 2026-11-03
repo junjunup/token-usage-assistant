@@ -710,7 +710,11 @@ export function DesktopApp() {
                   }}
                 />
               ) : generic ? (
-                <ProviderDashboard state={state} onSettings={() => setView('settings')} />
+                <ProviderDashboard
+                  state={state}
+                  onSettings={() => setView('settings')}
+                  pace={state.pace && <PaceLine pace={state.pace} className="overview-pace" />}
+                />
               ) : (
                 <>
                   {!state.hasCredential && (

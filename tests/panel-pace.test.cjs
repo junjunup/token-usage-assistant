@@ -175,14 +175,44 @@ test('T11.3: the pace line condenses the existing forecast; unknown stays a dash
   );
 });
 
-test('T11.3: only Command Code has a pace line; other platforms get none even with a forecast attached', () => {
+test('T12.1: every platform with quota windows has a pace line, named by its own windows; balances have none', () => {
   const prediction = { available: true, minutes: 30, windows: [{ key: 'five', status: 'after-reset' }] };
-  const [cc, glm] = panelState(
-    [commandcode(prediction), quota('glm', 'glm', [win('a', '5 小时窗口', 50)], { prediction })],
+  const glmForecast = {
+    available: true,
+    minutes: 24,
+    windows: [
+      { key: 'glm:a', label: '5 小时窗口', group: '套餐共享额度', status: 'before-reset', minutesToCap: 90 },
+      { key: 'glm:b', label: '周窗口', group: '套餐共享额度', status: 'after-reset', minutesToCap: 900 },
+    ],
+  };
+  const [cc, glm, kimi] = panelState(
+    [
+      commandcode(prediction),
+      quota('glm', 'glm', [win('glm:a', '5 小时窗口', 30)], { prediction: glmForecast }),
+      { ...balance('kimi', [{ currency: 'CNY', total: '10' }]), prediction: glmForecast },
+    ],
     settings,
   ).accounts;
   assert.equal(cc.pace?.text, '按最近 30 分钟的速度，重置前不会触顶');
-  assert.equal(glm.pace, null);
-  // No forecast at all (for example the account was never sampled): no line, not an invented one.
+  assert.equal(glm.pace?.tone, 'amber');
+  assert.equal(glm.pace?.text, '按最近 24 分钟的速度，5 小时窗口约 1 小时 30 分钟后触顶（早于重置）');
+  assert.equal(kimi.pace, null);
+  // Two windows with the same label are told apart by their group.
+  const twins = paceLine({
+    available: true,
+    minutes: 20,
+    windows: [
+      { key: 'm:g', label: '每周窗口', group: '通用共享额度', status: 'at-limit' },
+      { key: 'm:v', label: '每周窗口', group: 'video', status: 'after-reset' },
+    ],
+  });
+  assert.equal(twins?.text, '通用共享额度 每周窗口已达上限');
+  // Not sampled long enough: "—" with the forecast's own reason, never an invented outlook.
+  const notYet = { available: false, reason: '需要至少 10 分钟连续且新鲜的账户采样', windows: [] };
+  const short = panelState([quota('glm', 'glm', [win('glm:a', '5 小时窗口', 30)], { prediction: notYet })], settings)
+    .accounts[0].pace;
+  assert.deepEqual(short, { tone: 'normal', text: '—', reason: '需要至少 10 分钟连续且新鲜的账户采样' });
+  // No forecast at all: no line, not an invented one.
   assert.equal(panelState([commandcode(undefined)], settings).accounts[0].pace, null);
+  assert.equal(panelState([quota('glm', 'glm', [win('glm:a', '5 小时窗口', 30)])], settings).accounts[0].pace, null);
 });

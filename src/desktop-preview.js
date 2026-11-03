@@ -12,7 +12,7 @@ import {
 } from './generated/provider-domain.js';
 import { normalizeDeepSeek, normalizeKimi } from './generated/balance-domain.js';
 import { PROVIDERS } from './generated/provider-catalog.js';
-import { panelState } from './generated/menubar-panel.js';
+import { panelState, paceLine } from './generated/menubar-panel.js';
 import { accountOverview } from './generated/account-overview.js';
 const now = Date.now();
 let state = {
@@ -400,7 +400,33 @@ const listeners = new Set(),
   };
 // The state main.cjs would send, with the all-accounts list derived from the preview snapshots (T11.1).
 function snapshot() {
-  return { ...state, overview: accountOverview(previewSummaries(), state.settings) };
+  const active = previewSummaries().find((a) => a.active);
+  return {
+    ...state,
+    overview: accountOverview(previewSummaries(), state.settings),
+    // T12.1: like main.cjs, the current platform account's pace line (Command Code's comes with its analytics).
+    pace:
+      active && active.provider !== 'commandcode' && active.parts?.credits?.windows?.length
+        ? paceLine(previewPrediction(active))
+        : null,
+  };
+}
+// T12.1: a sample forecast for a platform account: the tightest window runs out before its reset when under 40 %.
+function previewPrediction(a) {
+  const windows = (a.parts?.credits?.windows || []).filter((w) => w.resetAt > 0 && Number.isFinite(w.remainingPercent));
+  if (!windows.length) return { available: false, reason: '需要至少 10 分钟连续且新鲜的账户采样', windows: [] };
+  const tight = [...windows].sort((x, y) => x.remainingPercent - y.remainingPercent)[0];
+  return {
+    available: true,
+    minutes: 18,
+    windows: windows.map((w) => ({
+      key: w.id,
+      label: w.label,
+      group: w.group,
+      status: w === tight && w.remainingPercent < 40 ? 'before-reset' : 'after-reset',
+      minutesToCap: w === tight && w.remainingPercent < 40 ? 95 : null,
+    })),
+  };
 }
 const associationPreview = async () => ({ ok: false, error: '请在 Windows 应用中管理真实账户关联。' });
 // Preview of a failed account-list load (?desktop-preview=credential-issue): re-read succeeds after a moment.
@@ -613,11 +639,14 @@ export function previewSummaries() {
 // same pure module as the desktop app (desktop/menubar-panel.cjs, generated), fed with the preview snapshots.
 function previewPanel() {
   // T11.3: like main.cjs, Command Code carries the (sample) forecast for the pace line.
-  const summaries = previewSummaries().map((a) =>
-    a.provider === 'commandcode'
-      ? { ...a, prediction: demoAnalytics({ source: 'account', range: 'today' }, state).prediction }
-      : a,
-  );
+  // T12.1: the other platforms carry a sample forecast too.
+  const summaries = previewSummaries().map((a) => ({
+    ...a,
+    prediction:
+      a.provider === 'commandcode'
+        ? demoAnalytics({ source: 'account', range: 'today' }, state).prediction
+        : previewPrediction(a),
+  }));
   const theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light';
   return {
     ...panelState(summaries, state.settings),
