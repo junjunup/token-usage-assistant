@@ -10,7 +10,7 @@ function connectionStatus(entry, data, sources = [], collectorIssue = '', portCh
     status: 'waiting',
     label: claude ? '组件已就绪 · 等待首次额度' : '等待额度同步',
     message: claude
-      ? '请在项目目录运行生成的 ' + launcherName() + '，收到套餐额度后才算同步成功。'
+      ? '请在项目目录运行生成的 ' + launcherName() + '，或在账户连接里「接入所有会话」；收到套餐额度后才算同步成功。'
       : '通过官方客户端读取订阅额度。',
   };
   if (collectorIssue && claude) quota = { status: 'error', label: '采集组件暂不可用', message: collectorIssue };

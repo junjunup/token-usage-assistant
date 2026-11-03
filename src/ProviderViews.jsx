@@ -368,7 +368,59 @@ export function ProviderWidget({ state }) {
     </>
   );
 }
-export function LocalConnectionStatus({ state }) {
+// T13.1 (D20 ②): whether the status-line helper is in Claude Code's own settings, and the one action for it.
+const CLAUDE_CONFIG = {
+  none: {
+    label: '未接入 · 只采集启动脚本打开的会话',
+    message: (f) =>
+      `经你确认后，把助手的状态栏组件写进 ${f}，之后任何方式打开的会话都会采集套餐额度；修改前先备份，可随时还原。`,
+    action: ['install', '接入所有会话'],
+  },
+  installed: {
+    label: '已接入 Claude Code 设置',
+    message: () => '新打开的会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。',
+    action: ['restore', '还原'],
+    tone: 'green',
+  },
+  changed: {
+    label: '状态栏已被改动 · 未接入',
+    message: () => 'Claude Code 的状态栏已经不是助手的组件（可能被你或别的工具改过），助手没有再动它。',
+    action: ['install', '重新接入'],
+    tone: 'amber',
+  },
+  unreadable: {
+    label: '设置文件看不懂 · 未修改',
+    message: (f) => `${f} 不是有效的 JSON 对象，助手不会修改它。`,
+    tone: 'amber',
+  },
+  blocked: {
+    label: '已有自定义状态栏 · 暂不接入',
+    message: () => 'Windows 上暂不支持和你自己的状态栏并存；可以继续用启动脚本打开 Claude Code。',
+  },
+};
+function ClaudeConfigStatus({ config, onChange }) {
+  const view = CLAUDE_CONFIG[config.status];
+  if (!view) return null;
+  return (
+    <div className="claude-config-status">
+      <span className="micro-label">所有 Claude Code 会话</span>
+      <strong>
+        <span className={'status-dot ' + (view.tone || 'neutral')} />
+        {view.label}
+        {config.status === 'installed' && config.chained ? ' · 原状态栏一起显示' : ''}
+      </strong>
+      <p>
+        {view.message(config.file)}
+        {view.action && onChange && (
+          <button type="button" className="text-button" onClick={() => onChange(view.action[0])}>
+            {view.action[1]}
+          </button>
+        )}
+      </p>
+    </div>
+  );
+}
+export function LocalConnectionStatus({ state, onClaudeConfig = null }) {
   if (!state.connectionStatus) return null;
   return (
     <div className="local-connection-status" aria-label="本机连接状态">
@@ -392,10 +444,21 @@ export function LocalConnectionStatus({ state }) {
           </div>
         );
       })}
+      {state.provider === 'claude' && state.claudeConfig && (
+        <ClaudeConfigStatus config={state.claudeConfig} onChange={onClaudeConfig} />
+      )}
     </div>
   );
 }
-export function ConnectionForm({ state, preview, action, onConnected, onRemove, wizard = null }) {
+export function ConnectionForm({
+  state,
+  preview,
+  action,
+  onConnected,
+  onRemove,
+  onClaudeConfig = null,
+  wizard = null,
+}) {
   // In the wizard (T11.4) every connection is a new one; updating or removing stays in settings.
   const active = wizard ? null : state.accounts?.find((a) => a.id === state.activeAccountId);
   const [mode, setMode] = useState('add'),
@@ -672,7 +735,7 @@ export function ConnectionForm({ state, preview, action, onConnected, onRemove, 
         <span className={'status-dot ' + (state.hasCredential ? 'green' : 'neutral')} />
         {active ? '当前连接 · ' + active.label : '添加官方套餐或按量账户'}
       </div>
-      <LocalConnectionStatus state={state} />
+      <LocalConnectionStatus state={state} onClaudeConfig={onClaudeConfig} />
       <form onSubmit={submit}>
         <div className="connection-selectors">
           {active && (

@@ -385,6 +385,9 @@ class ClaudeCollector {
       },
       statusLine: { type: 'command', command },
     };
+    // T13.1: the same helper and command can also go into Claude Code's own settings (claude-config.cjs).
+    this.helper = helper;
+    this.statusCommand = command;
     atomicWrite(path.join(this.home, 'claude-settings.json'), settings);
     fs.writeFileSync(
       path.join(this.home, '使用说明.txt'),

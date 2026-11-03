@@ -33,6 +33,7 @@ const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
+const { ClaudeConfig, settingsFile, readSettings } = require('./claude-config.cjs');
 const {
   windowChrome,
   loginOptions,
@@ -157,6 +158,8 @@ function state() {
       claudeCollector?.issue,
       claudeCollector?.portChange,
     ),
+    // T13.1: whether the status-line helper is in Claude Code's own settings (only once the collector exists).
+    claudeConfig: claudeConfigStatus(),
     data,
     platform: process.platform,
     loginItem: readLogin(app),
@@ -409,6 +412,62 @@ function openUpdate() {
   const url = updates?.state.latest?.url;
   if (updates?.state.status === 'available' && url?.startsWith(PAGE_PREFIX)) return shell.openExternal(url);
   throw inputError('暂无可查看的新版本。');
+}
+// T13.1 (D20 ②): Claude Code's user settings, with our helper as the statusLine command.
+function claudeConfig() {
+  if (smoke || !claudeCollector?.statusCommand) return null;
+  return new ClaudeConfig({
+    file: settingsFile(process.env, app.getPath('home')),
+    helperDir: claudeCollector.home,
+    helper: claudeCollector.helper,
+    command: claudeCollector.statusCommand,
+  });
+}
+function claudeConfigStatus() {
+  try {
+    return claudeConfig()?.status() || null;
+  } catch {
+    return null;
+  }
+}
+async function changeClaudeConfig(action) {
+  const config = claudeConfig();
+  if (!config) throw inputError('请先连接 Claude 账户。');
+  try {
+    if (action === 'restore') {
+      config.restore();
+      log.info('claude-config', 'restored', {});
+      return { ...state(), connectionMessage: '已还原 Claude Code 的状态栏设置。' };
+    }
+    const status = config.status();
+    if (status.status === 'unreadable')
+      throw inputError('Claude Code 的设置文件格式看不懂，没有修改。请检查 ' + status.file + ' 是不是有效的 JSON。');
+    if (status.status === 'blocked')
+      throw inputError(
+        '你已经设置了自己的 Claude Code 状态栏，Windows 上暂不支持和它并存，没有修改。可以继续用启动脚本打开 Claude Code。',
+      );
+    const choice = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      buttons: ['接入', '取消'],
+      defaultId: 0,
+      cancelId: 1,
+      message: '把助手的状态栏组件写进 Claude Code 设置？',
+      detail:
+        '将修改 ' +
+        status.file +
+        ' 里的 statusLine 一项，其他设置不变；修改前先把原文件备份到助手的数据目录，随时可以在这里还原。' +
+        (readSettings(config.file).value?.statusLine ? '你原来的状态栏命令会继续运行，显示在助手内容的前面。' : '') +
+        '\n\n之后任何方式打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）；逐请求的 Token 明细仍需用启动脚本打开。',
+    });
+    if (choice.response !== 0) return { ...state(), connectionMessage: '' };
+    config.install();
+    log.info('claude-config', 'installed', {});
+    return { ...state(), connectionMessage: '已接入：新打开的 Claude Code 会话会自动采集套餐额度。' };
+  } catch (e) {
+    if (e?.publicMessage) throw e;
+    log.warn('claude-config', 'failed', { errno: e?.code });
+    throw inputError('Claude Code 设置没有改成，原文件保持不变。请检查该文件的读写权限后重试。');
+  }
 }
 function showNotification(title, body) {
   if (smoke || !Notification.isSupported()) return false;
@@ -919,6 +978,10 @@ function installIpc() {
     log.info('main', 'diagnostics-saved', { count: text.length });
     return true;
   });
+  handle('assistant:claude-config', (event, action) => {
+    mainOnly(event);
+    return changeClaudeConfig(action === 'restore' ? 'restore' : 'install');
+  });
   handle('assistant:open-update', (event) => {
     mainOnly(event);
     return openUpdate();
@@ -1043,6 +1106,12 @@ else {
         try {
           await claudeCollector.start();
           claudeCollector.generateLauncher();
+          // T13.1: a moved or updated app keeps working in sessions connected through Claude Code's settings.
+          try {
+            claudeConfig()?.refresh();
+          } catch {
+            log.warn('claude-config', 'refresh-failed', {});
+          }
         } catch (e) {
           log.warn('claude-collector', 'start-failed', { stage: 'startup', errno: e?.code });
           claudeCollector.issue = 'Claude 本地采集端口不可用，请重启或重新连接。';

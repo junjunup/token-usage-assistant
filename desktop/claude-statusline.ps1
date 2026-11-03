@@ -15,5 +15,8 @@ try {
   $tuaLine = $tuaReply.line
   if ($tuaLine -is [string] -and $tuaLine.Length -gt 0 -and $tuaLine.Length -le 200 -and $tuaLine -notmatch '[\x00-\x1f\x7f]') { [Console]::Write($tuaLine) }
   else { [Console]::Write('Token usage: local collector') }
-} catch { [Console]::Write('Token usage: collector offline') }
+} catch {
+  # T13.1: connected through Claude Code's settings, every session runs this; an offline assistant then adds nothing.
+  if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'statusline-chain.json'))) { [Console]::Write('Token usage: collector offline') }
+}
 exit 0
