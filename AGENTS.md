@@ -3,7 +3,8 @@
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
 - 当前版本：**1.9.0-beta.6**（阶段 10「更多平台」T10.1 Kimi 开放平台余额、T10.2 OpenRouter Key 上限与花费；2026-10-29 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
-- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D17）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D18）
+- 工作方式：**追赶模式**（D18，2026-11-03）——快速迭代、大刀阔斧改进，红线不让步，见第 7 节
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
 ## 1. 读取顺序
@@ -75,22 +76,41 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - **跟随上游（D15，2026-10-27；T9.13–T9.15 已实现）**：本机工具数据的可信度按结构契约判断（核心字段 / 可选字段；关系不一致按记录标 `invalidUsage`，不丢记录），三档状态：正常 / 部分字段缺失 / 格式不兼容；不再按版本号贴「版本未验证」。每个来源只记用量计数的字段名（T9.14，不含值，含正文或凭据意味的名字一律不记），字段集合变化时在来源卡片上提示 14 天，并写进诊断信息。契约在 `desktop/upstream-contracts.cjs`，依据见 [UPSTREAM-CONTRACTS](docs/research/UPSTREAM-CONTRACTS.md)。各工具代码里的「已复核版本」列表只决定每周检查（T9.1）把哪些新版本交给兼容性检查（T9.15，`scripts/upstream-compat.cjs`：Codex 比对官方协议定义、Harness 在官方运行时上跑运行时测试、Claude 无可机读定义只能如实写明；只在临时目录安装官方包，`--ignore-scripts`，不登录、不调用模型）。
 - **Harness**：已验证 `0.1.7-rc.1`、`0.2.1-rc.2`（T8.13，2026-10-26 用户决定）/ session format 4 / JSONL schema 1。其他版本的运行时只有每个事件都符合已知结构才导出，记录写明实际版本（T9.13 起助手不再按版本贴标签）；字段改名、缺失或未知结束原因一律停止导出，不猜测。导出器 1.5.0 沿用 1.4.0 建立的来源身份。可选插件只导出启用后的白名单元数据，不含历史、正文、工具内容、凭据，也不代理请求。见 [插件说明](integrations/deepseek-harness/README.md)。
 
-## 7. 交付与验证（过渡期：D1 / D3 / D4）
+## 7. 交付与验证（追赶模式：D18）
 
-- 不改变应用行为的任务不出包。改变行为的任务在本机出 Mac 包（DMG + ZIP，文件名加 `-dev.<短 commit>`）；Windows 双包在执行记录中标「待 CI 补齐」，不得写成已交付。T2.3 完成后，三种包统一由 CI 产出。
-- 版本：阶段 1–2 保持 1.8.0-beta.5；阶段 3–5 依次为 1.8.0-beta.6–beta.8；菜单栏首版（T7.3–T7.8）为 1.9.0-beta.1，菜单栏真机验收后的改进（T7.9–T7.12、T4.7）为 1.9.0-beta.2，整体复盘后的稳固版（T8.1–T8.8）为 1.9.0-beta.3，T6.1–T6.3 为 1.9.0-beta.4，阶段 9「开源与增长」（T9.1–T9.11）攒成 1.9.0-beta.5（D14），阶段 10「更多平台」（T10.1、T10.2、T10.4）攒成 1.9.0-beta.6（D16），阶段 11「看得全、装得上」以 T11.9 收尾：达到 1.9.0 正式版门槛（D17 加入 Windows 真机验收）就发 1.9.0，否则发 1.9.0-beta.7，之后顺延为 1.9.0-beta.x，达到 1.9.0 正式版门槛后去掉 beta（D3，2026-10-18 调整）。版本号只在一组任务的最后一个任务合并时修改。
-- Mac 包：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。签名一律 ad-hoc（2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回）。装新版本时正式条目弹一次授权属于 D4 的已知限制。`codesign --verify --deep --strict` 必须通过，Electron fuses 必须与 `electron-builder.yml` 一致（T9.2，`scripts/fuses.cjs`；`RunAsNode` 不能关），打包后的原生 smoke 必须 `ok`；`spctl` 预期为 rejected，如实记录，不算通过。
-- D4（暂不购买 Apple Developer 账号）带来的限制：首次打开要到「系统设置 → 隐私与安全性」点「仍要打开」（2026-10-25 在 macOS 15.7.9 实测：弹窗里没有「打开」按钮，「右键 → 打开」不能放行，H3）；只能消除「已损坏」提示，不能消除「无法验证开发者」提示；覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。不引导用户关闭 Gatekeeper。
-- 出包时核对包内版本和代码与源码一致。只改了源码，不得称为已交付。
-- 每个任务按改进计划第 0.2 节执行：独立分支、`--no-ff` 合并、追加执行记录。
-- 确认分三档（D13，2026-10-25）：内部可撤回的步骤直接做完并接着做下一个任务；界面截图与公开发版攒到节点一次确认（每个版本只确认一次，确认后由执行模型完成打标签之后的全部步骤）；只能用户亲手做的事记进 PROJECT_HANDOFF「需要你亲手做的事」，在节点一次交出。遇到红线冲突、范围变化、计划外失败时仍立即停下来问。制定新计划或新阶段时，先在会话里给大纲和待定问题，用户同意后才写进改进计划（D14 ⑥）。
-- 有意义的决策变化要同步更新 `PROJECT_HANDOFF.md`（只写当前快照）和 `CHANGELOG.md`。
+产品还在追赶市面同类软件、没有用户量，流程按「快速迭代、大刀阔斧改进」执行（D18，2026-11-03）。第 2–6 节的红线与不变量、CI 通过、测试数只增不减、证据分级如实，**不因追赶而放松**；省下的是只有成熟产品才需要的仪式。
+
+- **每个任务**：按改进计划第 0.2 节，开独立分支 `task/<ID>-<简短名>`，用 `--no-ff` 合并（便于单独回滚）。本机跑 `pnpm run test:desktop`、lint、typecheck；改到界面或主进程时，开发版再跑一次隔离原生 smoke（约 1 分钟，见第 9 节）。推送后等 CI 两个平台通过。不放宽断言。
+- **不再每个任务都做的**：
+  - 分支上的 Release 打包试跑：只在发版前做，以及改了打包配置、Electron、原生 smoke 本身或打包工具链依赖时做。
+  - 本机 Mac 测试包（取代 D1）：用户想试用时才出，文件名加 `-dev.<短 commit>`。
+- **原生 smoke 冻结**：不再新增段落；现有检查被改动弄坏时修好它。新功能靠单元 / 契约测试和开发版截图保证。
+- **发版**：不按阶段发版，只在有值得给人看的东西时发（首发、一次大改之后）；平时只在 main 上推进，版本号只在发版时改。发版走完整流程（升级验证 profile、Release、存档核对、Publish，见 [docs/RELEASING.md](docs/RELEASING.md)），按 D13 每个版本只确认一次。当前：阶段 11 以 T11.9 收尾，达到 1.9.0 正式版门槛（D17 加入 Windows 真机验收）就发 1.9.0，否则发 1.9.0-beta.7。历次版本见 [CHANGELOG.md](CHANGELOG.md)。
+- **出包核对**：包内版本和代码必须与源码一致；只改了源码，不得称为已交付。Windows 包由 CI 产出，没在真机上装过的不写成「已验证」。
+- **Mac 包**：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。
+  - 签名一律 ad-hoc。2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回。装新版本时正式条目弹一次授权，属于 D4 的已知限制。
+  - 必须通过：`codesign --verify --deep --strict`；Electron fuses 与 `electron-builder.yml` 一致（T9.2，`scripts/fuses.cjs`；`RunAsNode` 不能关）；打包后的原生 smoke 结果 `ok`。
+  - `spctl` 预期为 rejected，如实记录，不算通过。
+- **D4（暂不购买 Apple Developer 账号）带来的限制**：
+  - 首次打开要到「系统设置 → 隐私与安全性」点「仍要打开」。2026-10-25 在 macOS 15.7.9 实测：弹窗里没有「打开」按钮，「右键 → 打开」不能放行（H3）。
+  - 只能消除「已损坏」提示，不能消除「无法验证开发者」提示。
+  - 覆盖升级后可能弹出 Keychain 授权；Mac 不做自动更新。
+  - 不引导用户关闭 Gatekeeper。
+- **依赖**：进安装包的依赖（Electron 与 `dependencies`）选发布满两周的确定版本，安全修复可由用户决定破例（先例 D12 ①）。开发与构建期依赖不受「满两周」限制，pnpm 拦截时加进 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 并注明原因；仍用精确版本与锁文件。
+- **执行记录**：改进计划第 6 节每个任务一行，只写做了什么、合并 commit、测试数、证据等级、遗留，不写过程；运行号只写推送后的 CI，发版时写全。
+- **确认分三档（D13）**：
+  - 第一档：内部可撤回的步骤直接做完，接着做下一个任务。
+  - 第二档：界面截图与公开发版攒到节点一次确认。每个版本只确认一次，确认后由执行模型完成打标签之后的全部步骤。
+  - 第三档：只能用户亲手做的事，记进 PROJECT_HANDOFF「需要你亲手做的事」，在节点一次交出。
+  - 遇到红线冲突、范围变化、计划外失败时，仍立即停下来问。
+  - 制定新计划或新阶段时，先在会话里给简短大纲和待定问题，用户同意后才写进改进计划（D14 ⑥）。
+- 有意义的决策变化要同步更新 `PROJECT_HANDOFF.md`（只写当前快照）和 `CHANGELOG.md`（只写用户能感知的变化）。
 - `README.md` 与 `README.en.md` 同结构（T9.8，D14）：改中文 README 时在同一个任务里同步英文版；英文版写明界面目前只有中文。
 
 ## 8. UI 规则
 
 - 保持已批准的刻度环 Logo（母版为 `desktop/assets/brand-mark.svg`）和现有 UI 风格：白底、细线、Geist / Geist Mono、分段绿色额度条、紫色 Token 强调、深浅色主题（参考 commandcode.ai 用量页）。不改名，不重做页面，不替换功能图标。
-- 任何新视觉元素或界面改动，都要先出浅色和深色的截图或草图，用户确认后才能实现和合并（D10）。从用户选定的 mock 实现时，以 mock 为准。
+- 界面改动（D10，D18 调整）：新页面和新的视觉元素（新卡片类型、图标、品牌、配色）先出浅色和深色的截图或草图，用户确认后才能实现和合并；已有界面上的小改动（文案、排列、间距、复用现有组件）直接实现，做完附浅色和深色截图，攒到节点一并给用户看，不满意再改。从用户选定的 mock 实现时，以 mock 为准。
 - 界面代码放在 `src/`；`dist/client` 由构建生成；`src/generated` 由 `scripts/prepare-analytics-preview.mjs` 生成，要改就改 `desktop/` 下对应的纯模块。
 - 已定交互：左侧导航和标题栏固定，只有主内容滚动；所有下拉菜单用统一的自定义组件，可键盘操作，不出现系统原生 select；悬浮窗默认紧凑，点击展开；侧栏第二个图标（SquaresFour）进入用量分析，悬浮窗开关放在总览；优先展示 5 小时/每周剩余额度和重置时间，Token 与费用分开。
 - 回归保护：悬浮窗收起后回到原来的底边（1.4.1）；侧栏品牌按钮零内边距，Logo 居中；Windows 窗口使用多尺寸 ICO，并显式设置任务栏信息，指向稳定启动器或安装后的 EXE；Mac 打包版以 bundle 内的 icns 为准（Dock 图标覆盖只在开发版生效）。
@@ -106,6 +126,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - 证据三级：①合成契约测试；②打包原生 smoke（隔离样例）；③真实账户或真机验收。没做过 ③ 的，不得写成「已验证」。Claude 用 computer use 在用户 Mac、真实账户上实测的结果也计为 ③，统一标注「③（Claude 代测）」；需要用户亲自操作的项（改系统设置、输入密码、外接屏、锁屏等）仍由用户做（D12 ②）。某个平台的真实观察不能证明其他平台（例如 Codex 的只读观察不证明 Claude 核账）。
 - 不做长时间稳定性/soak 测试（用户已叫停）；加速的短时运行不能当作两小时 soak。
 - `--smoke-test` 必须配新建的隔离 `--test-directory`；迁移和升级验证只能指向隔离目录，不得指向真实 userData。
+- 原生 smoke 冻结（D18）：不再新增段落，只修被改动弄坏的检查；开发版运行方法：先 `pnpm run build`，再 `electron . --smoke-test --test-directory=<新建的临时目录>`，结果在该目录的 `smoke-result.json`。
 - Mac 开发版（`pnpm run desktop`）自 T3.1 起使用独立的数据目录和 Keychain 条目，可以直接用于启动验收；打包版和 smoke 仍按上一条使用隔离目录。smoke 使用模拟钥匙串（见第 5 节），不会弹钥匙串授权窗；代价是 smoke 不再测到真实钥匙串读写，这部分由真机使用覆盖。
 - 因 Harness 运行时未安装而跳过的测试要明确报告，不算通过。当前基线：本机 418 通过 / 0 失败 / 6 跳过（共 424）；CI 安装了两个已验证版本的 Harness 运行时（T8.10、T8.13），为 424 通过 / 0 失败 / 0 跳过。本机要跑这 6 项，按插件 README 安装两套运行时并设置四个环境变量。
 - `pnpm run typecheck`（T5.5 起：8 个纯领域模块的严格 JSDoc 类型检查，T7.4 / T7.6 加入 `menubar-status.cjs`、`menubar-panel.cjs`，T6.2 加入 `coverage-report.cjs`，T9.13 加入 `upstream-contracts.cjs`，T11.1 加入 `account-overview.cjs`，T11.2 加入 `panel-placement.cjs`，T11.4 加入 `onboarding.cjs`；已接入 CI）必须通过。修改这些模块时同步维护注解；可能缺失的数值写成 `number|null`，不要用 0 代替。
