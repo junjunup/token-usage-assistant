@@ -145,7 +145,7 @@
 | 12 追上差距 | T12.6 自动发现本机工具 | 是（UI 小改） | T12.3–T12.5 | D19 | [x] |
 | 12 追上差距 | T12.7 Claude Code 状态栏显示全部账户额度（可选） | 是（新视觉元素，先给样例） | — | D19 ④ | [x] |
 | 12 追上差距 | T12.8 Windows 自动更新 | 是 | — | D19 ⑤ | [x] |
-| 13 接得上、带得走 | T13.1 Claude 一步接入（写入 Claude Code 配置，可还原） | 是（UI 小改） | — | D20 ② | [ ] |
+| 13 接得上、带得走 | T13.1 Claude 一步接入（写入 Claude Code 配置，可还原） | 是（UI 小改） | — | D20 ② | [x] |
 | 13 接得上、带得走 | T13.2 更多本机工具（先调研，选 3–4 个） | 是 | — | D20 ① | [ ] |
 | 13 接得上、带得走 | T13.3 更多平台（硅基流动等；百炼只调研） | 是 | — | D20 ①、D19 ② | [ ] |
 | 13 接得上、带得走 | T13.4 导出 CSV | 是（UI 小改） | — | D20 ① | [ ] |
@@ -599,6 +599,7 @@
 | 2026-11-03 | T12.6 | 自动发现本机工具：只检查各工具默认位置是否存在（Codex / Gemini / Kimi Code / Qwen 目录，OpenCode 与 Harness 导出文件），不读内容；向导「本机工具」与工具数据源表单标「本机已找到」并排在前面，添加仍走原生选择器（打开在找到的位置），符合 AGENTS §4。顺手去掉 Codex 选项里过时的「0.155.x」。`task/T12.6-discovery` `307867c`；CI `41572409433` 通过 | 443：437 / 0 / 6 | ①＋②（开发版 smoke ok）；截图在 `work/t12/shots/` | Windows 上 OpenCode 的默认位置未核实 |
 | 2026-11-03 | T12.7 | Claude Code 状态栏显示额度（用户选方案 C，设置 `claudeStatusQuota` 默认关闭）：组件 `/quota` 回复带回主进程算好的一行（本会话 5h / 7d 更紧的一个 + 最紧的其他账户），脚本只打印安全的单行，否则照旧；PowerShell 改为 UTF-8 输出。`task/T12.7-claude-statusline` `a2ac5fe`；CI `41573670140`、Release 试跑 `41573686034` 通过 | 445：439 / 0 / 6 | ①＋②；Mac 脚本端到端实跑（关 / 开 / 助手未运行三种输出正确）；截图在 `work/t12/shots/` | Windows 脚本「开」的路径没在真机上跑过（CI smoke 只覆盖关闭时）；没在真实 Claude Code 会话里看过 |
 | 2026-11-03 | T12.8 | Windows 自动更新（D19 ⑤）：只有 Windows 安装版（非便携、非开发、非 smoke）在「检查更新」里多「下载并安装」→「重启并安装」两步，各要点击；electron-updater 6.8.10（纯 JS、满两周）只在第一次点击时加载，`autoDownload` / `autoInstallOnAppQuit` 关闭，按发布页 `latest.yml` 的 SHA-512 校验（安装包未签名，已写入 PRIVACY）；错误只记固定代码。electron-builder 只给 Windows 加 publish 配置，生成 `latest.yml`（测试版也用这个名字）与 `.blockmap`；`scripts/verify-update-info.cjs` 在 Release 与 Publish 里核对它与 Setup EXE 一致，Publish 多传这两个文件；`verify-package` 只接受运行时依赖闭包（16 个包，逐文件比对），许可证与第三方声明同步。`task/T12.8-win-auto-update` `519af52`；CI `41598850023`、Release 试跑 `41598862400` 通过（第一次试跑 `41598331986` 因核对脚本误以为测试版生成 `beta.yml` 而失败，已修） | 451：445 / 0 / 6 | ①＋②（Windows 打包 smoke、打包内容与更新说明核对）；四种状态的浅色 / 深色截图在 `work/t12/shots/update-*.png` | 完整的下载、校验、安装流程待发版后验证（1.9.0-beta.6 及更早版本没有此功能，要手动升级一次）；没在 Windows 真机上点过 |
+| 2026-11-03 | T13.1 | Claude 一步接入（D20 ②）：账户连接里「所有 Claude Code 会话」一栏，确认框写明改哪个文件哪一项后，把状态栏组件写进 Claude Code 用户设置的 `statusLine`（`desktop/claude-config.cjs`：只改这一项、先备份、看不懂的文件不写、按组件路径识别、应用移动后启动时自动更新命令、还原放回原 statusLine）；原有命令由 Mac 组件串联运行（同一输入，结果在前，最长等 4 秒），Windows 已有自定义状态栏时拒绝接入；接入后助手离线时组件不输出。只写 statusLine，逐请求明细仍靠启动脚本。`task/T13.1-claude-connect` `4976f78`；CI `41601355022` 通过 | 458：452 / 0 / 6 | ①（含 Mac 组件串联的进程级测试）；开发版隔离 smoke 通过；四种状态的浅色 / 深色截图在 `work/t13/shots/` | 没在真实的 `~/.claude/settings.json` 和真实 Claude Code 会话上试过（要你在应用里点确认）；Windows 的写入路径只有单元测试 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
