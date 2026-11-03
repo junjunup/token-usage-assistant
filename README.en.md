@@ -20,7 +20,7 @@ Current version: **1.9.0-beta.6** (beta, not signed or notarized). History: [CHA
 ## What it does
 
 - **Platform quota and balance**: what is left in each 5-hour / weekly / monthly window and when it resets; the balance of pay-as-you-go platforms. Up to 20 accounts, each refreshed and alerted on its own.
-- **Local tool usage**: tokens, requests, models and projects for Codex, Claude Code, Gemini CLI, Zcode, OpenCode and DeepSeek Harness; optional cost estimates from prices you enter (USD and CNY kept apart).
+- **Local tool usage**: tokens, requests, models and projects for Codex, Claude Code, Gemini CLI, Kimi Code CLI, Zcode, OpenCode and DeepSeek Harness; optional cost estimates from prices you enter (USD and CNY kept apart).
 - **At a glance**: macOS menu bar icon and panel, Windows tray, an always-on-top floating window; light and dark themes.
 - **Honest numbers**: missing data shows "—", never 0; platform quotas and local usage are never added together; no comparison when coverage is incomplete.
 
@@ -45,6 +45,7 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Tool usage | OpenCode | Read-only SQLite metadata | Sample-tested |
 | Tool usage | Codex, Claude Code | Usage metadata from local rollout files / OTLP events | Sample-tested |
 | Tool usage | Gemini CLI | Per-reply usage counts in local session files (structure from the official open-source code) | Sample-tested |
+| Tool usage | Kimi Code CLI | Per-call usage records in local sessions (structure from the official open-source code) | Sample-tested |
 | Tool usage | DeepSeek Harness | Optional local plugin export | Sample-tested (plus contract tests on the official runtime) |
 
 Tool updates keep working: the app trusts the data structure, not the version number, so a new version is counted as usual while its core usage fields are unchanged, and a change in fields is flagged on the source card. A weekly job also checks new upstream versions for compatibility (Codex, Harness).

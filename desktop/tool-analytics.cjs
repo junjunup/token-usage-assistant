@@ -286,7 +286,7 @@ function normalizedPrices(prices) {
 function normalizeSubscriptionRecord(wire, sourceId) {
   if (
     !wire ||
-    !['codex', 'claude-code', 'gemini-cli'].includes(wire.tool) ||
+    !['codex', 'claude-code', 'gemini-cli', 'kimi-code-cli'].includes(wire.tool) ||
     !number(wire.timestamp) ||
     wire.timestamp <= 0 ||
     !wire.attemptId ||
@@ -317,7 +317,14 @@ function normalizeSubscriptionRecord(wire, sourceId) {
       at: wire.timestamp,
       updatedAt: wire.updatedAt || wire.timestamp,
       revision: wire.revision || 0,
-      provider: wire.tool === 'codex' ? 'openai' : wire.tool === 'gemini-cli' ? 'google' : 'anthropic',
+      provider:
+        wire.tool === 'codex'
+          ? 'openai'
+          : wire.tool === 'gemini-cli'
+            ? 'google'
+            : wire.tool === 'kimi-code-cli'
+              ? 'moonshot'
+              : 'anthropic',
       model: wire.model,
       project: wire.project,
       status: wire.status,
@@ -338,7 +345,9 @@ function normalizeSubscriptionRecord(wire, sourceId) {
         ? 'codex-rollout/reported-snapshot'
         : wire.tool === 'gemini-cli'
           ? 'gemini-cli/session-response'
-          : 'claude-code/otel-api-event',
+          : wire.tool === 'kimi-code-cli'
+            ? 'kimi-code/usage-record'
+            : 'claude-code/otel-api-event',
     // T12.3: one Gemini CLI response record per model reply.
     recordUnit: wire.tool === 'codex' ? 'usage-observation' : 'request',
   };
