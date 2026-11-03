@@ -3,7 +3,7 @@
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
 - 当前版本：**1.9.0-beta.6**（阶段 10「更多平台」T10.1 Kimi 开放平台余额、T10.2 OpenRouter Key 上限与花费；2026-10-29 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
-- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D18）
+- 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D19）
 - 工作方式：**追赶模式**（D18，2026-11-03）——快速迭代、大刀阔斧改进，红线不让步，见第 7 节
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
 
@@ -65,6 +65,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - **DeepSeek**：固定 HTTPS `GET /user/balance`，Bearer 鉴权，不跟随重定向；保留 `is_available` 和未知字段；`parts.balance` 与额度、工具用量、账单分开。见 [DEEPSEEK-BALANCE-1.6.0](docs/DEEPSEEK-BALANCE-1.6.0.md)。
 - **Kimi 开放平台**（T10.1，D16）：固定 HTTPS `GET /v1/users/me/balance`，Bearer 鉴权，不跟随重定向；国内 `api.moonshot.cn` 为 CNY、国际 `api.moonshot.ai` 为 USD（币种由所选站点决定，不换汇，两个站点的 Key 互不通用）。金额是 JSON 数字，按服务端的最短十进制形式转成字符串保存，详情里不四舍五入（紧凑位置按 D17 ④ 两位小数，见第 8 节）；指数形式视为格式不兼容。`available_balance` 是核心字段，代金券、现金余额可选（缺失显示「—」）；现金为负标「欠费」并始终可见；可用余额 ≤ 0 为「不可用于调用」（与 DeepSeek 余额同一规则，琥珀色），不是查询失败。
 - **OpenRouter**（T10.2，D16 ③）：固定 HTTPS `GET https://openrouter.ai/api/v1/key`，普通 API Key、Bearer 鉴权，不跟随重定向；不调用管理密钥接口。只展示**这把 Key** 的花费上限、预算与已报告花费（USD，UTC 日 / 周一起的周 / 月），不是账户余额也不是账单，与工具用量、其他平台不相加。`limit` 为 null 显示「不限」（不是 0），`limit_reset` / `reset_interval` 为 null 显示「不重置」；`budgets` 里 `key_limit` 一项与 Key 上限是同一个限制，只显示一次，重置时间取它的 `resets_at`（服务端给的，不自行推算）。Key 名称、用户 / 组织 / 工作区编号等身份字段一律不保存。金额按服务端数字的最短十进制形式显示，不四舍五入到一位（紧凑位置按 D17 ④ 两位小数，见第 8 节）。
+- **非官方接口（D19 ②，2026-11-03）**：没有官方文档、但被多个第三方项目使用的只读接口可以接入，条件：只用用户在本应用里填写的凭据；只读；界面与 PRIVACY 写明「非官方接口」；按结构契约读取，字段变化时显示「格式不兼容」，不猜；验证等级先标「样例验证」。不因此读取别的应用的凭据或浏览器 Cookie。首个适用：Kimi Code 订阅（T12.2）。
 - **OpenCode Go**：固定 HTTPS `GET /zen/go/v1/usage`，Bearer 鉴权，不跟随重定向，不调用推理。只展示服务端给出的三个百分比和重置时间，不编造余额、金额额度或续费日；舍入为 0 不能说明滚动窗口的起点。Zen / Black / 企业版查询不可用，不得暗示支持全部套餐。见 [OPENCODE-1.8.0-beta.5](docs/OPENCODE-1.8.0-beta.5.md)。
 - **Codex 订阅**：只读 app-server 方法白名单：`initialize`、`initialized`、`account/read`、`account/rateLimits/read`。选定程序前只做初始化预检；保留用户所选配置；可直接选择 `Codex.app` 的 `Resources/codex`。区分进程、协议、登录、阶段超时四类失败，不暴露 stderr；不声称支持旧版 CLI 协议。
 - **Codex 连接发现**：已保存的位置、`CODEX_HOME`、默认 `~/.codex`。只有一个时直接连接，多个时在应用内选择，手动选择作为回退；更新一个已丢失的保存位置时，不得静默改绑到另一个账户。见 [CONNECTION-UX-1.5.1](docs/CONNECTION-UX-1.5.1.md)、[MAC-TRIAL-1.8.0-beta.2](docs/MAC-TRIAL-1.8.0-beta.2.md)。
