@@ -136,7 +136,7 @@
 | 11 看得全、装得上 | T11.8 Windows 真机验收（用户亲手） | 否 | T11.1–T11.5 | D13、D17 ③ | [ ] |
 | 11 看得全、装得上 | T11.9 1.9.0 正式版（或 1.9.0-beta.7）收尾与发版 | 是 | T11.1–T11.8、T11.10 的 README 部分 | D3、D13、D17 ⑥ | [ ] |
 | 11 看得全、装得上 | T11.10 首发准备（README 定位改版、帖子草稿；发帖由用户亲手） | 否 | T11.8 | D13、D17 ① | [ ] |
-| 12 追上差距 | T12.1 节奏行扩到所有平台 | 是（UI 小改） | — | D19 ③ | [ ] |
+| 12 追上差距 | T12.1 节奏行扩到所有平台 | 是（UI 小改） | — | D19 ③ | [x] |
 | 12 追上差距 | T12.2 Kimi Code 订阅额度（非官方接口） | 是 | — | D19 ② | [ ] |
 | 12 追上差距 | T12.3 Gemini CLI 本机用量 | 是 | — | D19 | [ ] |
 | 12 追上差距 | T12.4 Kimi Code CLI 本机用量 | 是 | — | D19 | [ ] |
@@ -573,6 +573,7 @@
 | 2026-11-01 | 内部收尾（smoke 覆盖、上游检查、第 5 节整理） | `task/smoke-coverage`：`ce2081b`；分支 CI `41288371774`（两个平台与 winget 作业通过）；分支 Release 试跑 `41288387805`（windows / mac / release 均 success，两个平台的打包原生 smoke 都含新增两段） | 424 项不变：本机 418 / 0 / 6（只改 smoke 与文档）；ESLint 0 个错误、35 个警告；typecheck、`prettier --check` 通过 | ②：开发版隔离原生 smoke ok；CI 上 Mac 与 Windows 打包 smoke ok（Windows 走 4 步向导，含固定托盘图标一步），Windows 证据里有 8 张单账户悬浮窗截图。上游检查 ①：在 main 上手动跑 `41287689869`，Codex 0.166.0、Harness 0.2.1-rc.5 兼容性检查均「兼容」 | **向导**（`desktop/smoke/onboarding-native-smoke.cjs`）：smoke 的合成 Command Code 凭据改到这一段之后才配置；smoke 自带的旧版 Zcode 来源只在内存里暂时拿掉（不写盘），结束后放回。检查：空白配置时总览出现向导、步骤标题（Mac 3 步 / Windows 4 步）、10 个平台方块、没有全部账户网格和仪表盘；选 Kimi 国际站 → 填合成 Key → 连接后向导不关闭、停在「本机工具」并显示已连接；完成后 `setupWizard=false`、不再出现，Windows 上 `trayPinHint` 也变为 false（之后恢复，供总览段检查）；关掉连接提示，移除合成账户。**单账户悬浮窗**（`single-widget-native-smoke.cjs`，最后一段）：只保留 Codex 账户检查一次，再依次只连 GLM、MiniMax、火山、OpenCode Go、OpenRouter、DeepSeek、Kimi，检查收起（最多 2 个窗口 / 每个币种）与展开（全部窗口 / 每个币种的明细）、没有 NaN / undefined、展开前后底边不动，展开时截图。**第 5 节**：4 条过期状态改为已处理或补上复测结果；修正表格中间多出的空行；新增 minimatch 一条。CHANGELOG「未发布」补一条工程说明 | Claude 的单账户悬浮窗仍未覆盖（需要本机统计组件，放在最后一段代价大）；向导的「添加本机工具」按钮没有点（会弹原生选择器）。vite 6.4.5（11-04）、fast-uri 3.1.9（11-02）满两周后各做一次依赖更新；minimatch 等 electron-builder 升级 |
 | 2026-11-03 | 依赖更新（vite、fast-uri） | `task/deps-vite-fast-uri`：`96141e6`；分支 CI `41563285764`（两个平台与 winget 作业通过）；分支 Release 试跑 `41563302082`（windows / mac / release 均 success） | 424 项不变：本机 418 / 0 / 6；ESLint 0 个错误、35 个警告；typecheck、`prettier --check`、build（Vite 6.4.5）通过；`pnpm audit --prod` 无已知漏洞 | ①＋②：开发版隔离原生 smoke ok；CI 两个平台打包 smoke ok。`pnpm run dev` 等价命令起开发服务器（Vite 6.4.5）页面正常、无控制台错误，`/.git/HEAD`、`?raw`、`?import&raw` 均返回 403。不出包（只改开发 / 构建期依赖，不改应用行为） | **vite** 6.4.4 → 6.4.5（直接依赖，修 GHSA-8g5g-mxqh-grgj）：6.4.5 于 2026-10-21 发布，差一天满两周，**用户 2026-11-03 决定破例**（先例 D12 ①），写进 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 并注明原因；**fast-uri** 3.1.8 → 3.1.9（electron-builder > app-builder-lib > ajv，范围 `^3.0.1`，2026-10-19 发布，已满两周）：用临时 overrides `'ajv>fast-uri': ^3.1.9` 安装后删掉 overrides 重装，锁文件保留 3.1.9，工作区不留 overrides。对应的 6 条 Dependabot 告警应随推送关闭 | minimatch（构建期，见第 5 节）等 electron-builder 升级。本机没有全局 pnpm，`.claude/launch.json`（不入库）加了一个直接用 node 起开发服务器的配置 |
 | 2026-11-03 | D18 追赶模式（流程调整） | 第 1 节加 D18，第 0.2 节标准流程、界面确认流程、版本说明随之改；AGENTS 第 7 节重写（追赶模式），第 8 节界面规则、第 9 节 smoke 冻结、开头工作方式同步；PROJECT_HANDOFF 下一步写明。`task/D18-catch-up-mode` | 不变（只改文档） | 不涉及 | 竞品差距清单待阶段 11 收尾后做（D18 ⑨） |
+| 2026-11-03 | T12.1 | 其他平台的额度窗口按「已用百分比」写进采样历史（只取有重置时间的窗口），沿用同一预测；面板节奏行与平台总览对所有有额度窗口的账户显示，余额账户不显示。`task/T12.1-pace-all` `acba683`，CI `41568283263` 通过 | 426：420 / 0 / 6 | ①＋②（开发版 smoke ok）；浅色 / 深色截图在 `work/t12/shots/`（不入库），节点一并看 | 真实账户上要连续采样 10 分钟以上才会出现节奏行，未在真机上看过 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
