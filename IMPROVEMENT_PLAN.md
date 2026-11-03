@@ -137,7 +137,7 @@
 | 11 看得全、装得上 | T11.9 1.9.0 正式版（或 1.9.0-beta.7）收尾与发版 | 是 | T11.1–T11.8、T11.10 的 README 部分 | D3、D13、D17 ⑥ | [ ] |
 | 11 看得全、装得上 | T11.10 首发准备（README 定位改版、帖子草稿；发帖由用户亲手） | 否 | T11.8 | D13、D17 ① | [ ] |
 | 12 追上差距 | T12.1 节奏行扩到所有平台 | 是（UI 小改） | — | D19 ③ | [x] |
-| 12 追上差距 | T12.2 Kimi Code 订阅额度（非官方接口） | 是 | — | D19 ② | [ ] |
+| 12 追上差距 | T12.2 Kimi Code 订阅额度（非官方接口） | 是 | — | D19 ② | [x] |
 | 12 追上差距 | T12.3 Gemini CLI 本机用量 | 是 | — | D19 | [ ] |
 | 12 追上差距 | T12.4 Kimi Code CLI 本机用量 | 是 | — | D19 | [ ] |
 | 12 追上差距 | T12.5 Qwen Code 本机用量 | 是 | — | D19 | [ ] |
@@ -574,6 +574,7 @@
 | 2026-11-03 | 依赖更新（vite、fast-uri） | `task/deps-vite-fast-uri`：`96141e6`；分支 CI `41563285764`（两个平台与 winget 作业通过）；分支 Release 试跑 `41563302082`（windows / mac / release 均 success） | 424 项不变：本机 418 / 0 / 6；ESLint 0 个错误、35 个警告；typecheck、`prettier --check`、build（Vite 6.4.5）通过；`pnpm audit --prod` 无已知漏洞 | ①＋②：开发版隔离原生 smoke ok；CI 两个平台打包 smoke ok。`pnpm run dev` 等价命令起开发服务器（Vite 6.4.5）页面正常、无控制台错误，`/.git/HEAD`、`?raw`、`?import&raw` 均返回 403。不出包（只改开发 / 构建期依赖，不改应用行为） | **vite** 6.4.4 → 6.4.5（直接依赖，修 GHSA-8g5g-mxqh-grgj）：6.4.5 于 2026-10-21 发布，差一天满两周，**用户 2026-11-03 决定破例**（先例 D12 ①），写进 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 并注明原因；**fast-uri** 3.1.8 → 3.1.9（electron-builder > app-builder-lib > ajv，范围 `^3.0.1`，2026-10-19 发布，已满两周）：用临时 overrides `'ajv>fast-uri': ^3.1.9` 安装后删掉 overrides 重装，锁文件保留 3.1.9，工作区不留 overrides。对应的 6 条 Dependabot 告警应随推送关闭 | minimatch（构建期，见第 5 节）等 electron-builder 升级。本机没有全局 pnpm，`.claude/launch.json`（不入库）加了一个直接用 node 起开发服务器的配置 |
 | 2026-11-03 | D18 追赶模式（流程调整） | 第 1 节加 D18，第 0.2 节标准流程、界面确认流程、版本说明随之改；AGENTS 第 7 节重写（追赶模式），第 8 节界面规则、第 9 节 smoke 冻结、开头工作方式同步；PROJECT_HANDOFF 下一步写明。`task/D18-catch-up-mode` | 不变（只改文档） | 不涉及 | 竞品差距清单待阶段 11 收尾后做（D18 ⑨） |
 | 2026-11-03 | T12.1 | 其他平台的额度窗口按「已用百分比」写进采样历史（只取有重置时间的窗口），沿用同一预测；面板节奏行与平台总览对所有有额度窗口的账户显示，余额账户不显示。`task/T12.1-pace-all` `acba683`，CI `41568283263` 通过 | 426：420 / 0 / 6 | ①＋②（开发版 smoke ok）；浅色 / 深色截图在 `work/t12/shots/`（不入库），节点一并看 | 真实账户上要连续采样 10 分钟以上才会出现节奏行，未在真机上看过 |
+| 2026-11-03 | T12.2 | 新平台 Kimi Code 订阅（国内 kimi.com / 国际 kimi.ai）：`GET /coding/v1/usages`，用户自己的 Key，比例池优先、旧计数补缺，只显示百分比，界面 / README / PRIVACY 标「非官方接口」；调研见 `docs/research/KIMI-CODE.md`。同版本升级 profile 改为 11 个平台；向导 smoke 按全名点「Kimi 开放平台」。`task/T12.2-kimi-code` `96af3ae`、`7a120e2`；CI `41569754192`、Release 试跑 `41569773295`（改了 smoke）通过 | 431：425 / 0 / 6 | ①＋②；截图在 `work/t12/shots/` | 没有真实 Kimi Code 账户核对过（样例来自第三方工具） |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
