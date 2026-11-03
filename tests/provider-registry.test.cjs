@@ -9,11 +9,13 @@ const { createClient, ORIGINS } = require('../desktop/providers.cjs');
 const { fixtureBody } = require('../desktop/provider-fixture.cjs');
 
 // T5.3a: the registry must reproduce the pre-refactor platform list, official pages and client behaviour exactly.
-// Platforms added later are listed explicitly (T10.1: kimi, T10.2: openrouter) and covered by their own tests.
+// Platforms added later are listed explicitly (T10.1: kimi, T10.2: openrouter, T12.2: kimi-code) and covered by
+// their own tests.
 const IDS = [
   'opencode-go',
   'deepseek',
   'kimi',
+  'kimi-code',
   'openrouter',
   'codex',
   'claude',
@@ -38,6 +40,7 @@ test('the registry holds exactly the original platforms plus the added ones, in 
     'opencode-go',
     'deepseek',
     'kimi',
+    'kimi-code',
     'openrouter',
     'glm',
     'minimax',
@@ -48,6 +51,7 @@ test('the registry holds exactly the original platforms plus the added ones, in 
     'opencode-go': 'quota',
     deepseek: 'balance',
     kimi: 'balance',
+    'kimi-code': 'quota',
     openrouter: 'quota',
     codex: 'subscription',
     claude: 'subscription',
@@ -66,6 +70,10 @@ const OFFICIAL = [
   ['kimi', 'cn', {}, 'usage', 'https://platform.kimi.com'],
   ['kimi', 'global', {}, 'studio', 'https://platform.kimi.ai'],
   ['kimi', 'eu', {}, 'usage', null],
+  // T12.2: Kimi Code's console on each site.
+  ['kimi-code', 'cn', {}, 'usage', 'https://www.kimi.com/code/console'],
+  ['kimi-code', 'global', {}, 'studio', 'https://www.kimi.ai/code/console'],
+  ['kimi-code', 'eu', {}, 'usage', null],
   ['openrouter', 'global', {}, 'usage', 'https://openrouter.ai/settings/keys'],
   ['openrouter', 'cn', {}, 'studio', null],
   ['codex', 'local', {}, 'usage', 'https://chatgpt.com/codex/settings/usage'],
@@ -151,12 +159,12 @@ test('every quota and balance client behaves exactly as before the registry refa
     fs.readFileSync(path.join(__dirname, 'fixtures', 'provider-behaviour-snapshot.json'), 'utf8'),
   );
   const actual = {};
-  // The snapshot covers the platforms that existed at the refactor; later ones (T10.1 kimi, T10.2 openrouter) have
-  // their own tests.
+  // The snapshot covers the platforms that existed at the refactor; later ones (T10.1 kimi, T10.2 openrouter, T12.2
+  // kimi-code) have their own tests.
   const snapshotted = [...new Set(Object.keys(expected).map((k) => k.split(':')[0]))];
   assert.deepEqual(
     Object.keys(ORIGINS).filter((p) => !snapshotted.includes(p)),
-    ['kimi', 'openrouter'],
+    ['kimi', 'kimi-code', 'openrouter'],
   );
   for (const [provider, regions] of Object.entries(ORIGINS).filter(([p]) => snapshotted.includes(p)))
     for (const region of Object.keys(regions)) {

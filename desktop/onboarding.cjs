@@ -21,6 +21,7 @@ const ORDER = [
   'minimax',
   'volcengine',
   'opencode-go',
+  'kimi-code',
   'codex',
   'claude',
   'deepseek',

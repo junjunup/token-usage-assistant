@@ -20,6 +20,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 | Kimi 开放平台 | 可用余额、代金券余额、现金余额 | 国内 `api.moonshot.cn` / 国际 `api.moonshot.ai`（按你选的站点） |
 | OpenRouter | 这把 Key 的花费上限、预算和已报告花费（USD）；接口同时返回的 Key 名称、用户 / 组织 / 工作区编号等不保存 | `openrouter.ai` |
 | OpenCode Go | 三个周期的用量百分比 | `opencode.ai` |
+| Kimi Code 订阅 | 5 小时、每周与每月额度的百分比和重置时间、会员等级；**非官方接口**（Kimi 没有公开文档，字段来自第三方工具的整理） | 国内 `api.kimi.com` / 国际 `api.kimi.ai`（按你选的站点） |
 | Codex 订阅 | 账户与额度窗口 | 不联网；只调用本机官方 Codex 程序的 4 个只读方法 |
 | Claude 订阅 | 额度窗口 | 不联网；来自你用生成的启动脚本运行的 Claude Code 状态栏 |
 
@@ -78,6 +79,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 | Kimi open platform | available, voucher and cash balance | China `api.moonshot.cn` / international `api.moonshot.ai` (the site you choose) |
 | OpenRouter | this key's spend limit, budgets and reported spend (USD); the key label and user / organization / workspace ids it also returns are not kept | `openrouter.ai` |
 | OpenCode Go | usage percentages of three periods | `opencode.ai` |
+| Kimi Code subscription | percentages and reset times of the 5-hour, weekly and monthly quotas, membership level; an **unofficial endpoint** (Kimi publishes no documentation; the fields come from third-party tools) | China `api.kimi.com` / international `api.kimi.ai` (the site you choose) |
 | Codex subscription | account and quota windows | no network; four read-only methods of the official local Codex program |
 | Claude subscription | quota windows | no network; from the Claude Code status line when you start it with the generated launcher |
 

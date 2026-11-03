@@ -8,6 +8,7 @@ import {
   normalizeVolcengine,
   normalizeOpenCodeGo,
   normalizeOpenRouter,
+  normalizeKimiCode,
   quota,
 } from './generated/provider-domain.js';
 import { normalizeDeepSeek, normalizeKimi } from './generated/balance-domain.js';
@@ -118,6 +119,8 @@ for (const [provider, normalize] of Object.entries({
   'opencode-go': normalizeOpenCodeGo,
   // T10.2: an OpenRouter key with a monthly limit and one member budget (official example shape).
   openrouter: normalizeOpenRouter,
+  // T12.2: Kimi Code ratio pools (shape documented by third-party tools; no official sample).
+  'kimi-code': normalizeKimiCode,
 })) {
   snapshots[provider] = {
     parts: { credits: normalize(fixtureBody(provider, now), now) },

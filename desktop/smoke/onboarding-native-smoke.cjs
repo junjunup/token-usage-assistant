@@ -53,7 +53,7 @@ async function runOnboardingSmoke({ accounts, toolSources, mainWindow, settings,
       false,
     );
     checks.shownOnEmptyProfile = true;
-    await click(main, '.wz-tile', 'Kimi');
+    await click(main, '.wz-tile', 'Kimi 开放平台');
     await until(main, "document.querySelectorAll('.wz-chip').length===2");
     await click(main, '.wz-chip', '国际');
     await click(main, '.wz-actions .button.primary', '下一步');

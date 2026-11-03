@@ -5,6 +5,7 @@ const REGISTRY = Object.freeze(
     'opencode-go',
     'deepseek',
     'kimi',
+    'kimi-code',
     'openrouter',
     'codex',
     'claude',
