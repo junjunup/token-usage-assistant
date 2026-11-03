@@ -14,6 +14,7 @@ export const kindName = (kind) =>
     'claude-code': 'Claude Code',
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
+    'qwen-code': 'Qwen Code',
   })[kind] || kind;
 const stamp = (value) =>
   value
@@ -219,6 +220,7 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
                 label: 'Kimi Code CLI',
                 description: '选择 Kimi Code 目录 · 只读每次调用的用量记录',
               },
+              { value: 'qwen-code', label: 'Qwen Code', description: '选择 Qwen Code 目录 · 只读会话用量计数' },
             ]}
           />
         </label>

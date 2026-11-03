@@ -18,7 +18,7 @@
 ## 能做什么
 
 - **平台额度与余额**：5 小时 / 每周 / 月度窗口剩余多少、什么时候重置；按量平台的余额。多个账户（最多 20 个）各自刷新、各自提醒。
-- **本机工具用量**：Codex、Claude Code、Gemini CLI、Kimi Code CLI、Zcode、OpenCode、DeepSeek Harness 的 Token、请求、模型与项目分布；可按自己填的单价估算费用（USD / CNY 分开）。
+- **本机工具用量**：Codex、Claude Code、Gemini CLI、Kimi Code CLI、Qwen Code、Zcode、OpenCode、DeepSeek Harness 的 Token、请求、模型与项目分布；可按自己填的单价估算费用（USD / CNY 分开）。
 - **随时瞄一眼**：Mac 菜单栏图标与面板、Windows 托盘、置顶悬浮窗；深浅色主题。
 - **说实话**：数据缺失显示「—」而不是 0；平台额度和本机用量各算各的、不相加；覆盖不全时不做对比。
 
@@ -44,6 +44,7 @@
 | 工具用量 | Codex、Claude Code | 本机 rollout 文件 / OTLP 事件的用量元数据 | 样例验证 |
 | 工具用量 | Gemini CLI | 本机会话文件里每条回复的用量计数（结构取自官方开源代码） | 样例验证 |
 | 工具用量 | Kimi Code CLI | 本机会话里每次模型调用的用量记录（结构取自官方开源代码） | 样例验证 |
+| 工具用量 | Qwen Code | 本机会话文件里每条回复的用量计数（结构取自官方开源代码） | 样例验证 |
 | 工具用量 | DeepSeek Harness | 可选本机插件导出 | 样例验证（另在官方运行时上跑契约测试） |
 
 编程工具升级后照样能读：应用按数据结构而不是版本号判断，新版本只要核心用量字段没变就照常统计；字段有变化时会在来源卡片上提示。每周还会自动检查上游新版本是否兼容（Codex、Harness）。

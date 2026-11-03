@@ -2,7 +2,7 @@
 // derive kinds, default labels, inspection, scanning and overlap checks from here. Plain Node only (no electron),
 // so the worker thread can load it too; readers are required only when used.
 const TOOL_KINDS = Object.freeze(
-  ['zcode', 'harness', 'codex', 'claude-code', 'opencode', 'gemini-cli', 'kimi-code-cli'].map((kind) =>
+  ['zcode', 'harness', 'codex', 'claude-code', 'opencode', 'gemini-cli', 'kimi-code-cli', 'qwen-code'].map((kind) =>
     require('./' + kind + '.cjs'),
   ),
 );
