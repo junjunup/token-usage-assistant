@@ -795,6 +795,7 @@ export function AnalyticsPage({
                     'claude-code': 'Claude Code',
                     'gemini-cli': 'Gemini CLI',
                     'kimi-code-cli': 'Kimi Code',
+                    'qwen-code': 'Qwen Code',
                   }[item.kind] || item.kind}
                 </small>
               </label>

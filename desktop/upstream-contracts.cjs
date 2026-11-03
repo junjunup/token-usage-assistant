@@ -67,6 +67,20 @@ function kimiCodeUsageViolation(u) {
   return null;
 }
 
+/**
+ * Qwen Code `usageMetadata` (T12.5, Gemini API names): prompt, candidates and total counts are core; cached,
+ * thoughts and tool-use prompt optional. Every present count must be a non-negative integer.
+ * @param {any} u
+ * @returns {string|null} why the counts break the contract, or null
+ */
+function qwenUsageViolation(u) {
+  if (!u || typeof u !== 'object' || Array.isArray(u)) return 'shape';
+  if (!count(u.promptTokenCount) || !count(u.candidatesTokenCount) || !count(u.totalTokenCount)) return 'core';
+  for (const key of ['cachedContentTokenCount', 'thoughtsTokenCount', 'toolUsePromptTokenCount'])
+    if (u[key] !== undefined && u[key] !== null && !count(u[key])) return 'type';
+  return null;
+}
+
 const SOURCE_OPTIONAL = Object.freeze({
   codex: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write', 'reasoning']),
   claude: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write']),
@@ -163,6 +177,7 @@ module.exports = {
   claudeUsageViolation,
   geminiUsageViolation,
   kimiCodeUsageViolation,
+  qwenUsageViolation,
   missingOptional,
   contractState,
   partialNote,
