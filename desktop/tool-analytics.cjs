@@ -286,7 +286,7 @@ function normalizedPrices(prices) {
 function normalizeSubscriptionRecord(wire, sourceId) {
   if (
     !wire ||
-    !['codex', 'claude-code'].includes(wire.tool) ||
+    !['codex', 'claude-code', 'gemini-cli'].includes(wire.tool) ||
     !number(wire.timestamp) ||
     wire.timestamp <= 0 ||
     !wire.attemptId ||
@@ -317,7 +317,7 @@ function normalizeSubscriptionRecord(wire, sourceId) {
       at: wire.timestamp,
       updatedAt: wire.updatedAt || wire.timestamp,
       revision: wire.revision || 0,
-      provider: wire.tool === 'codex' ? 'openai' : 'anthropic',
+      provider: wire.tool === 'codex' ? 'openai' : wire.tool === 'gemini-cli' ? 'google' : 'anthropic',
       model: wire.model,
       project: wire.project,
       status: wire.status,
@@ -333,7 +333,13 @@ function normalizeSubscriptionRecord(wire, sourceId) {
     extra: base !== null && total !== null ? total - base : null,
     invalidUsage,
     usageReported: [input, output, total, read, write].some((v) => v !== null),
-    provenance: wire.tool === 'codex' ? 'codex-rollout/reported-snapshot' : 'claude-code/otel-api-event',
+    provenance:
+      wire.tool === 'codex'
+        ? 'codex-rollout/reported-snapshot'
+        : wire.tool === 'gemini-cli'
+          ? 'gemini-cli/session-response'
+          : 'claude-code/otel-api-event',
+    // T12.3: one Gemini CLI response record per model reply.
     recordUnit: wire.tool === 'codex' ? 'usage-observation' : 'request',
   };
 }

@@ -40,9 +40,25 @@ function claudeUsageViolation(u) {
 }
 
 /** The optional fields each source can report (Claude Code reports no reasoning tokens at all). */
+/**
+ * Gemini CLI `tokens` of a model response (T12.3): input, output and total are core; cached, thoughts and tool
+ * optional. Every present count must be a non-negative integer.
+ * @param {any} t
+ * @returns {string|null} why the counts break the contract, or null
+ */
+function geminiUsageViolation(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return 'shape';
+  if (!count(t.input) || !count(t.output) || !count(t.total)) return 'core';
+  for (const key of ['cached', 'thoughts', 'tool'])
+    if (t[key] !== undefined && t[key] !== null && !count(t[key])) return 'type';
+  return null;
+}
+
 const SOURCE_OPTIONAL = Object.freeze({
   codex: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write', 'reasoning']),
   claude: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write']),
+  // Gemini has no cache-write count, so only reads and reasoning (thoughts) can be missing.
+  gemini: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'reasoning']),
 });
 
 /**
@@ -130,6 +146,7 @@ module.exports = {
   SOURCE_OPTIONAL,
   codexUsageViolation,
   claudeUsageViolation,
+  geminiUsageViolation,
   missingOptional,
   contractState,
   partialNote,

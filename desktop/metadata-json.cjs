@@ -41,7 +41,17 @@ function projectJSON(source, selection) {
           ws();
           if (source[i++] !== ':') throw new Error('json');
         }
-        const child = sel === true ? true : obj && sel && Object.hasOwn(sel, key) ? sel[key] : false,
+        // An array selection [rule] applies its one rule to every element (T12.3); objects select by key.
+        const child =
+            sel === true
+              ? true
+              : obj
+                ? sel && Object.hasOwn(sel, key)
+                  ? sel[key]
+                  : false
+                : Array.isArray(sel)
+                  ? sel[0]
+                  : false,
           v = value(child, depth + 1);
         if (child) {
           if (obj) out[key] = v;

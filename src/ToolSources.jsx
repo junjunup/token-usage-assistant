@@ -6,9 +6,14 @@ import { Select } from './Select.jsx';
 import './tool-sources.css';
 
 export const kindName = (kind) =>
-  ({ opencode: 'OpenCode', harness: 'DeepSeek Harness', zcode: 'Zcode', codex: 'Codex', 'claude-code': 'Claude Code' })[
-    kind
-  ] || kind;
+  ({
+    opencode: 'OpenCode',
+    harness: 'DeepSeek Harness',
+    zcode: 'Zcode',
+    codex: 'Codex',
+    'claude-code': 'Claude Code',
+    'gemini-cli': 'Gemini CLI',
+  })[kind] || kind;
 const stamp = (value) =>
   value
     ? new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -207,6 +212,7 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
               { value: 'claude-code', label: 'Claude Code', description: '选择本地组件导出的 usage.jsonl' },
               { value: 'zcode', label: 'Zcode', description: '只读 SQLite 用量元数据' },
               { value: 'harness', label: 'DeepSeek Harness', description: '统计插件导出的专用 JSONL 文件' },
+              { value: 'gemini-cli', label: 'Gemini CLI', description: '选择 Gemini CLI 目录 · 只读会话用量计数' },
             ]}
           />
         </label>

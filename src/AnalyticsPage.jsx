@@ -793,6 +793,7 @@ export function AnalyticsPage({
                     zcode: 'Zcode',
                     codex: 'Codex',
                     'claude-code': 'Claude Code',
+                    'gemini-cli': 'Gemini CLI',
                   }[item.kind] || item.kind}
                 </small>
               </label>

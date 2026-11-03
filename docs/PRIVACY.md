@@ -28,6 +28,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 - Zcode、OpenCode：只读打开它们的数据库，不修改。
 - Codex：读取本机 rollout 文件中的用量快照。
+- Gemini CLI：读取 `~/.gemini/tmp/<项目>/chats/` 下会话文件里每条模型回复的用量计数（输入、输出、缓存、思考、总量）、模型名、时间和编号；同一文件里的提示词、回复、思考过程、工具调用和摘要一律跳过，不解码、不保存。
 - Claude Code：只采集你通过生成的启动脚本运行之后的用量事件；本机组件只监听 `127.0.0.1`。
 - DeepSeek Harness：可选插件，只导出启用之后的用量元数据。
 
@@ -87,6 +88,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 
 - Zcode, OpenCode: their databases are opened read-only and never modified.
 - Codex: usage snapshots in local rollout files.
+- Gemini CLI: for each model reply in the session files under `~/.gemini/tmp/<project>/chats/`, its usage counts (input, output, cached, thoughts, total), model name, time and id; prompts, replies, thoughts, tool calls and summaries in the same files are skipped, never decoded or kept.
 - Claude Code: only usage events after you start it with the generated launcher; the local component listens on `127.0.0.1` only.
 - DeepSeek Harness: an optional plugin exports usage metadata from the time it is enabled.
 
