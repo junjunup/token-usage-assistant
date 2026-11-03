@@ -142,7 +142,7 @@
 | 12 追上差距 | T12.4 Kimi Code CLI 本机用量 | 是 | — | D19 | [x] |
 | 12 追上差距 | T12.5 Qwen Code 本机用量 | 是 | — | D19 | [x] |
 | 12 追上差距 | T12.6 自动发现本机工具 | 是（UI 小改） | T12.3–T12.5 | D19 | [x] |
-| 12 追上差距 | T12.7 Claude Code 状态栏显示全部账户额度（可选） | 是（新视觉元素，先给样例） | — | D19 ④ | [ ] |
+| 12 追上差距 | T12.7 Claude Code 状态栏显示全部账户额度（可选） | 是（新视觉元素，先给样例） | — | D19 ④ | [x] |
 | 12 追上差距 | T12.8 Windows 自动更新 | 是 | — | D19 ⑤ | [ ] |
 
 **2026-10-23 起的执行顺序（D12，用户按复盘推荐确认）**：T8.9 → T8.11 → T8.12 → T8.1 → T8.2 → T8.3 → T8.4 → T8.5 → T8.6 → T8.7 → T8.10 → T8.8（发布 1.9.0-beta.3）→ T6.1 → T6.2 / T6.3 → T8.14 → 按测量结果再定 T4.2 / T7.2。T8.13 等用户告知 Harness 版本后插入。仍然每次只做一个任务；T8.9–T8.12 不改应用行为，可以在稳固版各任务之间穿插。
@@ -579,6 +579,7 @@
 | 2026-11-03 | T12.4 | 新工具来源 Kimi Code CLI（种类 `kimi-code-cli`）：只读 `~/.kimi-code/sessions/**/wire.jsonl` 的 `usage.record`（每次模型调用一条，结构取自 MoonshotAI/kimi-code 官方源码），缓存读取缺失时输入总量未知；撤销照样计入，分叉复制只算一次，没有时间的记录跳过并提示。向导 smoke 改为 7 个工具。调研笔记 `work/t12/kimi-code-cli-notes.md`（不入库）。`task/T12.4-kimi-code-cli` `11e585f`；CI `41571142407`、Release 试跑 `41571165042` 通过 | 439：433 / 0 / 6 | ①＋②（开发版 smoke ok） | 本机没有装 Kimi Code，未在真实数据上核对 |
 | 2026-11-03 | T12.5 | 新工具来源 Qwen Code：只读 `~/.qwen/projects/*/chats/*.jsonl`（旧版 `tmp/*/chats`）里 assistant 记录的 `usageMetadata`，结构取自 QwenLM/qwen-code 官方源码，口径同 Gemini CLI；`/branch` 复制按 uuid 只算一次。字段名指纹按 T9.14 不记含 prompt / content 的计数名。向导 smoke 改为 8 个工具。`task/T12.5-qwen-code` `171e592`；CI `41571781048`、Release 试跑 `41571800273` 通过 | 442：436 / 0 / 6 | ①＋②（开发版 smoke ok） | 本机没有装 Qwen Code，未在真实数据上核对 |
 | 2026-11-03 | T12.6 | 自动发现本机工具：只检查各工具默认位置是否存在（Codex / Gemini / Kimi Code / Qwen 目录，OpenCode 与 Harness 导出文件），不读内容；向导「本机工具」与工具数据源表单标「本机已找到」并排在前面，添加仍走原生选择器（打开在找到的位置），符合 AGENTS §4。顺手去掉 Codex 选项里过时的「0.155.x」。`task/T12.6-discovery` `307867c`；CI `41572409433` 通过 | 443：437 / 0 / 6 | ①＋②（开发版 smoke ok）；截图在 `work/t12/shots/` | Windows 上 OpenCode 的默认位置未核实 |
+| 2026-11-03 | T12.7 | Claude Code 状态栏显示额度（用户选方案 C，设置 `claudeStatusQuota` 默认关闭）：组件 `/quota` 回复带回主进程算好的一行（本会话 5h / 7d 更紧的一个 + 最紧的其他账户），脚本只打印安全的单行，否则照旧；PowerShell 改为 UTF-8 输出。`task/T12.7-claude-statusline` `a2ac5fe`；CI `41573670140`、Release 试跑 `41573686034` 通过 | 445：439 / 0 / 6 | ①＋②；Mac 脚本端到端实跑（关 / 开 / 助手未运行三种输出正确）；截图在 `work/t12/shots/` | Windows 脚本「开」的路径没在真机上跑过（CI smoke 只覆盖关闭时）；没在真实 Claude Code 会话里看过 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
