@@ -34,9 +34,6 @@ jobs:
         run: |
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] || { echo "Invalid tag: $TAG"; exit 1; }
           echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
-          # T12.8: electron-builder names the update description after the version's channel (latest / beta / alpha).
-          V="${TAG#v}"; CH=latest; [[ "$V" == *-* ]] && { CH="${V#*-}"; CH="${CH%%.*}"; }
-          echo "CHANNEL=$CH" >> "$GITHUB_ENV"
 
       # T8.10: the tagged CHANGELOG.md provides this version's notes (the run fails if it has no section).
       - uses: actions/checkout@v7
@@ -56,7 +53,7 @@ jobs:
             -p "TokenUsageAssistant-Mac-arm64-$VERSION.dmg" \
             -p "TokenUsageAssistant-Mac-arm64-$VERSION.zip" \
             -p "TokenUsageAssistant-Setup-$VERSION.exe.blockmap" \
-            -p "$CHANNEL.yml"
+            -p latest.yml
           [ "$(ls public | wc -l)" -eq 6 ] || { echo "Expected 4 installers, the update description and .blockmap"; ls -l public; exit 1; }
           node source/scripts/verify-update-info.cjs --out public
 

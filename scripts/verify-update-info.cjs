@@ -1,6 +1,7 @@
-// T12.8: the update description electron-builder writes for the Setup build (latest.yml, or beta.yml / alpha.yml
-// for a pre-release) must name exactly this version's Setup EXE with its real size and SHA-512, and the .blockmap
-// must be next to it: electron-updater downloads that file and rejects it when the SHA-512 differs.
+// T12.8: the update description electron-builder writes for the Setup build (latest.yml, also for a pre-release:
+// electron-updater on a beta looks for beta.yml first and falls back to latest.yml) must name exactly this version's
+// Setup EXE with its real size and SHA-512, and the .blockmap must be next to it: electron-updater downloads that
+// file and rejects it when the SHA-512 differs.
 //   node scripts/verify-update-info.cjs --out <dir>
 // Runs without installed dependencies (the Publish workflow has only a source checkout), so the fixed format is
 // read with regular expressions instead of a YAML parser.
@@ -8,19 +9,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
+// Channel files electron-updater could read; only latest.yml may exist, so no older or stray file wins.
 const CHANNELS = ['latest', 'beta', 'alpha'];
-
-/** The channel electron-builder names the file after: latest for a release, else the pre-release word. */
-function channelOf(version) {
-  const m = /^\d+\.\d+\.\d+(?:-([a-z]+)\.\d+)?$/.exec(version);
-  if (!m) throw new Error('not a release version: ' + version);
-  return m[1] || 'latest';
-}
 
 /** @returns {{ file: string, version: string, path: string, sha512: string, size: number }} */
 function checkUpdateInfo(dir, version) {
   const present = CHANNELS.map((c) => c + '.yml').filter((f) => fs.existsSync(path.join(dir, f)));
-  const expected = channelOf(version) + '.yml';
+  const expected = 'latest.yml';
   if (present.length !== 1 || present[0] !== expected)
     throw new Error(`expected only ${expected}, found: ${present.join(', ') || 'none'}`);
   const text = fs.readFileSync(path.join(dir, expected), 'utf8');
@@ -48,4 +43,4 @@ if (require.main === module) {
   console.log(JSON.stringify(checkUpdateInfo(dir, version)));
 }
 
-module.exports = { checkUpdateInfo, channelOf };
+module.exports = { checkUpdateInfo };

@@ -9,7 +9,7 @@ const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const { AutoInstaller, canInstall, errorCode, OWNER, REPO } = require('../desktop/auto-update.cjs');
 const { REPOSITORY } = require('../desktop/update-check.cjs');
-const { checkUpdateInfo, channelOf } = require('../scripts/verify-update-info.cjs');
+const { checkUpdateInfo } = require('../scripts/verify-update-info.cjs');
 const { productionPackages, packageOf } = require('../scripts/production-deps.cjs');
 
 const root = path.join(__dirname, '..');
@@ -121,24 +121,28 @@ test('T12.8: the update description must name this Setup EXE with its real size 
   const sha512 = crypto.createHash('sha512').update(bytes).digest('base64');
   const yml = (o = {}) =>
     `version: ${o.version || v}\nfiles:\n  - url: ${o.url || setup}\n    sha512: ${o.sha || sha512}\n    size: ${o.size || bytes.length}\npath: ${o.url || setup}\nsha512: ${o.sha || sha512}\nreleaseDate: '2026-11-03T00:00:00.000Z'\n`;
-  assert.equal(channelOf(v), 'beta');
-  assert.equal(channelOf('1.9.0'), 'latest');
-  assert.throws(() => checkUpdateInfo(dir, v), /expected only beta\.yml, found: none/);
-  fs.writeFileSync(path.join(dir, 'beta.yml'), yml());
-  assert.deepEqual(checkUpdateInfo(dir, v), { file: 'beta.yml', version: v, path: setup, sha512, size: bytes.length });
+  assert.throws(() => checkUpdateInfo(dir, v), /expected only latest\.yml, found: none/);
+  fs.writeFileSync(path.join(dir, 'latest.yml'), yml());
+  assert.deepEqual(checkUpdateInfo(dir, v), {
+    file: 'latest.yml',
+    version: v,
+    path: setup,
+    sha512,
+    size: bytes.length,
+  });
   for (const [o, error] of [
     [{ version: '1.9.0-beta.6' }, /names version/],
     [{ url: 'Other.exe' }, /must name only/],
     [{ sha: 'AAAA' }, /SHA-512 differs/],
     [{ size: 3 }, /size 3 differs/],
   ]) {
-    fs.writeFileSync(path.join(dir, 'beta.yml'), yml(o));
+    fs.writeFileSync(path.join(dir, 'latest.yml'), yml(o));
     assert.throws(() => checkUpdateInfo(dir, v), error);
   }
-  fs.writeFileSync(path.join(dir, 'beta.yml'), yml());
   fs.writeFileSync(path.join(dir, 'latest.yml'), yml());
+  fs.writeFileSync(path.join(dir, 'beta.yml'), yml());
   assert.throws(() => checkUpdateInfo(dir, v), /found: latest\.yml, beta\.yml/);
-  fs.rmSync(path.join(dir, 'latest.yml'));
+  fs.rmSync(path.join(dir, 'beta.yml'));
   fs.rmSync(path.join(dir, setup + '.blockmap'));
   assert.throws(() => checkUpdateInfo(dir, v), /blockmap/);
 });
@@ -146,11 +150,11 @@ test('T12.8: the update description must name this Setup EXE with its real size 
 test('T12.8: release and publish carry the update description and .blockmap; the runtime dependencies are known', () => {
   const release = read('.github/workflows/release.yml'),
     publish = read('.github/workflows/publish.yml');
-  for (const f of ['TokenUsageAssistant-Setup-*.exe.blockmap', 'release-out/latest.yml', 'release-out/beta.yml'])
+  for (const f of ['TokenUsageAssistant-Setup-*.exe.blockmap', 'release-out/latest.yml'])
     assert.ok(release.includes(f), f);
   assert.match(release, /verify-update-info\.cjs --out release-out/);
   assert.match(release, /verify-update-info\.cjs --out artifacts/);
-  assert.match(publish, /-p "\$CHANNEL\.yml"/);
+  assert.match(publish, /-p latest\.yml/);
   assert.match(publish, /-eq 6/);
   assert.match(publish, /verify-update-info\.cjs --out public/);
   // Every packaged dependency comes from package.json "dependencies"; only electron-updater is direct.
