@@ -30,6 +30,7 @@ const { providerDefinition } = require('./providers/index.cjs');
 const { toolKind } = require('./tool-kinds/index.cjs');
 const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
+const { AutoInstaller, canInstall } = require('./auto-update.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
 const {
@@ -110,6 +111,7 @@ let accounts,
   claudeCollector,
   smokeRun,
   updates,
+  installer,
   diagnosticsText = '',
   connectionBusy = false,
   lockCheck = null;
@@ -164,6 +166,8 @@ function state() {
       status: updates?.state.status || 'idle',
       version: updates?.state.latest?.version || null,
       checkedAt: updates?.state.checkedAt || null,
+      // T12.8: only the installed Windows build can download and install the update itself (after two clicks).
+      install: installer?.supported ? installer.state : null,
     },
     // The active account's real refresh interval (Codex never polls faster than every 120 s).
     refreshInterval: accounts?.active?.monitor.intervalSeconds,
@@ -919,6 +923,19 @@ function installIpc() {
     mainOnly(event);
     return openUpdate();
   });
+  // T12.8: the first click downloads the announced update, the second quits and runs the installer.
+  handle('assistant:download-update', (event) => {
+    mainOnly(event);
+    if (!installer?.supported || updates?.state.status !== 'available') throw inputError('暂无可安装的新版本。');
+    installer.download();
+    return installer.state;
+  });
+  handle('assistant:install-update', (event) => {
+    mainOnly(event);
+    if (!installer?.install()) throw inputError('更新还没有下载完成。');
+    quitting = true;
+    return true;
+  });
   handle('assistant:test-notification', (event) => {
     mainOnly(event);
     if (!settings.notifications) throw inputError('请先开启额度提醒');
@@ -1122,6 +1139,10 @@ else {
       updates = new UpdateChecker({
         currentVersion: app.getVersion(),
         fetch: (...args) => net.fetch(...args),
+        onChange: () => broadcast(),
+      });
+      installer = new AutoInstaller({
+        supported: !smoke && canInstall({ platform: process.platform, isPackaged: app.isPackaged, env: process.env }),
         onChange: () => broadcast(),
       });
       setUpdateCheck();

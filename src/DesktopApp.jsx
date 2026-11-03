@@ -109,6 +109,49 @@ const MENUBAR_FORMS = [
   { value: 'value', label: '② 刻度环 + 数值' },
   { value: 'two', label: '③ 两行小字' },
 ];
+// T12.8: what the update note says while the installed Windows build downloads and installs a new version.
+const UPDATE_ERRORS = {
+  'not-found': '这个版本在安装包仓库里没有自动更新文件，请到发布页手动下载。',
+  integrity: '下载的安装包与校验值不一致，已放弃，请到发布页手动下载。',
+  failed: '下载没有完成，请检查网络后重试，或到发布页手动下载。',
+};
+function UpdateNote({ update, current, action }) {
+  const install = update.install,
+    button = (label, Icon, run) => (
+      <button className="text-button" onClick={() => action(run)}>
+        {label}
+        <Icon size={13} />
+      </button>
+    );
+  if (install?.status === 'checking') return <>正在查找 {update.version} 的安装包…</>;
+  if (install?.status === 'downloading')
+    return (
+      <>
+        正在下载 {install.version}
+        {num(install.percent) ? `（${install.percent}%）` : '…'}
+      </>
+    );
+  if (install?.status === 'ready')
+    return (
+      <>
+        {install.version} 已下载并核对
+        <span className="update-actions">{button('重启并安装', ArrowsClockwise, () => bridge.installUpdate())}</span>
+      </>
+    );
+  return (
+    <>
+      发现新版本 {update.version} · 当前 {current}
+      <span className="update-actions">
+        {install &&
+          button(install.status === 'failed' ? '重新下载' : '下载并安装', FileArrowDown, () => bridge.downloadUpdate())}
+        {button('查看新版本', ArrowSquareOut, () => bridge.openUpdate())}
+      </span>
+      {install?.status === 'failed' && (
+        <span className="update-error red-text">{UPDATE_ERRORS[install.error] || UPDATE_ERRORS.failed}</span>
+      )}
+    </>
+  );
+}
 // T7.7 (macOS menu bar); T11.2: the same settings for the Windows tray, without the icon form (ring only there).
 function MenubarSettings({ state, settings, pref, mac }) {
   const usage = settings.menubarUsage !== false;
@@ -1153,17 +1196,17 @@ export function DesktopApp() {
                       label: '开启开机启动',
                     },
                     {
-                      // T5.2: only tells the user; never downloads or installs anything.
+                      // T5.2: the check only tells the user. T12.8: the installed Windows build can also download
+                      // and install the update, each step only after a click.
                       title: '检查更新',
                       note:
                         settings.updateCheck && state.update?.status === 'available' ? (
-                          <>
-                            发现新版本 {state.update.version} · 当前 {state.version}{' '}
-                            <button className="text-button" onClick={() => action(() => bridge.openUpdate())}>
-                              查看新版本
-                              <ArrowSquareOut size={13} />
-                            </button>
-                          </>
+                          <UpdateNote update={state.update} current={state.version} action={action} />
+                        ) : state.update?.install ? (
+                          <Disclosure
+                            summary="每 24 小时检查一次；有新版本时点一下即可下载安装"
+                            detail="启动时和每 24 小时向 GitHub 请求公开版本列表，不发送账户或设备信息。发现新版本后，点「下载并安装」才从安装包仓库下载安装包并核对校验值，下载完再点「重启并安装」；不会自动下载，也不会在退出时自动安装。"
+                          />
                         ) : (
                           <Disclosure
                             summary="每 24 小时检查一次，只提示不下载"

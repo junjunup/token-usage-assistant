@@ -34,13 +34,13 @@ Windows 可用：`certutil -hashfile TokenUsageAssistant-Setup-<版本>.exe SHA2
 
 **为什么没有签名？安全吗？** 签名需要付费的开发者证书，目前没有购买。应用是开源的（MIT），安装包由 GitHub Actions 从公开的源码构建，哈希可以对照 `SHA256SUMS.txt`。应用读什么、不读什么、联网访问哪里，见 [隐私说明](PRIVACY.md)；签名的现状与计划见 [代码签名说明](CODE-SIGNING.md)。
 
-**会自动更新吗？** 不会。应用启动时和每 24 小时检查一次新版本，有新版时提示你，由你下载安装（可在「账户与设置」里关闭检查）。
+**会自动更新吗？** 不会自己更新。应用启动时和每 24 小时检查一次新版本，有新版时提示你（可在「账户与设置」里关闭检查）。Windows 安装版（自带自动更新功能的版本起）可以在「账户与设置 → 检查更新」里点「下载并安装」，下载并核对完再点「重启并安装」；便携版和 Mac 版仍由你自己下载安装。
 
 **数据存在哪？** 全部在本机，见 [隐私说明](PRIVACY.md#数据存在哪)。
 
 **怎么卸载干净？**
 - macOS：退出应用，把「应用程序」里的「Token 用量助手」移到废纸篓，再删除 `~/Library/Application Support/TokenUsageAssistant/`。钥匙串里名为 `TokenUsageAssistant Safe Storage` 的条目也可以在「钥匙串访问」里删除。
-- Windows：安装版在「设置 → 应用」里卸载，免安装版直接删除 exe；再删除 `%APPDATA%` 下本应用的文件夹。
+- Windows：安装版在「设置 → 应用」里卸载，免安装版直接删除 exe；再删除 `%APPDATA%` 下本应用的文件夹；用过「下载并安装」的，还可以删除 `%LOCALAPPDATA%\commandcode-companion-updater`（下载的安装包）。
 - 用过 DeepSeek Harness 插件的，另删 `~/.token-usage-assistant/`，并在 Harness 中卸载插件。
 
 **我用的编程工具升级了，还能读到吗？** 能。应用按数据结构读取，不按版本号：新版本只要用量的核心字段没变就照常统计。工具不再提供某些可选数据（例如缓存或推理 Token）时，这几项显示「—」并提示「部分字段缺失」；核心字段改名或消失时，会明确提示格式不兼容，不会猜。
@@ -75,9 +75,9 @@ Each release includes `SHA256SUMS.txt`. Compute the file's SHA256 and compare it
 
 **Why unsigned? Is it safe?** Signing requires paid developer certificates, which the project does not have yet. The app is open source (MIT); installers are built from the public source by GitHub Actions, and their hashes are listed in `SHA256SUMS.txt`. What the app reads and connects to is described in [Privacy](PRIVACY.md); signing status and plans are in [Code signing](CODE-SIGNING.md#english).
 
-**Does it update itself?** No. It checks for new versions at start and every 24 hours and tells you; you download and install (the check can be turned off in settings).
+**Does it update itself?** Not on its own. It checks for new versions at start and every 24 hours and tells you (the check can be turned off in settings). On the Windows installed build (from the version that adds it), click "下载并安装" under 账户与设置 → 检查更新, then "重启并安装" once it is downloaded and checked; the portable and Mac builds are updated by downloading them yourself.
 
-**How do I remove it completely?** macOS: quit, move the app to the Trash, delete `~/Library/Application Support/TokenUsageAssistant/`, and optionally the `TokenUsageAssistant Safe Storage` item in Keychain Access. Windows: uninstall Setup in Settings → Apps (or delete the Portable exe) and delete the app's folder under `%APPDATA%`. If you used the DeepSeek Harness plugin, also delete `~/.token-usage-assistant/` and remove the plugin in Harness.
+**How do I remove it completely?** macOS: quit, move the app to the Trash, delete `~/Library/Application Support/TokenUsageAssistant/`, and optionally the `TokenUsageAssistant Safe Storage` item in Keychain Access. Windows: uninstall Setup in Settings → Apps (or delete the Portable exe) and delete the app's folder under `%APPDATA%` (and, if you used the in-app update, `%LOCALAPPDATA%\commandcode-companion-updater`, the downloaded installers). If you used the DeepSeek Harness plugin, also delete `~/.token-usage-assistant/` and remove the plugin in Harness.
 
 **My coding tool updated — will it still work?** Yes. The app reads by data structure, not by version: a new version is counted as usual while its core usage fields are unchanged. Optional values the tool stops reporting (e.g. cache or reasoning tokens) show "—" with a "partial fields" note; if core fields are renamed or removed, the app says the format is incompatible instead of guessing.
 

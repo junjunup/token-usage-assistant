@@ -643,6 +643,21 @@ h1 > span {
   padding: 8px;
   margin-left: 14px;
 }
+/* T12.8: the update note's buttons sit on one row under the version line. */
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  margin-top: 2px;
+}
+.update-actions .text-button {
+  margin-left: 0;
+  padding: 4px 0;
+}
+.update-error {
+  display: block;
+  margin-top: 2px;
+}
 .text-button:hover,
 .quiet-note button:hover {
   color: var(--fg);

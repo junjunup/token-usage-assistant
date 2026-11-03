@@ -456,6 +456,21 @@ state.settings = {
 state.menubar = { hidden: new URLSearchParams(location.search).get('desktop-preview') === 'menubar-hidden' };
 if (new URLSearchParams(location.search).get('desktop-preview') === 'update-available')
   state.update = { status: 'available', version: '1.8.0-beta.8', checkedAt: now };
+// T12.8: the installed Windows build's download / install steps (?desktop-preview=update-install&install=<status>).
+if (new URLSearchParams(location.search).get('desktop-preview') === 'update-install') {
+  const status = new URLSearchParams(location.search).get('install') || 'idle';
+  state.update = {
+    status: 'available',
+    version: '1.9.0',
+    checkedAt: now,
+    install: {
+      status,
+      version: status === 'idle' || status === 'failed' ? null : '1.9.0',
+      percent: status === 'downloading' ? 42 : status === 'ready' ? 100 : null,
+      error: status === 'failed' ? 'integrity' : null,
+    },
+  };
+}
 // T9.13 (D15) preview (?desktop-preview=contract-states): a Codex source missing an optional counter (partial) and a
 // Claude source with incompatible events, next to the normal sources.
 if (new URLSearchParams(location.search).get('desktop-preview') === 'contract-states')
@@ -600,6 +615,8 @@ export const previewBridge = {
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
   openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
+  downloadUpdate: async () => ({ ok: false, error: '浏览器预览不下载安装包。' }),
+  installUpdate: async () => ({ ok: false, error: '浏览器预览不安装更新。' }),
   previewDiagnostics: async () => ({
     ok: true,
     value: JSON.stringify(

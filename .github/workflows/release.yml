@@ -51,6 +51,9 @@ jobs:
       # Also extracts app.asar from both EXEs (7-Zip is preinstalled on the runner) and requires it to match.
       - name: Package integrity (source match + embedded payloads)
         run: node scripts/verify-package.cjs --out release-out --report release-out/package-integrity.json --payloads
+      # T12.8: the update description electron-updater reads names this Setup EXE with its size and SHA-512.
+      - name: Update description matches the Setup EXE
+        run: node scripts/verify-update-info.cjs --out release-out
       # Upgrade check with real DPAPI: the previous v* tag is rebuilt from source (app.asar only, no installer)
       # and upgraded to this build in an isolated directory. The old package is a source rebuild of the tag,
       # not a downloaded release binary. The profile is chosen from the two versions (scripts/upgrade-profiles).
@@ -90,7 +93,11 @@ jobs:
           if-no-files-found: error
           path: |
             release-out/TokenUsageAssistant-Setup-*.exe
+            release-out/TokenUsageAssistant-Setup-*.exe.blockmap
             release-out/TokenUsageAssistant-Portable-*.exe
+            release-out/latest.yml
+            release-out/beta.yml
+            release-out/alpha.yml
             release-out/package-integrity.json
             release-out/smoke-result-windows.json
             release-out/upgrade-native-report.json
@@ -173,6 +180,7 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$V" ]]; then
             echo "Tag $GITHUB_REF_NAME does not match package.json version $V"; exit 1
           fi
+          node scripts/verify-update-info.cjs --out artifacts
           ls -l artifacts
       - name: Create draft prerelease (tag pushes only)
         if: startsWith(github.ref, 'refs/tags/v')

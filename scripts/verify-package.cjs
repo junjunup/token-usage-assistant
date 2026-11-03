@@ -33,8 +33,30 @@ const names = asar
   .map((p) => p.replace(/^[/\\]+/, ''))
   .filter((p) => !asar.statFile(archive, p).files);
 const checks = [];
+// T12.8: runtime dependencies (electron-updater and what it needs) are packaged under node_modules/; every such file
+// must belong to one of them and match the installed copy (a dependency's package.json only by name and version).
+const { productionPackages, packageOf } = require('./production-deps.cjs');
+const runtime = productionPackages(root);
+const dependencies = new Set();
 for (const p of names) {
   const name = p.replaceAll('\\', '/');
+  if (name.startsWith('node_modules/')) {
+    const owner = packageOf(name),
+      pkg = owner && runtime.get(owner.name);
+    assert.ok(pkg, 'unexpected packaged dependency file: ' + name);
+    dependencies.add(owner.name);
+    const bytes = asar.extractFile(archive, p);
+    if (owner.rest === 'package.json') {
+      const packed = JSON.parse(bytes);
+      assert.equal(packed.name + '@' + packed.version, pkg.name + '@' + pkg.version, 'dependency differs: ' + name);
+    } else
+      assert.equal(
+        digest(bytes),
+        digest(fs.readFileSync(path.join(pkg.dir, owner.rest))),
+        'dependency differs: ' + name,
+      );
+    continue;
+  }
   assert.ok(
     name === 'package.json' || name.startsWith('desktop/') || name.startsWith('dist/client/'),
     'unexpected packaged file: ' + name,
@@ -45,6 +67,7 @@ for (const p of names) {
     checks.push({ file: name, sha256 });
   }
 }
+assert.deepEqual([...dependencies].sort(), [...runtime.keys()].sort(), 'packaged runtime dependencies differ');
 const packaged = JSON.parse(asar.extractFile(archive, 'package.json'));
 for (const key of ['name', 'version', 'main', 'description']) assert.equal(packaged[key], source[key]);
 assert.ok(!packaged.devDependencies);
@@ -133,6 +156,7 @@ const { readFuses, mismatches } = require('./fuses.cjs');
     payloads,
     licenses,
     fuses,
+    dependencies: [...runtime.values()].map((d) => d.name + '@' + d.version),
     verifiedFiles: checks.length,
     desktopFiles: checks.filter((p) => p.file.startsWith('desktop/')).length,
     files,

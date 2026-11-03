@@ -11,6 +11,8 @@ Token 用量助手本身以 [MIT 许可证](LICENSE) 发布。安装包中还包
 | [@kurkle/color](https://github.com/kurkle/color)（Chart.js 的依赖） | 0.3.4 | MIT | 用量图表 |
 | [Phosphor Icons](https://github.com/phosphor-icons/react) | 2.1.10 | MIT | 界面图标 |
 | [Geist / Geist Mono](https://github.com/vercel/geist-font)（经 [Fontsource](https://fontsource.org/) 打包） | 5.3.0 | SIL Open Font License 1.1 | 界面字体 |
+| [electron-updater](https://github.com/electron-userland/electron-builder) 及其依赖 builder-util-runtime | 6.8.10 / 9.7.0 | MIT | Windows 安装版的自动更新（用户确认后下载、安装） |
+| electron-updater 的其余依赖：debug、ms、fs-extra、graceful-fs、jsonfile、universalify、js-yaml、lazy-val、lodash.escaperegexp、lodash.isequal、semver、tiny-typed-emitter、sax、argparse | 见 THIRD_PARTY_LICENSES.txt | MIT / ISC / BlueOak-1.0.0 / Python-2.0 | 同上 |
 
 开发与构建工具（Vite、electron-builder、ESLint、Prettier、TypeScript 等）只在构建时使用，不随安装包分发。
 
