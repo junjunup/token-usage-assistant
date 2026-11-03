@@ -6,6 +6,8 @@ module.exports = {
     type: 'file',
     title: '选择统计组件导出的 usage.jsonl',
     filters: [{ name: '专用用量导出', extensions: ['jsonl'] }],
+    // T12.6: where the bundled export plugin writes, relative to the home directory.
+    defaultFilePath: '.token-usage-assistant/harness/usage.jsonl',
   },
   inspect(item) {
     const { readManifest } = require('../harness-reader.cjs');

@@ -40,13 +40,24 @@ test('native pickers match the pre-refactor dialog options', () => {
     defaultHomePath: '.codex',
   });
   assert.deepEqual(toolKind('zcode').picker, { type: 'file', title: '选择 Zcode 用量数据库', filters: SQLITE });
+  // T12.6 adds only the default file the picker opens at, when it exists.
   assert.deepEqual(toolKind('opencode').picker, {
     type: 'file',
     title: '选择 OpenCode 的 opencode.db',
     filters: SQLITE,
+    defaultFilePath: '.local/share/opencode/opencode.db',
   });
-  for (const kind of ['harness', 'claude-code'])
-    assert.deepEqual(toolKind(kind).picker, { type: 'file', title: '选择统计组件导出的 usage.jsonl', filters: JSONL });
+  assert.deepEqual(toolKind('harness').picker, {
+    type: 'file',
+    title: '选择统计组件导出的 usage.jsonl',
+    filters: JSONL,
+    defaultFilePath: '.token-usage-assistant/harness/usage.jsonl',
+  });
+  assert.deepEqual(toolKind('claude-code').picker, {
+    type: 'file',
+    title: '选择统计组件导出的 usage.jsonl',
+    filters: JSONL,
+  });
 });
 
 test('Codex inspection keeps its directory requirement and message', () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, CaretDown, CaretRight, Check, Database, Info, PushPin } from '@phosphor-icons/react';
 import { ConnectionForm, verificationBadge } from './ProviderViews.jsx';
 import { kindName } from './ToolSources.jsx';
@@ -45,7 +45,7 @@ export function SetupHeading({ mac, onSkip }) {
   );
 }
 
-export function SetupWizard({ state, preview, connect, addSource, finish }) {
+export function SetupWizard({ state, preview, connect, addSource, discover, finish }) {
   const win = state.platform === 'win32';
   const [step, setStep] = useState(() => previewStep(preview)),
     [provider, setProvider] = useState('glm'),
@@ -53,10 +53,20 @@ export function SetupWizard({ state, preview, connect, addSource, finish }) {
     [connected, setConnected] = useState(() =>
       previewStep(preview) >= 2 ? { provider: 'glm', region: providerInfo('glm').regions[0].id } : null,
     ),
-    [pending, setPending] = useState(null);
+    [pending, setPending] = useState(null),
+    [found, setFound] = useState([]);
   const info = providerInfo(provider),
     steps = wizardSteps({ platform: state.platform, credential: info.credential }),
     sources = state.toolSources || [];
+  // T12.6: on the tools step, the tools with data at their default location come first, marked as found.
+  useEffect(() => {
+    if (step !== 2) return;
+    let live = true;
+    discover?.().then((r) => live && r?.ok && setFound(r.value));
+    return () => {
+      live = false;
+    };
+  }, [step, discover, sources.length]);
   function choose(id) {
     setProvider(id);
     setRegion(providerInfo(id).regions[0].id);
@@ -169,22 +179,33 @@ export function SetupWizard({ state, preview, connect, addSource, finish }) {
               用量？选你用的工具（只读用量元数据，不读对话内容）。这些统计与平台额度分开，不相加。
             </p>
             <div className="wz-tools">
-              {TOOLS.map(([kind, note]) => {
-                const added = sources.some((s) => s.kind === kind);
-                return (
-                  <div className="wz-tool" key={kind}>
-                    <Database size={16} />
-                    <span>
-                      <b>{kindName(kind)}</b>
-                      <small>{note}</small>
-                    </span>
-                    {added && <em className="wz-found">已添加</em>}
-                    <button className="button" disabled={!!pending || preview} onClick={() => add(kind)}>
-                      {pending === kind ? '正在添加' : added ? '再添加一个' : '添加'}
-                    </button>
-                  </div>
-                );
-              })}
+              {[...TOOLS]
+                .sort(([a], [b]) => Number(!found.some((f) => f.kind === a)) - Number(!found.some((f) => f.kind === b)))
+                .map(([kind, note]) => {
+                  const added = sources.some((s) => s.kind === kind),
+                    hit = found.find((f) => f.kind === kind);
+                  return (
+                    <div className="wz-tool" key={kind}>
+                      <Database size={16} />
+                      <span>
+                        <b>{kindName(kind)}</b>
+                        <small>{note}</small>
+                      </span>
+                      {added ? (
+                        <em className="wz-found">已添加</em>
+                      ) : (
+                        hit && (
+                          <em className="wz-found" title={'在 ' + hit.path + ' 找到用量数据，添加时会打开这个位置'}>
+                            本机已找到 {hit.path}
+                          </em>
+                        )
+                      )}
+                      <button className="button" disabled={!!pending || preview} onClick={() => add(kind)}>
+                        {pending === kind ? '正在添加' : added ? '再添加一个' : '添加'}
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
             <div className="wz-actions">
               <span>
