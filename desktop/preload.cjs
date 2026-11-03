@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld(
     openOfficial: (target) => call('assistant:official', target),
     testNotification: () => call('assistant:test-notification'),
     openUpdate: () => call('assistant:open-update'),
+    downloadUpdate: () => call('assistant:download-update'),
+    installUpdate: () => call('assistant:install-update'),
     previewDiagnostics: () => call('assistant:diagnostics-preview'),
     saveDiagnostics: () => call('assistant:diagnostics-save'),
     ready: () => call('assistant:renderer-ready'),

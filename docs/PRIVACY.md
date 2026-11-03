@@ -52,6 +52,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 - 只访问你已连接平台的上述官方地址。
 - 检查更新：启动时和每 24 小时访问一次 GitHub 的公开版本列表（`api.github.com`），不发送账户或设备信息；可在「账户与设置」里关闭。
+- 下载更新（只有 Windows 安装版，T12.8）：只有你在「检查更新」里点了「下载并安装」，才从安装包仓库 `junjunup/TokenUsageAssistant` 的发布页（`github.com` 及其下载服务器）读取更新说明文件并下载新版安装包，核对说明文件里的 SHA-512 后存到本机的 `%LOCALAPPDATA%\commandcode-companion-updater`；再点「重启并安装」才运行安装程序（带正常的安装界面）。不发送账户或设备信息，不会自动下载，也不会在退出时自动安装。安装包没有代码签名，校验值和安装包来自同一个发布页，可信程度与你手动从那里下载相同。便携版和 Mac 版只提示，不下载。
 - 没有统计、遥测或广告。
 
 ### 诊断信息
@@ -115,6 +116,7 @@ Only on your computer:
 
 - Only the official addresses above, for the platforms you connect.
 - Update check: at start and every 24 hours, GitHub's public release list (`api.github.com`), sending no account or device information; it can be turned off in settings.
+- Downloading an update (Windows installed build only, T12.8): only after you click "下载并安装" (download and install) does the app read the update description from the installer repository `junjunup/TokenUsageAssistant` (`github.com` and its download servers), download the new installer, check its SHA-512 and keep it in `%LOCALAPPDATA%\commandcode-companion-updater`; the installer (with its normal window) runs only after a second click. No account or device information is sent, nothing downloads on its own and nothing installs on quit. The installers are not code-signed: the checksum comes from the same release page, the same trust as downloading it there yourself. The portable and Mac builds only tell you.
 - No analytics, telemetry or ads.
 
 ### Diagnostics

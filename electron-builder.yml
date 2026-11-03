@@ -31,6 +31,13 @@ extraResources:
 win:
   icon: desktop/assets/app.ico
   signExecutable: false
+  # T12.8: the public installer repository (D8), so the Setup build gets its update description (latest.yml, also for
+  # a beta) and .blockmap, and app-update.yml inside the app. electron-builder never uploads: every build
+  # passes --publish never and the Publish workflow uploads the files. Only on Windows: macOS only tells (D4).
+  publish:
+    provider: github
+    owner: junjunup
+    repo: TokenUsageAssistant
   target:
     - target: nsis
       arch: [x64]

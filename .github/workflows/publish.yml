@@ -2,7 +2,8 @@ name: Publish
 
 # Manually publishes an already-built release to the public installer repository (D8).
 # It reuses the exact installers attached to the source repository's release for the tag (no rebuild) and
-# uploads only the four installers plus SHA256SUMS.txt: no source, no integrity JSON (they hold
+# uploads only the four installers, the Windows update description and .blockmap (T12.8: what the installed Windows
+# build's updater reads) plus SHA256SUMS.txt: no source, no integrity JSON (they hold
 # runner paths), no smoke reports. The source release must be published (not a draft); since the source repository
 # went public (2026-10-18) that release is public too, so the review gate is the dry_run (default), which prepares
 # and lists everything without publishing.
@@ -50,8 +51,11 @@ jobs:
             -p "TokenUsageAssistant-Setup-$VERSION.exe" \
             -p "TokenUsageAssistant-Portable-$VERSION.exe" \
             -p "TokenUsageAssistant-Mac-arm64-$VERSION.dmg" \
-            -p "TokenUsageAssistant-Mac-arm64-$VERSION.zip"
-          [ "$(ls public | wc -l)" -eq 4 ] || { echo "Expected exactly 4 installers"; ls -l public; exit 1; }
+            -p "TokenUsageAssistant-Mac-arm64-$VERSION.zip" \
+            -p "TokenUsageAssistant-Setup-$VERSION.exe.blockmap" \
+            -p latest.yml
+          [ "$(ls public | wc -l)" -eq 6 ] || { echo "Expected 4 installers, the update description and .blockmap"; ls -l public; exit 1; }
+          node source/scripts/verify-update-info.cjs --out public
 
       - name: Checksums and notes
         run: |
