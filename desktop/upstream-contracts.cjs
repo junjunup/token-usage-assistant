@@ -54,11 +54,26 @@ function geminiUsageViolation(t) {
   return null;
 }
 
+/**
+ * Kimi Code `usage.record` counts (T12.4): inputOther, output and inputCacheCreation are core (always present in
+ * Kimi Code's TokenUsage); inputCacheRead is optional. Every present count must be a non-negative integer.
+ * @param {any} u
+ * @returns {string|null} why the counts break the contract, or null
+ */
+function kimiCodeUsageViolation(u) {
+  if (!u || typeof u !== 'object' || Array.isArray(u)) return 'shape';
+  if (!count(u.inputOther) || !count(u.output) || !count(u.inputCacheCreation)) return 'core';
+  if (u.inputCacheRead !== undefined && u.inputCacheRead !== null && !count(u.inputCacheRead)) return 'type';
+  return null;
+}
+
 const SOURCE_OPTIONAL = Object.freeze({
   codex: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write', 'reasoning']),
   claude: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write']),
   // Gemini has no cache-write count, so only reads and reasoning (thoughts) can be missing.
   gemini: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'reasoning']),
+  // Kimi Code reports no reasoning count at all; only cache reads can be missing.
+  kimiCode: /** @type {(keyof typeof OPTIONAL)[]} */ (['read']),
 });
 
 /**
@@ -147,6 +162,7 @@ module.exports = {
   codexUsageViolation,
   claudeUsageViolation,
   geminiUsageViolation,
+  kimiCodeUsageViolation,
   missingOptional,
   contractState,
   partialNote,

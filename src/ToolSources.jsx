@@ -13,6 +13,7 @@ export const kindName = (kind) =>
     codex: 'Codex',
     'claude-code': 'Claude Code',
     'gemini-cli': 'Gemini CLI',
+    'kimi-code-cli': 'Kimi Code CLI',
   })[kind] || kind;
 const stamp = (value) =>
   value
@@ -213,6 +214,11 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
               { value: 'zcode', label: 'Zcode', description: '只读 SQLite 用量元数据' },
               { value: 'harness', label: 'DeepSeek Harness', description: '统计插件导出的专用 JSONL 文件' },
               { value: 'gemini-cli', label: 'Gemini CLI', description: '选择 Gemini CLI 目录 · 只读会话用量计数' },
+              {
+                value: 'kimi-code-cli',
+                label: 'Kimi Code CLI',
+                description: '选择 Kimi Code 目录 · 只读每次调用的用量记录',
+              },
             ]}
           />
         </label>
