@@ -251,6 +251,42 @@ test('quota reset, null usage and zero burn do not produce invented depletion da
   a.forEach((r) => (r.credits.five.used = null));
   assert.equal(forecast(a, now).windows[0].status, 'insufficient');
 });
+// T12.1: other platforms' windows (percent of the window) go through the same forecast, by window id.
+test('T12.1: percent windows get the same forecast rules, and Command Code windows only appear for its samples', () => {
+  const reset = now + 5 * 3600000;
+  const sample = (i, five, week, resetAt = reset) => ({
+    t: now - (12 - i) * 60000,
+    summary: null,
+    credits: null,
+    creditAt: now - (12 - i) * 60000,
+    windows: {
+      'glm:five': { used: five, cap: 100, resetAt, label: '5 小时窗口', group: '套餐共享额度' },
+      'glm:week': { used: week, cap: 100, resetAt: now + 6 * 86400000, label: '周窗口', group: '套餐共享额度' },
+    },
+  });
+  // 12 minutes, five-hour window +4 points a minute (36 left, 9 minutes), weekly window flat.
+  const records = Array.from({ length: 13 }, (_, i) => sample(i, 16 + 4 * i, 40));
+  const f = forecast(records, now);
+  assert.equal(f.available, true);
+  assert.equal(f.tokensPerMinute, null);
+  assert.equal(f.costPerHour, null);
+  assert.deepEqual(
+    f.windows.map((w) => [w.key, w.status, w.label]),
+    [
+      ['glm:five', 'before-reset', '5 小时窗口'],
+      ['glm:week', 'idle', '周窗口'],
+    ],
+  );
+  close(f.windows[0].minutesToCap, 9);
+  // A window reset inside the span: only samples with the latest reset time count, and they are too short.
+  const reset2 = records.map((r, i) => (i < 8 ? r : sample(i, 1, 40, reset + 3600000)));
+  assert.equal(forecast(reset2, now).windows[0].status, 'insufficient');
+  // Command Code samples still give its five-hour and weekly windows, and only those.
+  assert.deepEqual(
+    forecast(samples(), now).windows.map((w) => w.key),
+    ['five', 'week'],
+  );
+});
 test('history is account-isolated and deduplicates minute samples', (t) => {
   const file = path.join(temp(t), 'history.json'),
     h = new HistoryStore(file);

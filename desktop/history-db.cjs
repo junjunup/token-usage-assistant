@@ -7,7 +7,7 @@
 const { DatabaseSync } = require('node:sqlite');
 const { readJson } = require('./store.cjs');
 const { DAY } = require('./analytics-core.cjs');
-const { HistoryStore } = require('./history.cjs');
+const { HistoryStore, windowRecord } = require('./history.cjs');
 const { log } = require('./logger.cjs');
 
 const KEEP_MS = 31 * DAY,
@@ -101,16 +101,10 @@ class SqliteHistoryStore {
   }
   append(data) {
     if (!this.hash || !data.parts.summary || !data.updatedAt.summary) return;
-    const t = data.updatedAt.summary;
-    if (this.records.at(-1)?.t >= t) return;
-    const started = process.hrtime.bigint();
     const s = data.parts.summary,
       c = data.parts.credits;
-    let replaced = null;
-    if (this.records.at(-1) && Math.floor(this.records.at(-1).t / 60000) === Math.floor(t / 60000))
-      replaced = this.records.pop().t;
-    const record = {
-      t,
+    this.add({
+      t: data.updatedAt.summary,
       summary: {
         total: s.total,
         input: s.input,
@@ -121,7 +115,19 @@ class SqliteHistoryStore {
       },
       credits: c ? { five: c.five, week: c.week, purchased: c.purchased, monthly: c.monthly, free: c.free } : null,
       creditAt: data.updatedAt.credits || null,
-    };
+    });
+  }
+  appendWindows(data) {
+    const record = windowRecord(data);
+    if (this.hash && record) this.add(record);
+  }
+  add(record) {
+    const t = record.t;
+    if (this.records.at(-1)?.t >= t) return;
+    const started = process.hrtime.bigint();
+    let replaced = null;
+    if (this.records.at(-1) && Math.floor(this.records.at(-1).t / 60000) === Math.floor(t / 60000))
+      replaced = this.records.pop().t;
     this.records.push(record);
     this.records = this.records.filter((r) => r.t >= t - KEEP_MS).slice(-MAX_RECORDS);
     const hash = this.hash,

@@ -164,6 +164,7 @@ class AccountManager extends EventEmitter {
       persist: (data) => {
         scoped.saveCache(hash, data);
         if (entry.provider === 'commandcode') history.append(data);
+        else history.appendWindows(data);
       },
       notify: (alert) =>
         this.notify({ ...alert, accountLabel: entry.label, provider: entry.provider, accountId: entry.id }),

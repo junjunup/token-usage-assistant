@@ -112,7 +112,7 @@ export function AccountSwitcher({ state, onSelect, onManage }) {
     </div>
   );
 }
-export function ProviderDashboard({ state, onSettings }) {
+export function ProviderDashboard({ state, onSettings, pace = null }) {
   const [used, setUsed] = useState(false),
     c = state.data.parts.credits,
     info = providerInfo(state.provider),
@@ -135,6 +135,7 @@ export function ProviderDashboard({ state, onSettings }) {
         </span>
         <span>{c?.planName || info?.name}</span>
       </div>
+      {pace}
       <LocalConnectionStatus state={state} />
       {(state.data.errors.length > 0 || state.credentialIssue) && (
         <div className="inline-warning" role="status">

@@ -50,19 +50,24 @@ const WINDOW_NAME = /** @type {Record<string, string>} */ ({ five: '5 小时窗�
 function paceLine(p) {
   if (!p) return null;
   if (!p.available) return { tone: 'normal', text: '—', reason: String(p.reason || '账户采样不足') };
-  /** @type {{ key: string, status: string, minutesToCap?: number|null }[]} */
+  /** @type {{ key: string, status: string, minutesToCap?: number|null, label?: string|null, group?: string|null }[]} */
   const windows = Array.isArray(p.windows) ? p.windows : [];
+  // T12.1: other platforms' windows carry their own label; the group is added when two windows share a label.
+  const name = (/** @type {typeof windows[number]} */ w) =>
+    WINDOW_NAME[w.key] ||
+    (w.label
+      ? (w.group && windows.filter((x) => x.label === w.label).length > 1 ? w.group + ' ' : '') + w.label
+      : '窗口');
   const span = '按最近 ' + Math.round(p.minutes) + ' 分钟的速度，';
   const atLimit = windows.find((w) => w.status === 'at-limit');
-  if (atLimit) return { tone: 'red', text: (WINDOW_NAME[atLimit.key] || '窗口') + '已达上限', reason: null };
+  if (atLimit) return { tone: 'red', text: name(atLimit) + '已达上限', reason: null };
   const soon = windows
     .filter((w) => w.status === 'before-reset' && typeof w.minutesToCap === 'number')
     .sort((x, y) => Number(x.minutesToCap) - Number(y.minutesToCap))[0];
   if (soon)
     return {
       tone: 'amber',
-      text:
-        span + (WINDOW_NAME[soon.key] || '窗口') + '约 ' + duration(Number(soon.minutesToCap)) + '后触顶（早于重置）',
+      text: span + name(soon) + '约 ' + duration(Number(soon.minutesToCap)) + '后触顶（早于重置）',
       reason: null,
     };
   const known = windows.filter((w) => w.status === 'after-reset' || w.status === 'idle');
@@ -178,7 +183,8 @@ function panelAccount(a, threshold) {
     shownCells: /** @type {('tokens'|'cost'|'balance')[]} */ (['tokens', 'cost', 'balance']).filter(
       (k) => cells[k].note !== '平台未提供',
     ),
-    pace: a.provider === 'commandcode' ? paceLine(a.prediction ?? null) : null,
+    // T12.1: every account with quota windows (balance-only accounts have no pace).
+    pace: a.provider === 'commandcode' || windows.length ? paceLine(a.prediction ?? null) : null,
     updatedAt: stamps.length ? Math.max(...stamps) : null,
   };
 }
