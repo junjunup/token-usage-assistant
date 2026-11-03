@@ -1145,6 +1145,7 @@ export function DesktopApp() {
                   action={(value) => action(() => bridge.connect(value), '本机连接已保存，可在总览查看账户数据。')}
                   onConnected={() => setView('overview')}
                   onRemove={() => setDialog('disconnect')}
+                  onClaudeConfig={(change) => action(() => bridge.claudeConfig(change), '已更新')}
                 />
                 {state.toolSourceIssue && (
                   <div className="inline-warning" role="status">
@@ -1222,7 +1223,7 @@ export function DesktopApp() {
                       note: (
                         <Disclosure
                           summary="在 Claude Code 底部显示本会话额度和最紧的其他账户"
-                          detail="只对用助手生成的启动脚本打开的 Claude Code 会话生效，例如「Claude 5h 60% · 最紧 OpenRouter 35%」。文字由本机助手算好后交给状态栏，不联网；关闭时状态栏照旧只显示采集状态。"
+                          detail="对用助手生成的启动脚本打开的会话，以及「接入所有会话」后的所有 Claude Code 会话生效，例如「Claude 5h 60% · 最紧 OpenRouter 35%」。文字由本机助手算好后交给状态栏，不联网；关闭时状态栏照旧只显示采集状态。"
                         />
                       ),
                       key: 'claudeStatusQuota',

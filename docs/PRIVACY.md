@@ -22,7 +22,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 | OpenCode Go | 三个周期的用量百分比 | `opencode.ai` |
 | Kimi Code 订阅 | 5 小时、每周与每月额度的百分比和重置时间、会员等级；**非官方接口**（Kimi 没有公开文档，字段来自第三方工具的整理） | 国内 `api.kimi.com` / 国际 `api.kimi.ai`（按你选的站点） |
 | Codex 订阅 | 账户与额度窗口 | 不联网；只调用本机官方 Codex 程序的 4 个只读方法 |
-| Claude 订阅 | 额度窗口 | 不联网；来自你用生成的启动脚本运行的 Claude Code 状态栏。开启「Claude Code 状态栏」设置后（默认关闭），本机助手把算好的一行文字（本会话额度和最紧的其他账户，例如「Claude 5h 60% · 最紧 GLM 62%」）回给状态栏显示，只在本机回环地址之间传递 |
+| Claude 订阅 | 额度窗口 | 不联网；来自你用生成的启动脚本运行的 Claude Code 状态栏，或（你在应用里点「接入所有会话」并确认后）任何方式打开的 Claude Code 会话的状态栏。开启「Claude Code 状态栏」设置后（默认关闭），本机助手把算好的一行文字（本会话额度和最紧的其他账户，例如「Claude 5h 60% · 最紧 GLM 62%」）回给状态栏显示，只在本机回环地址之间传递 |
 
 **本机编程工具**（只读，只取白名单里的元数据：时间、模型、项目目录、会话标识、Token 计数、请求状态）：
 
@@ -33,6 +33,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 - Qwen Code：读取 `~/.qwen/projects/<项目>/chats/`（旧版为 `~/.qwen/tmp/`）下会话文件里每条模型回复的用量计数（输入、输出、缓存、思考、总量）、模型名、时间和编号；提示词、回复、思考过程和工具调用一律跳过，不解码、不保存。
 - Gemini CLI：读取 `~/.gemini/tmp/<项目>/chats/` 下会话文件里每条模型回复的用量计数（输入、输出、缓存、思考、总量）、模型名、时间和编号；同一文件里的提示词、回复、思考过程、工具调用和摘要一律跳过，不解码、不保存。
 - Claude Code：只采集你通过生成的启动脚本运行之后的用量事件；本机组件只监听 `127.0.0.1`。
+- 接入所有 Claude Code 会话（T13.1，可选）：只有你在「账户与设置 → 账户连接」点「接入所有会话」并在确认框里同意后，应用才修改 Claude Code 的用户设置 `~/.claude/settings.json`（设置了 `CLAUDE_CONFIG_DIR` 时用那里的）里的 `statusLine` 一项，其他设置原样保留。修改前把原文件备份到上面的 `claude-collector/`；你原来的状态栏命令会继续运行（macOS；Windows 上已有自己的状态栏时不接入）。点「还原」放回原来的 `statusLine`。这样只多采集额度窗口，不加遥测设置；逐请求的 Token 明细仍只来自启动脚本打开的会话。
 - DeepSeek Harness：可选插件，只导出启用之后的用量元数据。
 
 ### 不读什么
@@ -86,7 +87,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 | OpenCode Go | usage percentages of three periods | `opencode.ai` |
 | Kimi Code subscription | percentages and reset times of the 5-hour, weekly and monthly quotas, membership level; an **unofficial endpoint** (Kimi publishes no documentation; the fields come from third-party tools) | China `api.kimi.com` / international `api.kimi.ai` (the site you choose) |
 | Codex subscription | account and quota windows | no network; four read-only methods of the official local Codex program |
-| Claude subscription | quota windows | no network; from the Claude Code status line when you start it with the generated launcher. With the "Claude Code status line" setting on (off by default), the assistant sends a computed line back for the status line to show (this session's quota and the tightest other account, e.g. "Claude 5h 60% · 最紧 GLM 62%"), over the loopback address only. |
+| Claude subscription | quota windows | no network; from the Claude Code status line when you start it with the generated launcher, or (after you click "接入所有会话" and confirm) in every Claude Code session. With the "Claude Code status line" setting on (off by default), the assistant sends a computed line back for the status line to show (this session's quota and the tightest other account, e.g. "Claude 5h 60% · 最紧 GLM 62%"), over the loopback address only. |
 
 **Local coding tools** — read-only, an allowlist of metadata only (time, model, project folder, session id, token counts, request status):
 
@@ -97,6 +98,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 - Qwen Code: for each model reply in the session files under `~/.qwen/projects/<project>/chats/` (older versions: `~/.qwen/tmp/`), its usage counts (input, output, cached, thoughts, total), model name, time and id; prompts, replies, thoughts and tool calls are skipped, never decoded or kept.
 - Gemini CLI: for each model reply in the session files under `~/.gemini/tmp/<project>/chats/`, its usage counts (input, output, cached, thoughts, total), model name, time and id; prompts, replies, thoughts, tool calls and summaries in the same files are skipped, never decoded or kept.
 - Claude Code: only usage events after you start it with the generated launcher; the local component listens on `127.0.0.1` only.
+- Connecting every Claude Code session (T13.1, optional): only after you click "接入所有会话" under 账户与设置 → 账户连接 and agree in the confirmation does the app change the `statusLine` entry of Claude Code's user settings `~/.claude/settings.json` (or the one in `CLAUDE_CONFIG_DIR`), keeping every other setting. The original file is backed up into `claude-collector/` first; your own status-line command keeps running (macOS; on Windows an existing status line is left alone and nothing is connected). "还原" (restore) puts the previous `statusLine` back. This adds quota windows only, no telemetry settings; per-request token details still come only from sessions started with the launcher.
 - DeepSeek Harness: an optional plugin exports usage metadata from the time it is enabled.
 
 ### What it never reads

@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld(
     openOfficial: (target) => call('assistant:official', target),
     testNotification: () => call('assistant:test-notification'),
     openUpdate: () => call('assistant:open-update'),
+    claudeConfig: (action) => call('assistant:claude-config', action),
     downloadUpdate: () => call('assistant:download-update'),
     installUpdate: () => call('assistant:install-update'),
     previewDiagnostics: () => call('assistant:diagnostics-preview'),

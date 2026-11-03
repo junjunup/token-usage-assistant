@@ -204,6 +204,15 @@
   margin-bottom: 18px;
   border-bottom: 1px solid var(--line);
 }
+.claude-config-status {
+  grid-column: 1 / -1;
+}
+.claude-config-status .text-button {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 0;
+  color: var(--fg);
+}
 .local-connection-status strong {
   display: flex;
   align-items: center;

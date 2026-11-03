@@ -1,7 +1,9 @@
-// Fail-open, metadata-only status-line observer for macOS. No transcript files are read.
+// Fail-open, metadata-only status-line observer for macOS. No transcript files are read. T13.1: when connected
+// through Claude Code's settings it also runs the statusLine command that was there before (same input).
 const fs = require('node:fs'),
   path = require('node:path'),
-  http = require('node:http');
+  http = require('node:http'),
+  { spawn } = require('node:child_process');
 const { projectJSON } = require('./metadata-json.cjs');
 const schema = {
   version: true,
@@ -28,34 +30,98 @@ function statusText(reply) {
     return '';
   }
 }
+/**
+ * T13.1: when the helper was put into Claude Code's own settings, the statusLine command that was there before.
+ * @returns {{ installed: boolean, command: string|null }}
+ */
+function readChain(dir = __dirname) {
+  try {
+    const v = JSON.parse(fs.readFileSync(path.join(dir, 'statusline-chain.json'), 'utf8'));
+    return {
+      installed: v?.installed === true,
+      command: typeof v?.command === 'string' && v.command ? v.command : null,
+    };
+  } catch {
+    return { installed: false, command: null };
+  }
+}
+/**
+ * What the status line shows: the previous command's output first, then the assistant's part. Without a previous
+ * command the plain markers stay; when connected through settings, an offline assistant adds nothing (every session
+ * would show it otherwise).
+ */
+function composeOutput({ ok, line, chain, chained }) {
+  const ours =
+    ok && line
+      ? line
+      : chain.command
+        ? ''
+        : ok
+          ? 'Token usage: local collector'
+          : chain.installed
+            ? ''
+            : 'Token usage: collector offline';
+  return [chained, ours].filter(Boolean).join('\n');
+}
 function run() {
+  const chain = readChain();
   let done = false,
     chunks = [],
     size = 0,
-    request;
-  const finish = (ok, line = '') => {
+    request,
+    child,
+    quota = null,
+    chained = chain.command ? null : '';
+  const finish = () => {
     if (done) return;
     done = true;
     clearTimeout(deadline);
     request?.destroy();
-    // T12.7: the assistant's quota line when it sends one (the setting is on), otherwise the plain marker.
-    process.stdout.write(ok && line ? line : ok ? 'Token usage: local collector' : 'Token usage: collector offline');
+    child?.kill();
+    process.stdout.write(composeOutput({ ok: !!quota?.ok, line: quota?.line || '', chain, chained: chained || '' }));
     process.exit(0);
   };
-  const deadline = setTimeout(() => finish(false), 1800);
-  process.stdin.on('error', () => finish(false));
+  const settle = () => quota && chained !== null && finish();
+  const quotaDone = (ok, line = '') => {
+    quota ||= { ok, line };
+    settle();
+  };
+  // A previous command (e.g. a usage tool) may be slower than the assistant's local reply.
+  const deadline = setTimeout(finish, chain.command ? 4000 : 1800);
+  process.stdin.on('error', () => quotaDone(false));
   process.stdin.on('data', (chunk) => {
     size += chunk.length;
-    if (size > 1000000) return finish(false);
+    if (size > 1000000) return quotaDone(false);
     chunks.push(chunk);
   });
   process.stdin.on('end', () => {
+    const input = Buffer.concat(chunks);
+    chunks = [];
+    if (chain.command) {
+      const env = { ...process.env };
+      delete env.ELECTRON_RUN_AS_NODE;
+      let out = '';
+      child = spawn('/bin/sh', ['-c', chain.command], { env, stdio: ['pipe', 'pipe', 'ignore'] });
+      child.stdout.setEncoding('utf8');
+      child.stdout.on('data', (d) => {
+        if (out.length < 4000) out += d;
+      });
+      child.on('error', () => {
+        chained = '';
+        settle();
+      });
+      child.on('close', () => {
+        chained = out.slice(0, 4000).replace(/\s+$/, '');
+        settle();
+      });
+      child.stdin.on('error', () => {});
+      child.stdin.end(input);
+    }
     try {
-      const body = JSON.stringify(quotaMetadata(Buffer.concat(chunks).toString('utf8')));
-      chunks = [];
+      const body = JSON.stringify(quotaMetadata(input.toString('utf8')));
       const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'collector.json'), 'utf8'));
       if (!Number.isInteger(cfg.port) || cfg.port < 1024 || cfg.port > 65535 || !/^[a-f0-9]{64}$/.test(cfg.token))
-        return finish(false);
+        return quotaDone(false);
       request = http.request(
         {
           hostname: '127.0.0.1',
@@ -74,16 +140,16 @@ function run() {
           res.on('data', (d) => {
             if (reply.length < 2000) reply += d;
           });
-          res.on('end', () => finish(res.statusCode === 200, statusText(reply)));
+          res.on('end', () => quotaDone(res.statusCode === 200, statusText(reply)));
         },
       );
-      request.on('error', () => finish(false));
-      request.setTimeout(1000, () => finish(false));
+      request.on('error', () => quotaDone(false));
+      request.setTimeout(1000, () => quotaDone(false));
       request.end(body);
     } catch {
-      finish(false);
+      quotaDone(false);
     }
   });
 }
 if (require.main === module) run();
-module.exports = { quotaMetadata, statusText };
+module.exports = { quotaMetadata, statusText, readChain, composeOutput };

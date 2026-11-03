@@ -337,6 +337,19 @@ if (selectedProvider && scenario === 'offline') {
   state.data.status = 'offline';
   state.data.errors = [{ endpoint: 'credits', status: 503, message: '平台暂时不可用，当前显示上次数据。' }];
 }
+// T13.1: ?provider=claude&claude-config=<none|installed|changed|unreadable|blocked> (default none).
+if (selectedProvider === 'claude') {
+  const status = new URLSearchParams(location.search).get('claude-config') || 'none';
+  state.claudeConfig = { status, file: '~/.claude/settings.json', chained: status === 'installed' };
+  state.connectionStatus ||= {
+    quota: { status: 'synced', label: '额度已同步', message: '订阅额度独立展示，不与本机 Token 相加。' },
+    details: {
+      status: 'synced',
+      label: '工具明细已同步',
+      message: '仅覆盖本机已观察记录；计费账户关联需在设置中人工确认。',
+    },
+  };
+}
 // T8.5: ?provider=claude&desktop-preview=claude-port-changed shows the local connection status after the collector
 // moved to another port (same texts as desktop/subscription-status.cjs; the preview does not run the collector).
 if (
@@ -615,6 +628,7 @@ export const previewBridge = {
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
   openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
+  claudeConfig: async () => ({ ok: false, error: '浏览器预览不修改 Claude Code 设置。' }),
   downloadUpdate: async () => ({ ok: false, error: '浏览器预览不下载安装包。' }),
   installUpdate: async () => ({ ok: false, error: '浏览器预览不安装更新。' }),
   previewDiagnostics: async () => ({
