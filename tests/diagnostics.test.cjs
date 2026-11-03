@@ -68,6 +68,7 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
     panelProtect: null,
     trayPinHint: null,
     setupWizard: null,
+    claudeStatusQuota: null,
   });
   assert.deepEqual(report.accounts, [
     {

@@ -195,8 +195,16 @@ class ClaudeCollector {
         try {
           const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
           chunks = [];
-          if (req.url === '/quota') this.receiveQuota(input);
-          else {
+          let line = '';
+          if (req.url === '/quota') {
+            const windows = this.receiveQuota(input);
+            // T12.7: the status-line text main computes when the setting is on ('' otherwise); fail-open.
+            try {
+              line = String(this.statusLine?.(windows) || '').slice(0, 200);
+            } catch {
+              line = '';
+            }
+          } else {
             this.portChange = null;
             const parsed = parseOtel(input, cfg.sourceId, this.sessions);
             if (parsed.rows.length)
@@ -215,8 +223,8 @@ class ClaudeCollector {
               );
             this.health(parsed.unsupported ? 'unsupported-events' : 'ready', parsed.fields);
           }
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end('{}');
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(line ? JSON.stringify({ line }) : '{}');
         } catch {
           this.health('invalid-events');
           fail(400);
@@ -323,6 +331,7 @@ class ClaudeCollector {
     if (JSON.stringify(old?.windows) === JSON.stringify(raw.windows)) raw.observedAt = old.observedAt;
     atomicWrite(file, raw);
     this.health('ready');
+    return raw.windows;
   }
   close() {
     this.server?.close();
