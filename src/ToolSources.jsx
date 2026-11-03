@@ -166,11 +166,29 @@ const recentChange = (source) =>
   Number.isFinite(source.fieldChange.at) &&
   Date.now() - source.fieldChange.at < FIELD_CHANGE_VISIBLE_MS;
 
-export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove, onSync }) {
+export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove, onSync, onDiscover }) {
   const [kind, setKind] = useState('zcode'),
     [label, setLabel] = useState(''),
     [pending, setPending] = useState(null),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [found, setFound] = useState([]);
+  // T12.6: tools with data at their default location; the first one not added yet is preselected.
+  useEffect(() => {
+    let live = true;
+    onDiscover?.().then((r) => {
+      if (!live || !r?.ok) return;
+      setFound(r.value);
+      const next = r.value.find((f) => !f.added);
+      if (next) setKind(next.kind);
+    });
+    return () => {
+      live = false;
+    };
+  }, [onDiscover, sources.length]);
+  const hint = (value) => {
+    const hit = found.find((f) => f.kind === value && !f.added);
+    return hit ? '本机已找到 ' + hit.path + ' · ' : '';
+  };
   async function run(id, callback) {
     setPending(id);
     setError('');
@@ -209,18 +227,42 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
             onChange={setKind}
             disabled={!!pending}
             options={[
-              { value: 'opencode', label: 'OpenCode', description: '选择 opencode.db · 只读用量元数据' },
-              { value: 'codex', label: 'Codex', description: '选择本机 Codex 配置目录 · 0.155.x' },
-              { value: 'claude-code', label: 'Claude Code', description: '选择本地组件导出的 usage.jsonl' },
-              { value: 'zcode', label: 'Zcode', description: '只读 SQLite 用量元数据' },
-              { value: 'harness', label: 'DeepSeek Harness', description: '统计插件导出的专用 JSONL 文件' },
-              { value: 'gemini-cli', label: 'Gemini CLI', description: '选择 Gemini CLI 目录 · 只读会话用量计数' },
+              {
+                value: 'opencode',
+                label: 'OpenCode',
+                description: hint('opencode') + '选择 opencode.db · 只读用量元数据',
+              },
+              {
+                value: 'codex',
+                label: 'Codex',
+                description: hint('codex') + '选择本机 Codex 配置目录（包含 sessions）',
+              },
+              {
+                value: 'claude-code',
+                label: 'Claude Code',
+                description: hint('claude-code') + '选择本地组件导出的 usage.jsonl',
+              },
+              { value: 'zcode', label: 'Zcode', description: hint('zcode') + '只读 SQLite 用量元数据' },
+              {
+                value: 'harness',
+                label: 'DeepSeek Harness',
+                description: hint('harness') + '统计插件导出的专用 JSONL 文件',
+              },
+              {
+                value: 'gemini-cli',
+                label: 'Gemini CLI',
+                description: hint('gemini-cli') + '选择 Gemini CLI 目录 · 只读会话用量计数',
+              },
               {
                 value: 'kimi-code-cli',
                 label: 'Kimi Code CLI',
-                description: '选择 Kimi Code 目录 · 只读每次调用的用量记录',
+                description: hint('kimi-code-cli') + '选择 Kimi Code 目录 · 只读每次调用的用量记录',
               },
-              { value: 'qwen-code', label: 'Qwen Code', description: '选择 Qwen Code 目录 · 只读会话用量计数' },
+              {
+                value: 'qwen-code',
+                label: 'Qwen Code',
+                description: hint('qwen-code') + '选择 Qwen Code 目录 · 只读会话用量计数',
+              },
             ]}
           />
         </label>

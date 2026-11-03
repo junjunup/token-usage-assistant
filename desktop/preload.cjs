@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld(
     analytics: (query) => call('assistant:analytics', query),
     cancelAnalytics: (id) => call('assistant:cancel-analytics', id),
     addToolSource: (value) => call('assistant:add-tool-source', value),
+    discoverTools: () => call('assistant:discover-tools'),
     updateToolSource: (id, patch) => call('assistant:update-tool-source', { id, patch }),
     chooseToolSource: (id) => call('assistant:choose-tool-source', id),
     removeToolSource: (id) => call('assistant:remove-tool-source', id),

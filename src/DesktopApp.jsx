@@ -54,6 +54,8 @@ import { AdvancedSettings, SetupHeading, SetupWizard } from './Onboarding.jsx';
 import { wizardPending } from './generated/onboarding.js';
 
 const bridge = window.tokenAssistant || previewBridge;
+// T12.6: tools with data at their default location (module-level, so the lists fetch once per change of sources).
+const discoverTools = () => bridge.discoverTools?.() ?? Promise.resolve(null);
 const browserPreview = !window.tokenAssistant;
 const widget = new URLSearchParams(location.search).get('surface') === 'widget';
 const num = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -682,6 +684,7 @@ export function DesktopApp() {
                 preview={browserPreview}
                 connect={(value) => action(() => bridge.connect(value), '本机连接已保存。')}
                 addSource={(kind, label) => action(() => bridge.addToolSource({ kind, label }))}
+                discover={discoverTools}
                 finish={finishSetup}
               />
             )}
@@ -1112,6 +1115,7 @@ export function DesktopApp() {
                   onChoose={(id) => action(() => bridge.chooseToolSource(id))}
                   onRemove={(id) => action(() => bridge.removeToolSource(id))}
                   onSync={(id) => action(() => bridge.syncToolSource(id))}
+                  onDiscover={discoverTools}
                 />
                 <AdvancedSettings associations={state.associations}>
                   <AccountLinks

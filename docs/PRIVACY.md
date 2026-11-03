@@ -26,6 +26,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 **本机编程工具**（只读，只取白名单里的元数据：时间、模型、项目目录、会话标识、Token 计数、请求状态）：
 
+- 发现本机工具（T12.6）：打开「本机工具」列表时，只检查几个工具的默认位置是否存在（如 `~/.codex/sessions`、`~/.gemini/tmp`、`~/.kimi-code/sessions`、`~/.qwen/projects`、`~/.local/share/opencode/opencode.db`），不读取其中任何文件；找到的工具仍要你在系统文件选择框里确认后才会添加。
 - Zcode、OpenCode：只读打开它们的数据库，不修改。
 - Codex：读取本机 rollout 文件中的用量快照。
 - Kimi Code CLI：读取 `~/.kimi-code/sessions/` 下各会话 `wire.jsonl` 里的 `usage.record` 用量记录（每次模型调用的未缓存输入、输出、缓存读写计数、模型名、时间、agent 编号）；同一文件里的对话、工具调用和供应商原始 usage 一律跳过，不解码、不保存。
@@ -88,6 +89,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 
 **Local coding tools** — read-only, an allowlist of metadata only (time, model, project folder, session id, token counts, request status):
 
+- Finding local tools (T12.6): when the local tools list opens, the app only checks whether a few default locations exist (such as `~/.codex/sessions`, `~/.gemini/tmp`, `~/.kimi-code/sessions`, `~/.qwen/projects`, `~/.local/share/opencode/opencode.db`) and reads no file in them; a found tool is added only after you confirm it in the system file dialog.
 - Zcode, OpenCode: their databases are opened read-only and never modified.
 - Codex: usage snapshots in local rollout files.
 - Kimi Code CLI: the `usage.record` entries in each session's `wire.jsonl` under `~/.kimi-code/sessions/` (per model call: uncached input, output, cache read / write counts, model name, time, agent id); conversations, tool calls and the provider's raw usage in the same files are skipped, never decoded or kept.

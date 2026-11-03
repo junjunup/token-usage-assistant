@@ -528,6 +528,12 @@ export const previewBridge = {
     return ok(true);
   },
   addToolSource: async () => ({ ok: false, error: '请在 Windows 应用中选择用量文件。' }),
+  // T12.6: sample discovery for the preview (nothing on this machine is looked at).
+  discoverTools: async () =>
+    ok([
+      { kind: 'codex', path: '~/.codex', added: false },
+      { kind: 'gemini-cli', path: '~/.gemini', added: false },
+    ]),
   chooseToolSource: async () => ({ ok: false, error: '请在 Windows 应用中更换文件位置。' }),
   syncToolSource: async (id) => {
     const source = state.toolSources.find((s) => s.id === id);

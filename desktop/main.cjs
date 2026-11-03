@@ -28,6 +28,7 @@ const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { providerDefinition } = require('./providers/index.cjs');
 const { toolKind } = require('./tool-kinds/index.cjs');
+const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
@@ -611,7 +612,15 @@ function installIpc() {
             defaultPath: path.join(app.getPath('home'), picker.defaultHomePath),
             properties: ['openDirectory'],
           }
-        : { title: picker.title, properties: ['openFile'], filters: picker.filters },
+        : {
+            title: picker.title,
+            properties: ['openFile'],
+            filters: picker.filters,
+            // T12.6: open at the default file when it exists, so a found tool is one confirmation away.
+            ...(picker.defaultFilePath && fs.existsSync(path.join(app.getPath('home'), picker.defaultFilePath))
+              ? { defaultPath: path.join(app.getPath('home'), picker.defaultFilePath) }
+              : {}),
+          },
     );
     return choice.canceled ? null : choice.filePaths[0];
   };
@@ -621,6 +630,11 @@ function installIpc() {
     if (!file) return { cancelled: true };
     toolSources.add({ kind: value.kind, label: value.label, file });
     return { cancelled: false };
+  });
+  // T12.6: tools with data at their default location (existence only); adding still goes through the picker.
+  handle('assistant:discover-tools', (event) => {
+    mainOnly(event);
+    return discoverTools(app.getPath('home'), toolSources.entries);
   });
   handle('assistant:update-tool-source', (event, value) => {
     mainOnly(event);
