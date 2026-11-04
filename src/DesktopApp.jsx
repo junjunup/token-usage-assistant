@@ -29,6 +29,7 @@ import {
   ArrowsLeftRight,
   FileArrowDown,
   AppWindow,
+  Folder,
 } from '@phosphor-icons/react';
 import '@fontsource/geist/400.css';
 import '@fontsource/geist/500.css';
@@ -1240,6 +1241,30 @@ export function DesktopApp() {
                       ),
                       key: 'claudeStatusQuota',
                       label: '在 Claude Code 状态栏显示额度',
+                    },
+                    {
+                      // T13.5 (D20 ③): a snapshot file and a command that prints it; no network service.
+                      title: '命令行读取额度',
+                      note: state.statusCommand ? (
+                        <>
+                          运行{' '}
+                          <code>
+                            {/\s/.test(state.statusCommand) ? `"${state.statusCommand}"` : state.statusCommand}
+                          </code>
+                          （加 --text 输出文字）{' '}
+                          <button className="text-button" onClick={() => action(() => bridge.showStatusCommand())}>
+                            在文件夹中显示
+                            <Folder size={13} />
+                          </button>
+                        </>
+                      ) : (
+                        <Disclosure
+                          summary="生成一个命令，打印全部账户的额度（JSON 或文字）"
+                          detail="开启后，助手在自己的数据目录里保存一份额度快照，并放一个命令（Mac 为 tua-status，Windows 为 tua-status.cmd）打印它，方便脚本和其他工具读取。只含额度百分比、重置时间和余额，不含密钥；不开放网络端口。助手关闭时命令显示最后一次的值和时间；关闭此项会删除这些文件。"
+                        />
+                      ),
+                      key: 'statusExport',
+                      label: '开启命令行读取额度',
                     },
                   ].map((item) => (
                     <div className="setting-row" key={item.key}>

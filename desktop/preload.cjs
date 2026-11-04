@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld(
     previewDiagnostics: () => call('assistant:diagnostics-preview'),
     saveDiagnostics: () => call('assistant:diagnostics-save'),
     exportCsv: (query) => call('assistant:export-csv', query),
+    showStatusCommand: () => call('assistant:show-status-command'),
     ready: () => call('assistant:renderer-ready'),
     // Popover panel (T7.6); main.cjs only accepts these from the panel window.
     panelState: () => call('assistant:panel-state'),

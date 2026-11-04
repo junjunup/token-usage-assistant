@@ -360,6 +360,11 @@ if (selectedProvider && scenario === 'offline') {
   state.data.status = 'offline';
   state.data.errors = [{ endpoint: 'credits', status: 503, message: '平台暂时不可用，当前显示上次数据。' }];
 }
+// T13.5: ?status-command=1 shows the command-line snapshot setting as turned on.
+if (new URLSearchParams(location.search).get('status-command')) {
+  state.settings.statusExport = true;
+  state.statusCommand = '~/Library/Application Support/TokenUsageAssistant/cli/tua-status';
+}
 // T13.1: ?provider=claude&claude-config=<none|installed|changed|unreadable|blocked> (default none).
 if (selectedProvider === 'claude') {
   const status = new URLSearchParams(location.search).get('claude-config') || 'none';
@@ -653,6 +658,7 @@ export const previewBridge = {
   openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
   claudeConfig: async () => ({ ok: false, error: '浏览器预览不修改 Claude Code 设置。' }),
   exportCsv: async () => ({ ok: false, error: '浏览器预览不保存文件。' }),
+  showStatusCommand: async () => ({ ok: false, error: '浏览器预览不打开文件夹。' }),
   downloadUpdate: async () => ({ ok: false, error: '浏览器预览不下载安装包。' }),
   installUpdate: async () => ({ ok: false, error: '浏览器预览不安装更新。' }),
   previewDiagnostics: async () => ({

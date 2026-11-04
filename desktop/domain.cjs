@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean }} Settings */
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -43,6 +43,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   setupWizard: true,
   // T12.7 (D19 ④): show this session's Claude quota and the tightest other account in Claude Code's status line.
   claudeStatusQuota: false,
+  // T13.5 (D20 ③): keep a quota snapshot and a command that prints it (tua-status) in the assistant's data folder.
+  statusExport: false,
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>
