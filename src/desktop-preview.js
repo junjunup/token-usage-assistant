@@ -9,9 +9,16 @@ import {
   normalizeOpenCodeGo,
   normalizeOpenRouter,
   normalizeKimiCode,
+  normalizeZenMux,
   quota,
 } from './generated/provider-domain.js';
-import { normalizeDeepSeek, normalizeKimi } from './generated/balance-domain.js';
+import {
+  normalizeDeepSeek,
+  normalizeKimi,
+  normalizeSiliconFlow,
+  normalizeStepFun,
+  normalizeZenMuxBalance,
+} from './generated/balance-domain.js';
 import { PROVIDERS } from './generated/provider-catalog.js';
 import { panelState, paceLine } from './generated/menubar-panel.js';
 import { accountOverview } from './generated/account-overview.js';
@@ -121,6 +128,8 @@ for (const [provider, normalize] of Object.entries({
   openrouter: normalizeOpenRouter,
   // T12.2: Kimi Code ratio pools (shape documented by third-party tools; no official sample).
   'kimi-code': normalizeKimiCode,
+  // T13.3: ZenMux subscription windows (official Management API example shape).
+  zenmux: normalizeZenMux,
 })) {
   snapshots[provider] = {
     parts: { credits: normalize(fixtureBody(provider, now), now) },
@@ -169,6 +178,20 @@ snapshots.deepseek = {
   status: 'connected',
   nextRefreshAt: now + 60000,
 };
+// T13.3: SiliconFlow (China site), StepFun and ZenMux pay-as-you-go balances from the official reference examples.
+for (const [provider, balance] of [
+  ['siliconflow', () => normalizeSiliconFlow(fixtureBody('siliconflow'), 'CNY')],
+  ['stepfun', () => normalizeStepFun(fixtureBody('stepfun'))],
+  ['zenmux-payg', () => normalizeZenMuxBalance(fixtureBody('zenmux-payg'))],
+])
+  snapshots[provider] = {
+    parts: { balance: balance() },
+    errors: [],
+    updatedAt: { balance: now },
+    fetching: false,
+    status: 'connected',
+    nextRefreshAt: now + 60000,
+  };
 // T10.1: Kimi open platform, China site (CNY), from the official sample response.
 snapshots.kimi = {
   parts: { balance: normalizeKimi(fixtureBody('kimi'), 'CNY') },
@@ -380,7 +403,7 @@ if (selectedProvider === 'kimi' && ['arrears', 'exhausted', 'unknown'].includes(
     },
     'CNY',
   );
-const balanceProvider = ['deepseek', 'kimi'].includes(selectedProvider);
+const balanceProvider = ['deepseek', 'kimi', 'siliconflow', 'stepfun', 'zenmux-payg'].includes(selectedProvider);
 // T10.2: ?provider=openrouter&scenario=unlimited — a key without a spend limit and without budgets.
 if (selectedProvider === 'openrouter' && scenario === 'unlimited') {
   const body = fixtureBody('openrouter', now);

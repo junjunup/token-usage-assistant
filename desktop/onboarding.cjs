@@ -22,10 +22,14 @@ const ORDER = [
   'volcengine',
   'opencode-go',
   'kimi-code',
+  'zenmux',
   'codex',
   'claude',
   'deepseek',
   'kimi',
+  'siliconflow',
+  'stepfun',
+  'zenmux-payg',
   'openrouter',
 ];
 const GROUPS = [

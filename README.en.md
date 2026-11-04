@@ -36,8 +36,12 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Platform quota | Volcengine personal Agent Plan (Beijing) | Official AFP quota API | Sample-tested |
 | Platform quota | OpenCode Go | Official usage API (percentages for three periods) | Sample-tested |
 | Platform quota | Kimi Code subscription (China / international) | **Unofficial endpoint** (Kimi publishes no documentation; 5-hour, weekly and monthly percentages) | Sample-tested (samples from third-party tools) |
+| Plan quota | ZenMux subscription | Official management API (5-hour and 7-day usage; needs a Management API Key) | Sample-tested |
 | Balance | DeepSeek | Official balance API | Sample-tested |
 | Balance | Kimi open platform (China / international) | Official balance API | Sample-tested |
+| Pay-as-you-go balance | SiliconFlow (China / international) | Official user info API (granted and topped-up parts read from the official example) | Sample-tested |
+| Pay-as-you-go balance | StepFun (China) | Official account API (available balance; Step Plan quota has no query API) | Sample-tested |
+| Pay-as-you-go balance | ZenMux | Official management API (USD balance; needs a Management API Key) | Sample-tested |
 | Key limit and spend | OpenRouter | Official key API (this key's limit, budgets, reported spend) | Sample-tested |
 | Subscription quota | ChatGPT · Codex | Read-only methods of the local official Codex program | Live-tested (Windows, read-only query of a Pro account) |
 | Subscription quota | Claude · Claude Code | Status line + local OTLP component | Live-tested (macOS, quota and usage sync; not reconciled with the website) |

@@ -24,6 +24,69 @@ function fixtureBody(provider, now = NOW) {
       scode: '0x0',
       status: true,
     };
+  // T13.3: the official reference examples (identity fields synthetic; they must never be kept).
+  if (provider === 'siliconflow')
+    return {
+      code: 20000,
+      message: 'OK',
+      status: true,
+      data: {
+        id: 'synthetic-user',
+        name: '',
+        image: '',
+        email: '',
+        isAdmin: false,
+        balance: '0.88',
+        status: 'normal',
+        introduction: '',
+        role: '',
+        chargeBalance: '88.00',
+        totalBalance: '88.88',
+      },
+    };
+  if (provider === 'stepfun')
+    return { object: 'account', type: 'prepaid', balance: 12.5, total_cash_balance: 50, total_voucher_balance: 26 };
+  if (provider === 'zenmux-payg')
+    return {
+      success: true,
+      data: { currency: 'usd', total_credits: 482.74, top_up_credits: 35, bonus_credits: 447.74 },
+    };
+  if (provider === 'zenmux')
+    return {
+      success: true,
+      data: {
+        plan: {
+          tier: 'pro',
+          amount_usd: 20,
+          interval: 'month',
+          expires_at: new Date(now + 20 * 86400000).toISOString(),
+        },
+        currency: 'usd',
+        base_usd_per_flow: 0.03283,
+        effective_usd_per_flow: 0.03283,
+        account_status: 'healthy',
+        quota_5_hour: {
+          usage_percentage: 0.3215,
+          resets_at: new Date(now + 3 * 3600000).toISOString(),
+          remaining_resets: 2,
+          max_flows: 600,
+          used_flows: 192.9,
+          remaining_flows: 407.1,
+          used_value_usd: 6.33,
+          max_value_usd: 19.7,
+        },
+        quota_7_day: {
+          usage_percentage: 0.1047,
+          resets_at: new Date(now + 4 * 86400000).toISOString(),
+          max_flows: 6000,
+          used_flows: 628.2,
+          remaining_flows: 5371.8,
+          used_value_usd: 20.62,
+          max_value_usd: 197,
+        },
+        quota_monthly: { max_flows: 24000, max_value_usd: 788 },
+      },
+    };
   // T10.2: shaped like the official example (credits = USD); identity fields are synthetic and must never be kept.
   if (provider === 'openrouter')
     return {
@@ -164,15 +227,23 @@ async function fixtureFetch(url) {
           ? 'kimi'
           : url.includes('/coding/v1/usages')
             ? 'kimi-code'
-            : url === 'https://openrouter.ai/api/v1/key'
-              ? 'openrouter'
-              : url.includes('bigmodel') || url.includes('api.z.ai')
-                ? 'glm'
-                : url.includes('minimax')
-                  ? 'minimax'
-                  : url.includes('volcengineapi')
-                    ? 'volcengine'
-                    : null;
+            : url.includes('api.siliconflow.')
+              ? 'siliconflow'
+              : url === 'https://api.stepfun.com/v1/accounts'
+                ? 'stepfun'
+                : url === 'https://zenmux.ai/api/v1/management/subscription/detail'
+                  ? 'zenmux'
+                  : url === 'https://zenmux.ai/api/v1/management/payg/balance'
+                    ? 'zenmux-payg'
+                    : url === 'https://openrouter.ai/api/v1/key'
+                      ? 'openrouter'
+                      : url.includes('bigmodel') || url.includes('api.z.ai')
+                        ? 'glm'
+                        : url.includes('minimax')
+                          ? 'minimax'
+                          : url.includes('volcengineapi')
+                            ? 'volcengine'
+                            : null;
   return new Response(JSON.stringify(fixtureBody(provider, Date.now())), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
