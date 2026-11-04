@@ -20,6 +20,10 @@ const TOOLS = [
   ['gemini-cli', '选择 Gemini CLI 目录（通常是 ~/.gemini），只读会话里的用量计数'],
   ['kimi-code-cli', '选择 Kimi Code 目录（通常是 ~/.kimi-code），只读每次调用的用量记录'],
   ['qwen-code', '选择 Qwen Code 目录（通常是 ~/.qwen），只读会话里的用量计数'],
+  ['cline', '选择 Cline 数据目录（通常是 ~/.cline/data），只读每轮对话的用量'],
+  ['kilo', '选择 Kilo Code 的 kilo.db，只读用量元数据'],
+  ['goose', '选择 Goose 的 sessions.db，只读每个会话的累计用量'],
+  ['crush', '选择项目里的 .crush/crush.db，只读每个会话的累计用量'],
 ];
 
 // The browser preview can open a later step (?desktop-preview=empty&step=2) for screenshots.

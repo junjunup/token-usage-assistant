@@ -286,7 +286,9 @@ function normalizedPrices(prices) {
 function normalizeSubscriptionRecord(wire, sourceId) {
   if (
     !wire ||
-    !['codex', 'claude-code', 'gemini-cli', 'kimi-code-cli', 'qwen-code'].includes(wire.tool) ||
+    !['codex', 'claude-code', 'gemini-cli', 'kimi-code-cli', 'qwen-code', 'cline', 'goose', 'crush'].includes(
+      wire.tool,
+    ) ||
     !number(wire.timestamp) ||
     wire.timestamp <= 0 ||
     !wire.attemptId ||
@@ -317,8 +319,10 @@ function normalizeSubscriptionRecord(wire, sourceId) {
       at: wire.timestamp,
       updatedAt: wire.updatedAt || wire.timestamp,
       revision: wire.revision || 0,
-      provider:
-        wire.tool === 'codex'
+      // T13.2: Cline, Goose and Crush work with any provider; Cline names it, the others leave it unknown.
+      provider: ['cline', 'goose', 'crush'].includes(wire.tool)
+        ? wire.provider || null
+        : wire.tool === 'codex'
           ? 'openai'
           : wire.tool === 'gemini-cli'
             ? 'google'
@@ -351,16 +355,30 @@ function normalizeSubscriptionRecord(wire, sourceId) {
             ? 'kimi-code/usage-record'
             : wire.tool === 'qwen-code'
               ? 'qwen-code/session-response'
-              : 'claude-code/otel-api-event',
-    // T12.3: one Gemini CLI response record per model reply.
-    recordUnit: wire.tool === 'codex' ? 'usage-observation' : 'request',
+              : wire.tool === 'cline'
+                ? 'cline/turn-metrics'
+                : wire.tool === 'goose'
+                  ? 'goose-sqlite/session-total'
+                  : wire.tool === 'crush'
+                    ? 'crush-sqlite/session-total'
+                    : 'claude-code/otel-api-event',
+    // T12.3: one Gemini CLI response record per model reply. T13.2: Goose and Crush keep only each session's
+    // running total (one row per session, dated by its last update); a Cline row is one turn.
+    recordUnit:
+      wire.tool === 'codex'
+        ? 'usage-observation'
+        : ['goose', 'crush'].includes(wire.tool)
+          ? 'session-total'
+          : wire.tool === 'cline'
+            ? 'turn'
+            : 'request',
   };
 }
 /**
  * @param {any} raw whitelisted OpenCode row
  * @param {string} sourceId
  */
-function normalizeOpenCodeRecord(raw, sourceId) {
+function normalizeOpenCodeRecord(raw, sourceId, tool = 'opencode') {
   if (!raw || !number(raw.at) || raw.at <= 0 || !['v1-step', 'v1-message', 'v2-message'].includes(raw.format))
     throw new Error('OpenCode metadata schema');
   // OpenCode stores non-cached input and visible output separately from cache/reasoning.
@@ -383,7 +401,8 @@ function normalizeOpenCodeRecord(raw, sourceId) {
   return {
     ...identity({
       sourceId,
-      tool: 'opencode',
+      // T13.2: Kilo Code keeps the same database structure (a fork of OpenCode).
+      tool,
       requestId: raw.id,
       attemptId: raw.id,
       sessionId: raw.session_id,
@@ -405,7 +424,7 @@ function normalizeOpenCodeRecord(raw, sourceId) {
     extra: base !== null && total !== null ? total - base : null,
     invalidUsage,
     usageReported: [fresh, read, write, visible, reasoning, reported].some((v) => v !== null),
-    provenance: 'opencode-sqlite/' + raw.format,
+    provenance: (tool === 'kilo' ? 'kilo-sqlite/' : 'opencode-sqlite/') + raw.format,
     recordUnit: 'usage-observation',
   };
 }

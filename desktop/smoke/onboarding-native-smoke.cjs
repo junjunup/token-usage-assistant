@@ -75,7 +75,7 @@ async function runOnboardingSmoke({ accounts, toolSources, mainWindow, settings,
       await main.webContents.executeJavaScript("document.querySelector('.wz-done').textContent"),
       /已连接 Kimi/,
     );
-    assert.equal(await main.webContents.executeJavaScript("document.querySelectorAll('.wz-tool').length"), 8);
+    assert.equal(await main.webContents.executeJavaScript("document.querySelectorAll('.wz-tool').length"), 12);
     assert.equal(await main.webContents.executeJavaScript("!!document.querySelector('.wz-panel')"), true);
     checks.staysOpenAfterConnect = true;
     if (isWin) {

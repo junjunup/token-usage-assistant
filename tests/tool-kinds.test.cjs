@@ -3,11 +3,25 @@ const test = require('node:test'),
 const { TOOL_KINDS, toolKind } = require('../desktop/tool-kinds/index.cjs');
 
 // T5.3b: the registry must reproduce the pre-refactor kinds, labels, pickers and overlap rules exactly. Kinds added
-// later are listed explicitly (T12.3: gemini-cli, T12.4: kimi-code-cli, T12.5: qwen-code) and covered by their own tests.
+// later are listed explicitly (T12.3: gemini-cli, T12.4: kimi-code-cli, T12.5: qwen-code, T13.2: cline, kilo, goose,
+// crush) and covered by their own tests.
 test('tool kinds, default labels and overlap rules match the pre-refactor code', () => {
   assert.deepEqual(
     TOOL_KINDS.map((k) => k.kind),
-    ['zcode', 'harness', 'codex', 'claude-code', 'opencode', 'gemini-cli', 'kimi-code-cli', 'qwen-code'],
+    [
+      'zcode',
+      'harness',
+      'codex',
+      'claude-code',
+      'opencode',
+      'gemini-cli',
+      'kimi-code-cli',
+      'qwen-code',
+      'cline',
+      'kilo',
+      'goose',
+      'crush',
+    ],
   );
   assert.deepEqual(Object.fromEntries(TOOL_KINDS.map((k) => [k.kind, k.defaultLabel])), {
     zcode: 'Zcode',
@@ -18,10 +32,26 @@ test('tool kinds, default labels and overlap rules match the pre-refactor code',
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
     'qwen-code': 'Qwen Code',
+    cline: 'Cline',
+    kilo: 'Kilo Code',
+    goose: 'Goose',
+    crush: 'Crush',
   });
   assert.deepEqual(
     TOOL_KINDS.filter((k) => k.overlapCheck).map((k) => k.kind),
-    ['zcode', 'codex', 'claude-code', 'opencode', 'gemini-cli', 'kimi-code-cli', 'qwen-code'],
+    [
+      'zcode',
+      'codex',
+      'claude-code',
+      'opencode',
+      'gemini-cli',
+      'kimi-code-cli',
+      'qwen-code',
+      'cline',
+      'kilo',
+      'goose',
+      'crush',
+    ],
   );
   assert.equal(toolKind('unknown'), null);
   for (const k of TOOL_KINDS) {

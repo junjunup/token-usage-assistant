@@ -81,6 +81,18 @@ function qwenUsageViolation(u) {
   return null;
 }
 
+/**
+ * T13.2: a Cline turn's `metrics` (sdk messages contract v1): input and output counts are core; cost is optional.
+ * Cache counts are not used (whether input includes them depends on the provider), so they are not checked.
+ * @param {any} m
+ * @returns {string|null}
+ */
+function clineUsageViolation(m) {
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return 'shape';
+  if (!count(m.inputTokens) || !count(m.outputTokens)) return 'core';
+  return null;
+}
+
 const SOURCE_OPTIONAL = Object.freeze({
   codex: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write', 'reasoning']),
   claude: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write']),
@@ -88,6 +100,8 @@ const SOURCE_OPTIONAL = Object.freeze({
   gemini: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'reasoning']),
   // Kimi Code reports no reasoning count at all; only cache reads can be missing.
   kimiCode: /** @type {(keyof typeof OPTIONAL)[]} */ (['read']),
+  // T13.2: Cline, Goose and Crush counts are kept without cache reads / writes (provider-dependent or not recorded).
+  sessionTotals: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write']),
 });
 
 /**
@@ -178,6 +192,7 @@ module.exports = {
   geminiUsageViolation,
   kimiCodeUsageViolation,
   qwenUsageViolation,
+  clineUsageViolation,
   missingOptional,
   contractState,
   partialNote,

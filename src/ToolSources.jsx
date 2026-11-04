@@ -15,7 +15,13 @@ export const kindName = (kind) =>
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
     'qwen-code': 'Qwen Code',
+    cline: 'Cline',
+    kilo: 'Kilo Code',
+    goose: 'Goose',
+    crush: 'Crush',
   })[kind] || kind;
+// Kinds whose picker chooses a folder (the rest choose a file).
+const DIRECTORY_KINDS = ['codex', 'gemini-cli', 'kimi-code-cli', 'qwen-code', 'cline'];
 const stamp = (value) =>
   value
     ? new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -263,6 +269,26 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
                 label: 'Qwen Code',
                 description: hint('qwen-code') + '选择 Qwen Code 目录 · 只读会话用量计数',
               },
+              {
+                value: 'cline',
+                label: 'Cline',
+                description: hint('cline') + '选择 Cline 数据目录 · 只读每轮对话的用量',
+              },
+              {
+                value: 'kilo',
+                label: 'Kilo Code',
+                description: hint('kilo') + '选择 kilo.db · 只读用量元数据',
+              },
+              {
+                value: 'goose',
+                label: 'Goose',
+                description: hint('goose') + '选择 sessions.db · 只读会话级汇总',
+              },
+              {
+                value: 'crush',
+                label: 'Crush',
+                description: '选择项目里的 .crush/crush.db · 只读会话级汇总，每个项目添加一次',
+              },
             ]}
           />
         </label>
@@ -279,7 +305,7 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
         </label>
         <button className="button" type="submit" disabled={!!pending}>
           <Plus size={14} />
-          {pending === 'add' ? '正在添加' : kind === 'codex' ? '选择目录并添加' : '选择文件并添加'}
+          {pending === 'add' ? '正在添加' : DIRECTORY_KINDS.includes(kind) ? '选择目录并添加' : '选择文件并添加'}
         </button>
       </form>
       {kind === 'opencode' && (

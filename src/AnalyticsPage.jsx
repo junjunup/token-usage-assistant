@@ -796,6 +796,10 @@ export function AnalyticsPage({
                     'gemini-cli': 'Gemini CLI',
                     'kimi-code-cli': 'Kimi Code',
                     'qwen-code': 'Qwen Code',
+                    cline: 'Cline',
+                    kilo: 'Kilo Code',
+                    goose: 'Goose',
+                    crush: 'Crush',
                   }[item.kind] || item.kind}
                 </small>
               </label>
@@ -882,6 +886,16 @@ export function AnalyticsPage({
           <span>
             包含 Codex 已报告用量快照：记录数不等于请求次数。Codex
             缺少请求终态，不参与成功率和已完成请求均值；缓存与推理子项不重复累加。
+          </span>
+        </div>
+      )}
+      {local && report?.sourceReports?.some((row) => ['goose', 'crush'].includes(row.kind)) && (
+        // T13.2 (D20): Goose and Crush keep only each session's total.
+        <div className="analysis-callout">
+          <Info size={17} />
+          <span>
+            包含 Goose / Crush
+            会话级汇总：每条是一个会话的累计用量，不是请求数；跨天的会话整段算在最后更新的那天，按日分布会有偏差。
           </span>
         </div>
       )}

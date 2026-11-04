@@ -3,11 +3,12 @@
 // file); nothing is read. A found tool is still added through the native picker (AGENTS §4), opened at that path.
 const fs = require('node:fs');
 const path = require('node:path');
-const { TOOL_KINDS } = require('./tool-kinds/index.cjs');
+const { TOOL_KINDS, pickerPath } = require('./tool-kinds/index.cjs');
 const { pathKey } = require('./platform.cjs');
 
 /** The default location of a kind, relative to the home directory, or null when it has none. */
-const defaultOf = (kind) => kind.picker.defaultHomePath || kind.picker.defaultFilePath || null;
+const defaultOf = (kind, platform = process.platform) =>
+  pickerPath(kind.picker, 'defaultHomePath', platform) || pickerPath(kind.picker, 'defaultFilePath', platform);
 
 /**
  * @param {string} home the user's home directory
