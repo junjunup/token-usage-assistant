@@ -3,7 +3,7 @@ const { DatabaseSync } = require('node:sqlite');
 const fs = require('node:fs');
 const path = require('node:path');
 const { initIndex } = require('./harness-reader.cjs');
-const { aggregateTools } = require('./tool-analytics.cjs');
+const { aggregateTools, exportRecords } = require('./tool-analytics.cjs');
 // Per-kind scanning and overlap rules come from desktop/tool-kinds/ (T5.3b).
 const { toolKind } = require('./tool-kinds/index.cjs');
 const { associateRows } = require('./association-rules.cjs');
@@ -106,6 +106,18 @@ function execute(
         start: times.length ? times.reduce((a, b) => Math.min(a, b), Infinity) : null,
         end: times.length ? times.reduce((a, b) => Math.max(a, b), -Infinity) : null,
         complete: false,
+      };
+    }
+    // T13.4: the same records as the analysis, for the CSV export (capped like a scan).
+    if (operation === 'export') {
+      const rows = exportRecords(associated, range, filters, prices);
+      return {
+        source: 'tools',
+        range,
+        status: reports.every((s) => s.status === 'ready') ? 'ready' : 'partial',
+        rows: rows.slice(0, 100000),
+        truncated: rows.length > 100000,
+        sourceReports: reports.map(({ id, kind, label, status }) => ({ id, kind, label, status })),
       };
     }
     const report = aggregateTools(associated, range, filters, prices, reports);

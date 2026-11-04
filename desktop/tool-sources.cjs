@@ -371,13 +371,22 @@ class ToolSources extends EventEmitter {
     const generation = this.revision,
       requestId = query.requestId || crypto.randomUUID();
     const result = await this.run(
-      { operation: 'query', sources, range, filters, prices, associationRules: associationContext?.rules || [] },
+      {
+        operation: internal.operation === 'export' ? 'export' : 'query',
+        sources,
+        range,
+        filters,
+        prices,
+        associationRules: associationContext?.rules || [],
+      },
       requestId,
     );
     if (associationContext && associationContext.signature !== this.associations.context().signature)
       return { source: 'tools', status: 'cancelled', range, summary: null, message: '账户关联已变化，请重新分析。' };
     if (generation !== this.revision)
       return { source: 'tools', status: 'cancelled', range, summary: null, message: '数据源已变化，请重新分析。' };
+    // T13.4: an export returns the records only; source statuses are kept from the last analysis.
+    if (internal.operation === 'export') return { ...result, source: 'tools', range };
     for (const report of result.sourceReports || []) {
       const previous = this.runtime.get(report.id);
       // T9.14: compare the reported field-name fingerprint with the saved one; a change is kept with its time.

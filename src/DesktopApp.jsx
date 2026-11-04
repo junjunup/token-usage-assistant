@@ -1134,6 +1134,18 @@ export function DesktopApp() {
                   analysis.refresh();
                 }}
                 savePrice={(value) => action(() => bridge.saveModelPrice(value), '估算单价已保存。')}
+                onExport={async () => {
+                  const done = await action(() =>
+                    bridge.exportCsv({ source: 'tools', range, ...filters, sourceIds, billingGroupId }),
+                  );
+                  if (done && !done.cancelled)
+                    setToast({
+                      title:
+                        `已导出 ${done.count.toLocaleString('en-US')} 条用量明细` +
+                        (done.truncated ? '（只含最近 100,000 条）' : '') +
+                        (done.partial ? '；部分来源未同步，只含可读取的记录' : ''),
+                    });
+                }}
               />
             ) : view === 'reconciliation' ? (
               <ReconciliationPage state={state} bridge={bridge} onSettings={() => setView('settings')} />

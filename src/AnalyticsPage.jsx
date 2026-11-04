@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   X,
   Info,
+  FileArrowDown,
 } from '@phosphor-icons/react';
 import './analytics.css';
 import { Select } from './Select.jsx';
@@ -619,6 +620,7 @@ export function AnalyticsPage({
   billingGroups = [],
   billingGroupId = '',
   onBillingGroupId,
+  onExport = null,
 }) {
   const [tab, setTab] = useState('trend'),
     [sort, setSort] = useState('tokens'),
@@ -733,6 +735,13 @@ export function AnalyticsPage({
           <ArrowClockwise className={loading ? 'spin' : ''} size={14} />
           {loading ? '更新中' : '刷新分析'}
         </button>
+        {source === 'tools' && onExport && s && !loading && (
+          // T13.4: the records behind this view (same range, sources and filters) as a CSV file.
+          <button className="button analysis-export" type="button" onClick={onExport}>
+            <FileArrowDown size={14} />
+            导出 CSV
+          </button>
+        )}
         {local && loading && cancel && (
           <button className="button analysis-cancel" type="button" onClick={cancel}>
             <X size={14} />

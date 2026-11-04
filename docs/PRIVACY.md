@@ -66,6 +66,10 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 只有你点「导出诊断信息」时才生成，保存前先完整预览：版本、系统、设置、各账户与工具来源的状态，以及最近 500 行日志。不含密钥、对话内容或原始错误文本。是否发给别人由你决定。
 
+### 导出用量明细（CSV）
+
+只有你在「用量分析 → 工具分析」点「导出 CSV」时才生成，保存到你在系统保存框里选的位置。内容是当前时间范围、来源和筛选下的本机工具用量记录：时间、工具、数据源名称、记录单位、状态、服务商、模型、项目路径、会话编号、各项 Token 计数、按你的单价估算的费用和关联的计费账户。不含密钥、提示词、回复或请求编号；缺失的计数留空，不写 0。
+
 ### 怎么删除
 
 - 删除某个连接：应用会删除该连接的密钥、用量快照和采样历史。
@@ -136,6 +140,10 @@ Only on your computer:
 ### Diagnostics
 
 Created only when you choose "导出诊断信息" (export diagnostics), with a full preview before saving: version, system, settings, the status of each account and tool source, and the last 500 log lines. No keys, conversation content or raw error text. Sharing it is up to you.
+
+### Usage export (CSV)
+
+Created only when you click "导出 CSV" (export CSV) under 用量分析 → 工具分析, and saved where you choose in the system save dialog. It holds the local tool usage records of the current range, sources and filters: time, tool, source name, record unit, status, provider, model, project path, session id, token counts, the cost estimated from your own prices and the linked billing account. No keys, prompts, replies or request ids; a missing count is an empty cell, never 0.
 
 ### Deleting data
 
