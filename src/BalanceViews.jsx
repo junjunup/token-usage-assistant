@@ -8,9 +8,21 @@ import './balance.css';
 const currencyName = (code) => (code === 'CNY' ? '人民币' : '美元');
 // T10.1: each balance platform's own names for the parts of its balance. DeepSeek: total = granted + topped up;
 // Kimi: available = cash + voucher, and negative cash (arrears) leaves only the voucher.
-const BRAND = { deepseek: 'DeepSeek', kimi: 'Kimi 开放平台' };
+const BRAND = {
+  deepseek: 'DeepSeek',
+  kimi: 'Kimi 开放平台',
+  siliconflow: '硅基流动',
+  stepfun: '阶跃星辰',
+  'zenmux-payg': 'ZenMux',
+};
 const brand = (state) => BRAND[state.provider] || providerInfo(state.provider)?.name || '平台';
 const kimiRow = (row) => row && 'voucher' in row;
+// T13.3: StepFun reports only the available balance (its cash / voucher figures are lifetime totals, not parts).
+const plainRow = (row) => row && !('voucher' in row) && !('granted' in row);
+// T13.3: SiliconFlow's reference does not explain its three amounts; their reading follows its example.
+const PART_NOTE = {
+  siliconflow: '赠金与充值两项的含义官方文档没有写明，按官方示例（赠金 + 充值 = 总余额）推断。',
+};
 const unavailableText = (state) =>
   state.provider === 'kimi' ? '可用余额已用完，暂不能调用 API' : '当前余额不可用于 API 调用';
 export function BalanceDashboard({ state, onSettings, onTools }) {
@@ -64,6 +76,17 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
           {rows.map((row) =>
             kimiRow(row) ? (
               <KimiBalance row={row} stale={stale} key={row.currency} />
+            ) : plainRow(row) ? (
+              <section className="balance-currency" key={row.currency} aria-label={row.currency + ' 余额'}>
+                <div className="micro-label">
+                  {row.currency} / {currencyName(row.currency)}
+                </div>
+                <h2>{stale ? '上次可用余额' : '可用余额'}</h2>
+                <strong className="balance-total mono">
+                  {formatAmount(row.total)} <small>{row.currency}</small>
+                </strong>
+                {balance.postpaid && <p>后付费账户：用量事后结算，余额为 0 也可以继续调用。</p>}
+              </section>
             ) : (
               <section className="balance-currency" key={row.currency} aria-label={row.currency + ' 余额'}>
                 <div className="micro-label">
@@ -87,7 +110,10 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
                     </dd>
                   </div>
                 </dl>
-                <p>总余额包含赠金与充值余额，三项不重复相加。</p>
+                <p>
+                  总余额包含赠金与充值余额，三项不重复相加。
+                  {PART_NOTE[state.provider] ? ' ' + PART_NOTE[state.provider] : ''}
+                </p>
               </section>
             ),
           )}
@@ -210,7 +236,7 @@ export function BalanceWidget({ state }) {
               </div>
             </dl>
           )}
-          {state.settings.widgetExpanded && !kimiRow(row) && (
+          {state.settings.widgetExpanded && !kimiRow(row) && !plainRow(row) && (
             <dl>
               <div>
                 <dt>赠金</dt>

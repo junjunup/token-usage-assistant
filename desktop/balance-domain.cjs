@@ -74,6 +74,75 @@ function normalizeKimi(raw, currency) {
     source: 'kimi-official-balance',
   };
 }
+const positiveAmount = (/** @type {string} */ v) => !v.startsWith('-') && /[1-9]/.test(v);
+/**
+ * SiliconFlow GET /v1/user/info (T13.3, D20). The official reference lists the fields but not their meaning; from its
+ * example (balance 0.88 + chargeBalance 88.00 = totalBalance 88.88) and how other tools read it, totalBalance is the
+ * total, balance the granted part and chargeBalance the topped-up part. All three are decimal strings; totalBalance is
+ * required. The currency comes from the site (CNY on siliconflow.cn, USD on siliconflow.com), never converted.
+ * @param {any} raw upstream JSON
+ * @param {'CNY'|'USD'} currency
+ */
+function normalizeSiliconFlow(raw, currency) {
+  const data = raw?.data;
+  if (!raw || raw.code !== 20000 || raw.status !== true || !data || typeof data !== 'object' || Array.isArray(data))
+    throw new Error('Unsupported balance response');
+  if (!['CNY', 'USD'].includes(currency)) throw new Error('Unsupported currency');
+  const total = decimal(data.totalBalance),
+    granted = decimal(data.balance),
+    toppedUp = decimal(data.chargeBalance);
+  if (total === null) throw new Error('Missing amounts');
+  return {
+    isAvailable: positiveAmount(total),
+    balances: [{ currency, total, granted, toppedUp }],
+    source: 'siliconflow-official-balance',
+  };
+}
+/**
+ * StepFun GET /v1/accounts (T13.3, D20; official reference). `balance` (a JSON number) is the available balance;
+ * total_cash_balance / total_voucher_balance are lifetime totals (paid in, granted), not what is left, so they are
+ * not shown as parts of the balance. China site only: the reference names no currency and the platform bills in CNY.
+ * A postpaid account settles afterwards, so its balance does not decide whether it can call.
+ * @param {any} raw upstream JSON
+ */
+function normalizeStepFun(raw) {
+  if (!raw || raw.object !== 'account' || !['prepaid', 'postpaid'].includes(raw.type))
+    throw new Error('Unsupported balance response');
+  const total = numberAmount(raw.balance);
+  if (total === null) throw new Error('Missing amounts');
+  return {
+    isAvailable: raw.type === 'postpaid' || positiveAmount(total),
+    balances: [{ currency: 'CNY', total }],
+    postpaid: raw.type === 'postpaid',
+    source: 'stepfun-official-balance',
+  };
+}
+/**
+ * ZenMux GET /api/v1/management/payg/balance (T13.3, D20; official Management API): USD credits; total = top-up +
+ * bonus (the platform allows small floating differences, so they are shown as returned, not recomputed).
+ * @param {any} raw upstream JSON
+ */
+function normalizeZenMuxBalance(raw) {
+  const data = raw?.data;
+  if (
+    !raw ||
+    raw.success === false ||
+    !data ||
+    typeof data !== 'object' ||
+    Array.isArray(data) ||
+    data.currency !== 'usd'
+  )
+    throw new Error('Unsupported balance response');
+  const total = numberAmount(data.total_credits),
+    toppedUp = numberAmount(data.top_up_credits),
+    granted = numberAmount(data.bonus_credits);
+  if (total === null) throw new Error('Missing amounts');
+  return {
+    isAvailable: positiveAmount(total),
+    balances: [{ currency: 'USD', total, granted, toppedUp }],
+    source: 'zenmux-official-payg-balance',
+  };
+}
 /**
  * @param {any} value
  * @returns {string}
@@ -124,4 +193,13 @@ function compactAmount(value) {
     digits.slice(-2)
   );
 }
-module.exports = { normalizeDeepSeek, normalizeKimi, numberAmount, formatAmount, compactAmount };
+module.exports = {
+  normalizeDeepSeek,
+  normalizeKimi,
+  normalizeSiliconFlow,
+  normalizeStepFun,
+  normalizeZenMuxBalance,
+  numberAmount,
+  formatAmount,
+  compactAmount,
+};

@@ -9,14 +9,18 @@ const { createClient, ORIGINS } = require('../desktop/providers.cjs');
 const { fixtureBody } = require('../desktop/provider-fixture.cjs');
 
 // T5.3a: the registry must reproduce the pre-refactor platform list, official pages and client behaviour exactly.
-// Platforms added later are listed explicitly (T10.1: kimi, T10.2: openrouter, T12.2: kimi-code) and covered by
-// their own tests.
+// Platforms added later are listed explicitly (T10.1: kimi, T10.2: openrouter, T12.2: kimi-code, T13.3: siliconflow,
+// stepfun, zenmux, zenmux-payg) and covered by their own tests.
 const IDS = [
   'opencode-go',
   'deepseek',
   'kimi',
   'kimi-code',
   'openrouter',
+  'siliconflow',
+  'stepfun',
+  'zenmux',
+  'zenmux-payg',
   'codex',
   'claude',
   'commandcode',
@@ -42,6 +46,10 @@ test('the registry holds exactly the original platforms plus the added ones, in 
     'kimi',
     'kimi-code',
     'openrouter',
+    'siliconflow',
+    'stepfun',
+    'zenmux',
+    'zenmux-payg',
     'glm',
     'minimax',
     'volcengine',
@@ -53,6 +61,10 @@ test('the registry holds exactly the original platforms plus the added ones, in 
     kimi: 'balance',
     'kimi-code': 'quota',
     openrouter: 'quota',
+    siliconflow: 'balance',
+    stepfun: 'balance',
+    zenmux: 'quota',
+    'zenmux-payg': 'balance',
     codex: 'subscription',
     claude: 'subscription',
     commandcode: 'commandcode',
@@ -164,7 +176,7 @@ test('every quota and balance client behaves exactly as before the registry refa
   const snapshotted = [...new Set(Object.keys(expected).map((k) => k.split(':')[0]))];
   assert.deepEqual(
     Object.keys(ORIGINS).filter((p) => !snapshotted.includes(p)),
-    ['kimi', 'kimi-code', 'openrouter'],
+    ['kimi', 'kimi-code', 'openrouter', 'siliconflow', 'stepfun', 'zenmux', 'zenmux-payg'],
   );
   for (const [provider, regions] of Object.entries(ORIGINS).filter(([p]) => snapshotted.includes(p)))
     for (const region of Object.keys(regions)) {

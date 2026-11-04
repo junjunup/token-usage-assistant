@@ -407,6 +407,54 @@ function normalizeKimiCode(raw) {
       '字段来自多个第三方工具的整理，只按平台给出的百分比显示，不换算为次数或 Token。「每月总额度」与 Kimi 的其他功能（对话、Agent 等）共用，和 5 小时、每周窗口同时约束，不能相加。',
   };
 }
+const ZENMUX_TIERS = Object.freeze({ free: 'Free', pro: 'Pro', max: 'Max', ultra: 'Ultra' });
+const ZENMUX_STATUS = Object.freeze({
+  monitored: '平台检测到用量异常，正在观察（服务仍可用）',
+  abusive: '平台判定用量异常，已限制服务',
+  suspended: '账户已暂停',
+  banned: '账户已封禁',
+});
+/**
+ * T13.3 (D20): ZenMux GET /api/v1/management/subscription/detail (official Management API, a Management API Key).
+ * The rolling 5-hour and 7-day windows give `usage_percentage` as a 0–1 fraction and `resets_at` (ISO, null before
+ * the window starts). The monthly quota has no real-time usage, so it is not shown as a window. At least one window.
+ * @param {any} raw
+ */
+function normalizeZenMux(raw) {
+  const d = raw?.data;
+  if (!object(raw) || raw.success === false || !object(d)) throw new Error('schema');
+  const windows = /** @type {[string, string][]} */ ([
+    ['quota_5_hour', '5 小时窗口'],
+    ['quota_7_day', '7 天窗口'],
+  ]).flatMap(([key, label]) => {
+    const w = d[key];
+    if (w === null || w === undefined) return [];
+    if (!object(w) || typeof w.usage_percentage !== 'number' || !Number.isFinite(w.usage_percentage))
+      throw new Error('schema');
+    if (w.usage_percentage < 0) throw new Error('schema');
+    const resetsAt = isoInstant(w.resets_at ?? null);
+    return [
+      quota({
+        id: 'zenmux:' + key,
+        label,
+        group: 'ZenMux 订阅',
+        remainingPercent: Math.round((100 - Math.min(1, w.usage_percentage) * 100) * 100) / 100,
+        resetAt: resetsAt,
+      }),
+    ];
+  });
+  if (!windows.length) throw new Error('schema');
+  const tier = typeof d.plan?.tier === 'string' ? ZENMUX_TIERS[/** @type {'pro'} */ (d.plan.tier)] : undefined;
+  const status =
+    typeof d.account_status === 'string' ? ZENMUX_STATUS[/** @type {'banned'} */ (d.account_status)] : undefined;
+  return {
+    windows,
+    planName: tier ? 'ZenMux · ' + tier : 'ZenMux',
+    note: status || '5 小时与 7 天窗口同时约束，任一用尽都会限速',
+    noteDetail:
+      '额度按 Flow 计，这里只显示平台给出的使用比例和重置时间。每月额度没有实时用量，不作为窗口显示。查询使用 Management API Key，只调用只读查询接口。',
+  };
+}
 // T10.2 (D16 ③): OpenRouter GET /api/v1/key — limits and reported spend of THIS key (credits = USD), not an account
 // balance or a bill. Only whitelisted numbers are kept: the key label, user / organization / workspace ids and other
 // identity fields are never stored. The key's own limit also appears in `budgets` as scope key_limit; it is shown
@@ -537,6 +585,7 @@ function normalizeOpenRouter(raw) {
 }
 module.exports = {
   quota,
+  normalizeZenMux,
   normalizeGlm,
   normalizeMiniMax,
   normalizeVolcengine,
