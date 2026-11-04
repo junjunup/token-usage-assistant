@@ -27,7 +27,8 @@ const { createClient } = require('./providers.cjs');
 const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { providerDefinition } = require('./providers/index.cjs');
-const { toolKind, pickerPath } = require('./tool-kinds/index.cjs');
+const { toolKind, pickerPath, TOOL_KINDS } = require('./tool-kinds/index.cjs');
+const { toolRecordsCsv } = require('./csv-export.cjs');
 const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
@@ -978,6 +979,34 @@ function installIpc() {
     }
     log.info('main', 'diagnostics-saved', { count: text.length });
     return true;
+  });
+  // T13.4: the tool records the analysis shows (same range, sources and filters) as a CSV file the user saves.
+  handle('assistant:export-csv', async (event, query) => {
+    mainOnly(event);
+    if (!query || typeof query !== 'object' || query.source !== 'tools') throw inputError('只能导出工具用量明细。');
+    const result = await toolSources.query(query, analytics?.prices || {}, { operation: 'export' });
+    if (!Array.isArray(result?.rows)) throw inputError(result?.message || '用量明细暂时无法导出，请稍后重试。');
+    if (!result.rows.length) throw inputError('当前范围和筛选下没有可导出的记录。');
+    const text = toolRecordsCsv(result.rows, {
+      sources: Object.fromEntries(toolSources.entries.map((s) => [s.id, s.label || toolKind(s.kind)?.defaultLabel])),
+      accounts: Object.fromEntries((associations?.publicState().groups || []).map((g) => [g.id, g.label])),
+      tools: Object.fromEntries(TOOL_KINDS.map((k) => [k.kind, k.defaultLabel])),
+    });
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const choice = await dialog.showSaveDialog(mainWindow, {
+      title: '导出用量明细',
+      defaultPath: `TokenUsageAssistant-usage-${String(query.range || 'today').replace(/[^\w-]/g, '')}-${stamp}.csv`,
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    });
+    if (choice.canceled || !choice.filePath) return { cancelled: true };
+    try {
+      fs.writeFileSync(choice.filePath, text, { encoding: 'utf8', mode: 0o600 });
+    } catch (e) {
+      log.warn('main', 'csv-export-failed', { errno: e?.code });
+      throw inputError('用量明细未能保存，请换一个位置重试。');
+    }
+    log.info('main', 'csv-exported', { count: result.rows.length });
+    return { count: result.rows.length, truncated: !!result.truncated, partial: result.status !== 'ready' };
   });
   handle('assistant:claude-config', (event, action) => {
     mainOnly(event);

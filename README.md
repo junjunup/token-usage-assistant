@@ -18,7 +18,7 @@
 ## 能做什么
 
 - **平台额度与余额**：5 小时 / 每周 / 月度窗口剩余多少、什么时候重置；按量平台的余额。多个账户（最多 20 个）各自刷新、各自提醒。
-- **本机工具用量**：Codex、Claude Code、Gemini CLI、Kimi Code CLI、Qwen Code、Cline、Kilo Code、Goose、Crush、Zcode、OpenCode、DeepSeek Harness 的 Token、请求、模型与项目分布；可按自己填的单价估算费用（USD / CNY 分开）。
+- **本机工具用量**：Codex、Claude Code、Gemini CLI、Kimi Code CLI、Qwen Code、Cline、Kilo Code、Goose、Crush、Zcode、OpenCode、DeepSeek Harness 的 Token、请求、模型与项目分布；可按自己填的单价估算费用（USD / CNY 分开），明细可导出为 CSV。
 - **随时瞄一眼**：Mac 菜单栏图标与面板、Windows 托盘、置顶悬浮窗；深浅色主题。
 - **说实话**：数据缺失显示「—」而不是 0；平台额度和本机用量各算各的、不相加；覆盖不全时不做对比。
 

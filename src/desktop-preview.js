@@ -652,6 +652,7 @@ export const previewBridge = {
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
   openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
   claudeConfig: async () => ({ ok: false, error: '浏览器预览不修改 Claude Code 设置。' }),
+  exportCsv: async () => ({ ok: false, error: '浏览器预览不保存文件。' }),
   downloadUpdate: async () => ({ ok: false, error: '浏览器预览不下载安装包。' }),
   installUpdate: async () => ({ ok: false, error: '浏览器预览不安装更新。' }),
   previewDiagnostics: async () => ({

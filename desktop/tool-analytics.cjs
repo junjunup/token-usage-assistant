@@ -622,6 +622,33 @@ function coverageFor(reports, range) {
   };
 }
 /**
+ * T13.4: the records the analysis shows for these inputs (same deduplication, pricing and filters as aggregateTools),
+ * oldest first, for the CSV export.
+ * @param {ToolRecord[]} records
+ * @param {ActiveRange} range
+ * @param {ToolFilters & { sourceIds?: string[] }} [filters]
+ * @param {any} [prices]
+ * @returns {ToolRecord[]}
+ */
+function exportRecords(records, range, filters = {}, prices = {}) {
+  const p = normalizedPrices(prices),
+    ids = Array.isArray(filters.sourceIds) && filters.sourceIds.length ? new Set(filters.sourceIds) : null;
+  return deduplicate(records)
+    .filter(
+      (r) =>
+        (!ids || ids.has(r.sourceId)) &&
+        r.at >= range.start &&
+        r.at <= range.end &&
+        (!filters.billingGroupId ||
+          (filters.billingGroupId === 'unlinked' ? !r.accountId : r.accountId === filters.billingGroupId)) &&
+        (!filters.model || r.modelKey === filters.model) &&
+        (!filters.project || r.project === filters.project) &&
+        (!filters.session || r.session === filters.session),
+    )
+    .map((r) => priceRecord(r, p))
+    .sort((a, b) => a.at - b.at);
+}
+/**
  * @param {ToolRecord[]} records
  * @param {ActiveRange} range
  * @param {ToolFilters} [filters]
@@ -765,4 +792,5 @@ module.exports = {
   normalizeSubscriptionRecord,
   normalizeOpenCodeRecord,
   aggregateTools,
+  exportRecords,
 };
