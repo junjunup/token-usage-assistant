@@ -70,6 +70,10 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 只有你在「用量分析 → 工具分析」点「导出 CSV」时才生成，保存到你在系统保存框里选的位置。内容是当前时间范围、来源和筛选下的本机工具用量记录：时间、工具、数据源名称、记录单位、状态、服务商、模型、项目路径、会话编号、各项 Token 计数、按你的单价估算的费用和关联的计费账户。不含密钥、提示词、回复或请求编号；缺失的计数留空，不写 0。
 
+### 命令行读取额度
+
+默认关闭。只有你在「账户与设置 → PREFERENCES」打开「命令行读取额度」后，应用才在数据目录的 `cli/` 里保存 `status.json` 与 `status.txt`（全部账户的额度百分比、重置时间、余额金额和更新时间，账户名称为你起的备注），并放一个只打印这两个文件的命令（Mac `tua-status`，Windows `tua-status.cmd` 与 `tua-status.ps1`）。不含密钥或账户身份信息，不开放网络端口；关闭这一项会删除这些文件。
+
 ### 怎么删除
 
 - 删除某个连接：应用会删除该连接的密钥、用量快照和采样历史。
@@ -144,6 +148,10 @@ Created only when you choose "导出诊断信息" (export diagnostics), with a f
 ### Usage export (CSV)
 
 Created only when you click "导出 CSV" (export CSV) under 用量分析 → 工具分析, and saved where you choose in the system save dialog. It holds the local tool usage records of the current range, sources and filters: time, tool, source name, record unit, status, provider, model, project path, session id, token counts, the cost estimated from your own prices and the linked billing account. No keys, prompts, replies or request ids; a missing count is an empty cell, never 0.
+
+### Command-line quota
+
+Off by default. Only after you turn on "命令行读取额度" under 账户与设置 → PREFERENCES does the app keep `status.json` and `status.txt` in `cli/` inside its data folder (every account's quota percentages, reset times, balance amounts and update times, with the account names you gave them) and put a command there that only prints these files (macOS `tua-status`, Windows `tua-status.cmd` and `tua-status.ps1`). No keys or account identities, no network port; turning it off deletes these files.
 
 ### Deleting data
 

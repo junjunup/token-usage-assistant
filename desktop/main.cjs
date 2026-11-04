@@ -29,6 +29,7 @@ const { connectCodex } = require('./codex-connect.cjs');
 const { providerDefinition } = require('./providers/index.cjs');
 const { toolKind, pickerPath, TOOL_KINDS } = require('./tool-kinds/index.cjs');
 const { toolRecordsCsv } = require('./csv-export.cjs');
+const { StatusExport } = require('./status-export.cjs');
 const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
@@ -114,6 +115,7 @@ let accounts,
   smokeRun,
   updates,
   installer,
+  statusExport,
   diagnosticsText = '',
   connectionBusy = false,
   lockCheck = null;
@@ -159,6 +161,8 @@ function state() {
       claudeCollector?.issue,
       claudeCollector?.portChange,
     ),
+    // T13.5: the command that prints the quota snapshot, while that setting is on.
+    statusCommand: settings.statusExport && statusExport ? statusExport.command : null,
     // T13.1: whether the status-line helper is in Claude Code's own settings (only once the collector exists).
     claudeConfig: claudeConfigStatus(),
     data,
@@ -203,6 +207,17 @@ function broadcast() {
   for (const w of [mainWindow, widgetWindow]) if (w && !w.isDestroyed()) w.webContents.send('assistant:state', s);
   updateTray();
   menubarPanel?.send();
+  syncStatusExport();
+}
+// T13.5 (D20 ③): the command-line snapshot follows the accounts while the setting is on; off removes its files.
+function syncStatusExport() {
+  if (!statusExport || !settings || !accounts) return;
+  try {
+    if (settings.statusExport) statusExport.update(accounts.summaries(), settings);
+    else if (statusExport.lastAt || fs.existsSync(statusExport.command)) statusExport.remove();
+  } catch (e) {
+    log.warn('status-export', 'write-failed', { errno: e?.code });
+  }
 }
 function savePreferences() {
   store.saveSettings(settings, bounds);
@@ -1008,6 +1023,13 @@ function installIpc() {
     log.info('main', 'csv-exported', { count: result.rows.length });
     return { count: result.rows.length, truncated: !!result.truncated, partial: result.status !== 'ready' };
   });
+  handle('assistant:show-status-command', (event) => {
+    mainOnly(event);
+    if (!settings.statusExport || !statusExport || !fs.existsSync(statusExport.command))
+      throw inputError('请先开启「命令行读取额度」。');
+    shell.showItemInFolder(statusExport.command);
+    return true;
+  });
   handle('assistant:claude-config', (event, action) => {
     mainOnly(event);
     return changeClaudeConfig(action === 'restore' ? 'restore' : 'install');
@@ -1240,6 +1262,8 @@ else {
         fetch: (...args) => net.fetch(...args),
         onChange: () => broadcast(),
       });
+      // T13.5: never in smoke mode (the isolated test directory has no real accounts to export).
+      if (!smoke) statusExport = new StatusExport({ dir: store.file('cli') });
       installer = new AutoInstaller({
         supported: !smoke && canInstall({ platform: process.platform, isPackaged: app.isPackaged, env: process.env }),
         onChange: () => broadcast(),

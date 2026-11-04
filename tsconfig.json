@@ -24,6 +24,8 @@
     "desktop/panel-placement.cjs",
     "desktop/onboarding.cjs",
     "desktop/coverage-report.cjs",
-    "desktop/upstream-contracts.cjs"
+    "desktop/upstream-contracts.cjs",
+    "desktop/status-snapshot.cjs",
+    "desktop/csv-export.cjs"
   ]
 }
