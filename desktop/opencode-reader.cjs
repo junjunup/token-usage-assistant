@@ -2,13 +2,16 @@ const fs = require('node:fs');
 const { DatabaseSync } = require('node:sqlite');
 const { normalizeOpenCodeRecord } = require('./tool-analytics.cjs');
 const MAX_ROWS = 100000;
-const schema = () => ({
+const schema = (name = 'OpenCode', dbName = 'opencode.db') => ({
   status: 'schema',
-  message: 'OpenCode 数据库结构暂不支持，原文件未修改。请选择含用量记录的 opencode.db。',
+  message: `${name} 数据库结构暂不支持，原文件未修改。请选择含用量记录的 ${dbName}。`,
 });
 
-function readOpenCodeRows(file, range, sourceId) {
-  if (!fs.existsSync(file)) return { status: 'missing', message: '未找到 OpenCode 数据库，请重新选择 opencode.db。' };
+// T13.2: Kilo Code's kilo.db has the same structure; `tool` names the rows and the messages.
+function readOpenCodeRows(file, range, sourceId, tool = 'opencode') {
+  const name = tool === 'kilo' ? 'Kilo Code' : 'OpenCode',
+    dbName = tool === 'kilo' ? 'kilo.db' : 'opencode.db';
+  if (!fs.existsSync(file)) return { status: 'missing', message: `未找到 ${name} 数据库，请重新选择 ${dbName}。` };
   let db;
   try {
     db = new DatabaseSync(file, { readOnly: true, enableLoadExtension: false });
@@ -27,12 +30,13 @@ function readOpenCodeRows(file, range, sourceId) {
           .map((c) => c.name),
       );
     const has = (name, required) => tables.has(name) && required.every((c) => columns(name).has(c));
-    if (!has('session', ['id', 'directory', 'time_created'])) return schema();
+    if (!has('session', ['id', 'directory', 'time_created'])) return schema(name, dbName);
     const v1 = has('message', ['id', 'session_id', 'time_created', 'time_updated', 'data']);
     const v2 = has('session_message', ['id', 'session_id', 'type', 'time_created', 'time_updated', 'data']);
-    if ((!v1 && !v2) || (tables.has('message') && !v1) || (tables.has('session_message') && !v2)) return schema();
+    if ((!v1 && !v2) || (tables.has('message') && !v1) || (tables.has('session_message') && !v2))
+      return schema(name, dbName);
     const parts = has('part', ['id', 'message_id', 'session_id', 'data', 'time_created', 'time_updated']);
-    if (tables.has('part') && !parts) return schema();
+    if (tables.has('part') && !parts) return schema(name, dbName);
     // JSON extraction happens inside SQLite: no full message, content, error, or credential leaves the source database.
     const leaf = (alias, key) => `json_extract(${alias}.data,'$.${key}')`;
     const tokens = (alias) =>
@@ -78,7 +82,7 @@ function readOpenCodeRows(file, range, sourceId) {
       );
     }
     if (parts) invalid += Number(db.prepare('SELECT COUNT(*) AS n FROM part WHERE NOT json_valid(data)').get().n);
-    if (invalid) return schema();
+    if (invalid) return schema(name, dbName);
     const all = db
       .prepare(queries.map((q) => 'SELECT * FROM (' + q + ')').join(' UNION ALL ') + ' ORDER BY at DESC,id LIMIT ?')
       .all(...queries.flatMap(() => [start, end]), MAX_ROWS + 1);
@@ -93,15 +97,15 @@ function readOpenCodeRows(file, range, sourceId) {
         typeof r.session_created !== 'number' ||
         r.session_created <= 0
       )
-        return schema();
+        return schema(name, dbName);
       // Fork/import clones retain original event times. Exclude history predating this session.
       if (r.at < r.session_created) {
         inherited++;
         continue;
       }
-      rows.push(normalizeOpenCodeRecord(r, sourceId));
+      rows.push(normalizeOpenCodeRecord(r, sourceId, tool));
     }
-    const note = 'OpenCode 已保存的用量记录，不等于请求数';
+    const note = name + ' 已保存的用量记录，不等于请求数';
     return {
       rows,
       status: 'ready',
@@ -115,7 +119,7 @@ function readOpenCodeRows(file, range, sourceId) {
       formatVersion: v1 && v2 ? 'v1/v2' : v2 ? 'v2' : 'v1',
     };
   } catch {
-    return { status: 'error', message: '暂时无法只读解析 OpenCode 数据库，请稍后重试或检查文件格式。' };
+    return { status: 'error', message: `暂时无法只读解析 ${name} 数据库，请稍后重试或检查文件格式。` };
   } finally {
     if (db) {
       try {

@@ -27,7 +27,7 @@ const { createClient } = require('./providers.cjs');
 const { resizedWidgetBounds } = require('./widget-bounds.cjs');
 const { connectCodex } = require('./codex-connect.cjs');
 const { providerDefinition } = require('./providers/index.cjs');
-const { toolKind } = require('./tool-kinds/index.cjs');
+const { toolKind, pickerPath } = require('./tool-kinds/index.cjs');
 const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
@@ -673,12 +673,15 @@ function installIpc() {
   const chooseToolFile = async (kind) => {
     const picker = toolKind(kind)?.picker;
     if (!picker) throw inputError('不支持的工具来源');
+    const home = app.getPath('home'),
+      homePath = pickerPath(picker, 'defaultHomePath'),
+      filePath = pickerPath(picker, 'defaultFilePath');
     const choice = await dialog.showOpenDialog(
       mainWindow,
       picker.type === 'directory'
         ? {
             title: picker.title,
-            defaultPath: path.join(app.getPath('home'), picker.defaultHomePath),
+            defaultPath: homePath ? path.join(home, homePath) : home,
             properties: ['openDirectory'],
           }
         : {
@@ -686,9 +689,7 @@ function installIpc() {
             properties: ['openFile'],
             filters: picker.filters,
             // T12.6: open at the default file when it exists, so a found tool is one confirmation away.
-            ...(picker.defaultFilePath && fs.existsSync(path.join(app.getPath('home'), picker.defaultFilePath))
-              ? { defaultPath: path.join(app.getPath('home'), picker.defaultFilePath) }
-              : {}),
+            ...(filePath && fs.existsSync(path.join(home, filePath)) ? { defaultPath: path.join(home, filePath) } : {}),
           },
     );
     return choice.canceled ? null : choice.filePaths[0];

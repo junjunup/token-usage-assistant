@@ -31,6 +31,9 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 - Codex：读取本机 rollout 文件中的用量快照。
 - Kimi Code CLI：读取 `~/.kimi-code/sessions/` 下各会话 `wire.jsonl` 里的 `usage.record` 用量记录（每次模型调用的未缓存输入、输出、缓存读写计数、模型名、时间、agent 编号）；同一文件里的对话、工具调用和供应商原始 usage 一律跳过，不解码、不保存。
 - Qwen Code：读取 `~/.qwen/projects/<项目>/chats/`（旧版为 `~/.qwen/tmp/`）下会话文件里每条模型回复的用量计数（输入、输出、缓存、思考、总量）、模型名、时间和编号；提示词、回复、思考过程和工具调用一律跳过，不解码、不保存。
+- Cline（T13.2）：读取你选择的 Cline 数据目录（通常是 `~/.cline/data`）里 `sessions/<会话>/<会话>.messages.json` 中每轮最后一条回复的用量计数（输入、输出）和模型名；提示词、回复、思考、工具内容不解码。旧版任务（`ui_messages.json`）不读取。
+- Kilo Code（T13.2）：只读打开你选择的 `kilo.db`（通常在 `~/.local/share/kilo/`），与 OpenCode 相同的白名单投影。
+- Goose、Crush（T13.2）：只读打开你选择的 Goose `sessions.db` 或某个项目的 Crush `.crush/crush.db`，只选每个会话的累计输入、输出、更新时间、模型名（Goose 还有服务商与工作目录）；会话名、描述、配方、对话内容不读取。它们只有会话级汇总，不是请求数。
 - Gemini CLI：读取 `~/.gemini/tmp/<项目>/chats/` 下会话文件里每条模型回复的用量计数（输入、输出、缓存、思考、总量）、模型名、时间和编号；同一文件里的提示词、回复、思考过程、工具调用和摘要一律跳过，不解码、不保存。
 - Claude Code：只采集你通过生成的启动脚本运行之后的用量事件；本机组件只监听 `127.0.0.1`。
 - 接入所有 Claude Code 会话（T13.1，可选）：只有你在「账户与设置 → 账户连接」点「接入所有会话」并在确认框里同意后，应用才修改 Claude Code 的用户设置 `~/.claude/settings.json`（设置了 `CLAUDE_CONFIG_DIR` 时用那里的）里的 `statusLine` 一项，其他设置原样保留。修改前把原文件备份到上面的 `claude-collector/`；你原来的状态栏命令会继续运行（macOS；Windows 上已有自己的状态栏时不接入）。点「还原」放回原来的 `statusLine`。这样只多采集额度窗口，不加遥测设置；逐请求的 Token 明细仍只来自启动脚本打开的会话。
@@ -96,6 +99,9 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 - Codex: usage snapshots in local rollout files.
 - Kimi Code CLI: the `usage.record` entries in each session's `wire.jsonl` under `~/.kimi-code/sessions/` (per model call: uncached input, output, cache read / write counts, model name, time, agent id); conversations, tool calls and the provider's raw usage in the same files are skipped, never decoded or kept.
 - Qwen Code: for each model reply in the session files under `~/.qwen/projects/<project>/chats/` (older versions: `~/.qwen/tmp/`), its usage counts (input, output, cached, thoughts, total), model name, time and id; prompts, replies, thoughts and tool calls are skipped, never decoded or kept.
+- Cline (T13.2): in the Cline data folder you choose (usually `~/.cline/data`), `sessions/<id>/<id>.messages.json`: for the last reply of each turn, its usage counts (input, output) and model; prompts, replies, thinking and tool content are not decoded. Older tasks (`ui_messages.json`) are not read.
+- Kilo Code (T13.2): the `kilo.db` you choose (usually in `~/.local/share/kilo/`), opened read-only with the same whitelisted projection as OpenCode.
+- Goose, Crush (T13.2): the Goose `sessions.db` or a project's Crush `.crush/crush.db` you choose, opened read-only; only each session's accumulated input, output, update time and model (Goose also provider and working folder). Session names, descriptions, recipes and conversation content are not read. These are session totals, not requests.
 - Gemini CLI: for each model reply in the session files under `~/.gemini/tmp/<project>/chats/`, its usage counts (input, output, cached, thoughts, total), model name, time and id; prompts, replies, thoughts, tool calls and summaries in the same files are skipped, never decoded or kept.
 - Claude Code: only usage events after you start it with the generated launcher; the local component listens on `127.0.0.1` only.
 - Connecting every Claude Code session (T13.1, optional): only after you click "接入所有会话" under 账户与设置 → 账户连接 and agree in the confirmation does the app change the `statusLine` entry of Claude Code's user settings `~/.claude/settings.json` (or the one in `CLAUDE_CONFIG_DIR`), keeping every other setting. The original file is backed up into `claude-collector/` first; your own status-line command keeps running (macOS; on Windows an existing status line is left alone and nothing is connected). "还原" (restore) puts the previous `statusLine` back. This adds quota windows only, no telemetry settings; per-request token details still come only from sessions started with the launcher.
