@@ -146,7 +146,7 @@
 | 12 追上差距 | T12.7 Claude Code 状态栏显示全部账户额度（可选） | 是（新视觉元素，先给样例） | — | D19 ④ | [x] |
 | 12 追上差距 | T12.8 Windows 自动更新 | 是 | — | D19 ⑤ | [x] |
 | 13 接得上、带得走 | T13.1 Claude 一步接入（写入 Claude Code 配置，可还原） | 是（UI 小改） | — | D20 ② | [x] |
-| 13 接得上、带得走 | T13.2 更多本机工具（先调研，选 3–4 个） | 是 | — | D20 ① | [ ] |
+| 13 接得上、带得走 | T13.2 更多本机工具（先调研，选 3–4 个） | 是 | — | D20 ① | [x] |
 | 13 接得上、带得走 | T13.3 更多平台（硅基流动等；百炼只调研） | 是 | — | D20 ①、D19 ② | [ ] |
 | 13 接得上、带得走 | T13.4 导出 CSV | 是（UI 小改） | — | D20 ① | [ ] |
 | 13 接得上、带得走 | T13.5 命令行 / JSON 输出 | 是 | — | D20 ③ | [ ] |
@@ -600,6 +600,7 @@
 | 2026-11-03 | T12.7 | Claude Code 状态栏显示额度（用户选方案 C，设置 `claudeStatusQuota` 默认关闭）：组件 `/quota` 回复带回主进程算好的一行（本会话 5h / 7d 更紧的一个 + 最紧的其他账户），脚本只打印安全的单行，否则照旧；PowerShell 改为 UTF-8 输出。`task/T12.7-claude-statusline` `a2ac5fe`；CI `41573670140`、Release 试跑 `41573686034` 通过 | 445：439 / 0 / 6 | ①＋②；Mac 脚本端到端实跑（关 / 开 / 助手未运行三种输出正确）；截图在 `work/t12/shots/` | Windows 脚本「开」的路径没在真机上跑过（CI smoke 只覆盖关闭时）；没在真实 Claude Code 会话里看过 |
 | 2026-11-03 | T12.8 | Windows 自动更新（D19 ⑤）：只有 Windows 安装版（非便携、非开发、非 smoke）在「检查更新」里多「下载并安装」→「重启并安装」两步，各要点击；electron-updater 6.8.10（纯 JS、满两周）只在第一次点击时加载，`autoDownload` / `autoInstallOnAppQuit` 关闭，按发布页 `latest.yml` 的 SHA-512 校验（安装包未签名，已写入 PRIVACY）；错误只记固定代码。electron-builder 只给 Windows 加 publish 配置，生成 `latest.yml`（测试版也用这个名字）与 `.blockmap`；`scripts/verify-update-info.cjs` 在 Release 与 Publish 里核对它与 Setup EXE 一致，Publish 多传这两个文件；`verify-package` 只接受运行时依赖闭包（16 个包，逐文件比对），许可证与第三方声明同步。`task/T12.8-win-auto-update` `519af52`；CI `41598850023`、Release 试跑 `41598862400` 通过（第一次试跑 `41598331986` 因核对脚本误以为测试版生成 `beta.yml` 而失败，已修） | 451：445 / 0 / 6 | ①＋②（Windows 打包 smoke、打包内容与更新说明核对）；四种状态的浅色 / 深色截图在 `work/t12/shots/update-*.png` | 完整的下载、校验、安装流程待发版后验证（1.9.0-beta.6 及更早版本没有此功能，要手动升级一次）；没在 Windows 真机上点过 |
 | 2026-11-03 | T13.1 | Claude 一步接入（D20 ②）：账户连接里「所有 Claude Code 会话」一栏，确认框写明改哪个文件哪一项后，把状态栏组件写进 Claude Code 用户设置的 `statusLine`（`desktop/claude-config.cjs`：只改这一项、先备份、看不懂的文件不写、按组件路径识别、应用移动后启动时自动更新命令、还原放回原 statusLine）；原有命令由 Mac 组件串联运行（同一输入，结果在前，最长等 4 秒），Windows 已有自定义状态栏时拒绝接入；接入后助手离线时组件不输出。只写 statusLine，逐请求明细仍靠启动脚本。`task/T13.1-claude-connect` `4976f78`；CI `41601355022` 通过 | 458：452 / 0 / 6 | ①（含 Mac 组件串联的进程级测试）；开发版隔离 smoke 通过；四种状态的浅色 / 深色截图在 `work/t13/shots/` | 没在真实的 `~/.claude/settings.json` 和真实 Claude Code 会话上试过（要你在应用里点确认）；Windows 的写入路径只有单元测试 |
+| 2026-11-05 | T13.2 | 更多本机工具（D20 ④）：Cline 读 SDK 存储 `sessions/<id>/<id>.messages.json` 每轮的 `metrics`（输入按报告值、缓存不计、按消息 id 去重，旧版 `ui_messages.json` 不读）；Kilo Code 的 `kilo.db` 复用 OpenCode 读取器；Goose `sessions.db` 与项目的 Crush `crush.db` 只读白名单列，按会话级汇总（每会话一行、按最后更新时间、用量分析标明；Crush 只取顶层会话、每个项目单独选择）；默认位置可按系统区分（Goose 在 Windows 的 `%APPDATA%`）；向导工具数 8 → 12（smoke 同步）。调研见 `docs/research/MORE-TOOLS.md`。`task/T13.2-more-tools` `7ec90c4`；CI `41881511881` 通过 | 464：458 / 0 / 6 | ①（按官方源码构造的样例）；开发版隔离 smoke 通过；向导截图在 `work/t13/shots/` | 四个工具都没在真实数据上核对；Cline 旧版任务、Roo Code 不支持 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
