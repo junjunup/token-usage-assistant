@@ -48,6 +48,13 @@ export function t(text, vars) {
     const m = pattern.exec(filled);
     if (m) return typeof replace === 'function' ? replace(...m.slice(1)) : filled.replace(pattern, replace);
   }
+  // Messages made of several sentences (a source's status: "N 个文件…已排除。部分字段缺失…。Qwen Code…"): each
+  // sentence on its own; untranslated sentences stay Chinese.
+  const sentences = filled.match(/[^。（]+。|（[^）]*）|[^。（]+$/g);
+  if (sentences && sentences.length > 1) {
+    const done = sentences.map((part) => t(part.trim()));
+    if (done.some((part, i) => part !== sentences[i].trim())) return done.join(' ');
+  }
   // Labels joined with " · " (e.g. "成员预算 · 每周"): each part on its own; untranslated parts stay as they are.
   if (filled.includes(' · ')) {
     const parts = filled.split(' · '),

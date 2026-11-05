@@ -33,6 +33,7 @@ const { StatusExport } = require('./status-export.cjs');
 const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
 const { ProviderStatus, describe: describeStatus } = require('./provider-status.cjs');
+const { tm, setMainLanguage } = require('./i18n-main.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
@@ -195,7 +196,7 @@ function state() {
 // T12.7 (D19 ④): Claude Code's status line asks for this on each repaint; '' while the setting is off.
 function claudeStatusText(windows) {
   return settings.claudeStatusQuota && accounts
-    ? claudeStatusLine(accountOverview(accounts.summaries(), settings), windows)
+    ? claudeStatusLine(accountOverview(accounts.summaries(), settings), windows, tm)
     : '';
 }
 // T12.1: the current account's pace line for the platform dashboards (Command Code's comes with its analytics, and
@@ -222,6 +223,46 @@ function syncProviderStatus() {
   providerStatus.setProviders(accounts.entries.map((e) => e.provider));
   if (settings.providerStatus && !smoke) providerStatus.start();
   else if (providerStatus.running) providerStatus.stop();
+}
+// T14.4: the macOS application menu, rebuilt when the interface language changes.
+function buildAppMenu() {
+  if (!isMac) return;
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: tm('Token 用量助手'),
+        submenu: [
+          { role: 'about', label: tm('关于 Token 用量助手') },
+          { type: 'separator' },
+          { role: 'hide', label: tm('隐藏助手') },
+          { role: 'hideOthers', label: tm('隐藏其他应用') },
+          { role: 'unhide', label: tm('显示全部') },
+          { type: 'separator' },
+          { role: 'quit', label: tm('退出助手') },
+        ],
+      },
+      {
+        label: tm('编辑'),
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'selectAll' },
+        ],
+      },
+      {
+        label: tm('窗口'),
+        submenu: [
+          { label: tm('打开用量总览'), accelerator: 'CommandOrControl+1', click: showMain },
+          { role: 'minimize' },
+          { role: 'close' },
+        ],
+      },
+    ]),
+  );
 }
 function systemLanguage() {
   // The native smoke checks Chinese text; CI runners use an English system, so smoke always runs in Chinese.
@@ -337,7 +378,7 @@ function secureWindow(kind) {
     skipTaskbar: kind === 'widget',
     alwaysOnTop: kind === 'widget',
     movable: kind !== 'widget' || !settings.pinned,
-    title: kind === 'main' ? 'Token 用量助手' : '用量悬浮窗',
+    title: kind === 'main' ? tm('Token 用量助手') : tm('用量悬浮窗'),
     backgroundColor: settings.theme === 'dark' ? '#141416' : '#ffffff',
     icon: windowIcon(__dirname),
     webPreferences: {
@@ -443,6 +484,12 @@ function applySettings(next) {
   fitWidget();
   accounts.updateSettings(settings);
   if (previous.updateCheck !== settings.updateCheck) setUpdateCheck();
+  if (previous.language !== settings.language) {
+    setMainLanguage(settings.language, systemLanguage());
+    buildAppMenu();
+    for (const w of [mainWindow, widgetWindow])
+      if (w && !w.isDestroyed()) w.setTitle(tm(w === mainWindow ? 'Token 用量助手' : '用量悬浮窗'));
+  }
   broadcast();
 }
 // T5.2: the update check runs only while enabled, and never in smoke mode (no network there).
@@ -491,16 +538,24 @@ async function changeClaudeConfig(action) {
       );
     const choice = await dialog.showMessageBox(mainWindow, {
       type: 'question',
-      buttons: ['接入', '取消'],
+      buttons: [tm('接入'), tm('取消')],
       defaultId: 0,
       cancelId: 1,
-      message: '把助手的状态栏组件写进 Claude Code 设置？',
+      message: tm('把助手的状态栏组件写进 Claude Code 设置？'),
       detail:
-        '将修改 ' +
-        status.file +
-        ' 里的 statusLine 一项，其他设置不变；修改前先把原文件备份到助手的数据目录，随时可以在这里还原。' +
-        (readSettings(config.file).value?.statusLine ? '你原来的状态栏命令会继续运行，显示在助手内容的前面。' : '') +
-        '\n\n之后任何方式打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）；逐请求的 Token 明细仍需用启动脚本打开。',
+        tm(
+          '将修改 {file} 里的 statusLine 一项，其他设置不变；修改前先把原文件备份到助手的数据目录，随时可以在这里还原。',
+          {
+            file: status.file,
+          },
+        ) +
+        (readSettings(config.file).value?.statusLine
+          ? tm('你原来的状态栏命令会继续运行，显示在助手内容的前面。')
+          : '') +
+        '\n\n' +
+        tm(
+          '之后任何方式打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）；逐请求的 Token 明细仍需用启动脚本打开。',
+        ),
     });
     if (choice.response !== 0) return { ...state(), connectionMessage: '' };
     config.install();
@@ -527,33 +582,39 @@ function quotaAlert(alert) {
   if (alert.key?.startsWith('balance:')) {
     const symbol = alert.currency === 'CNY' ? '¥' : alert.currency === 'USD' ? '$' : alert.currency + ' ';
     showNotification(
-      (alert.accountLabel ? alert.accountLabel + ' · ' : '') + alert.currency + ' 余额偏低',
-      `余额 ${symbol}${formatAmount(alert.total)}，低于 ${symbol}${alert.threshold} 提醒金额。`,
+      (alert.accountLabel ? alert.accountLabel + ' · ' : '') + tm('{currency} 余额偏低', { currency: alert.currency }),
+      tm('余额 {balance}，低于 {threshold} 提醒金额。', {
+        balance: symbol + formatAmount(alert.total),
+        threshold: symbol + alert.threshold,
+      }),
     );
     return;
   }
   const name =
-    alert.label || (alert.key === 'monthly' ? '月度套餐额度' : alert.key === 'five' ? '5 小时额度' : '每周额度');
+    alert.label || tm(alert.key === 'monthly' ? '月度套餐额度' : alert.key === 'five' ? '5 小时额度' : '每周额度');
   const prefix = alert.accountLabel ? alert.accountLabel + ' · ' : '';
   const detail =
     alert.key === 'monthly'
       ? alert.hasPurchased
-        ? '仍有购买额度，可在面板查看。'
+        ? tm('仍有购买额度，可在面板查看。')
         : alert.hasFree
-          ? '仍有免费余额。'
-          : '请打开面板查看余额与账期。'
-      : '可打开助手查看重置时间。';
+          ? tm('仍有免费余额。')
+          : tm('请打开面板查看余额与账期。')
+      : tm('可打开助手查看重置时间。');
   showNotification(
-    prefix + name + (alert.level === 2 ? '已用尽' : '偏低'),
+    prefix + tm(alert.level === 2 ? '{name}已用尽' : '{name}偏低', { name }),
     alert.level === 2
       ? detail
-      : '剩余 ' + percentText(alert.remaining) + '，低于 ' + settings.threshold + '% 提醒阈值。',
+      : tm('剩余 {left}，低于 {threshold}% 提醒阈值。', {
+          left: percentText(alert.remaining),
+          threshold: settings.threshold,
+        }),
   );
 }
 // T9.3: tray text follows the menu bar — "<1%" below 0.5%, and an explicitly idle window reads "未启用".
 function windowText(w) {
-  if (w?.unlimited) return '不限';
-  if (w?.resetState === 'idle' && !w?.exceeded) return '未启用';
+  if (w?.unlimited) return tm('不限');
+  if (w?.resetState === 'idle' && !w?.exceeded) return tm('未启用');
   return percentText(w?.remainingPercent);
 }
 function updateTray() {
@@ -565,39 +626,46 @@ function updateTray() {
   const lines =
     accounts?.active.client.capabilities?.balance && !accounts?.active.client.capabilities?.quota
       ? balance?.balances.length
-        ? balance.balances.map((b) => b.currency + ' 余额 ' + formatAmount(b.total))
-        : ['余额金额暂未返回']
+        ? balance.balances.map((b) =>
+            tm('{currency} 余额 {amount}', { currency: b.currency, amount: formatAmount(b.total) }),
+          )
+        : [tm('余额金额暂未返回')]
       : Array.isArray(credit?.windows)
         ? credit.windows
             .filter((w) => w.applicable !== false)
             .slice(0, 4)
             .map((w) => w.label + ' ' + windowText(w))
         : [
-            '月度剩余 ' + (typeof credit?.monthly === 'number' ? '$' + credit.monthly.toFixed(2) : '—'),
-            '5 小时 ' + windowText(credit?.five) + ' · 每周 ' + windowText(credit?.week),
+            tm('月度剩余 {amount}', {
+              amount: typeof credit?.monthly === 'number' ? '$' + credit.monthly.toFixed(2) : '—',
+            }),
+            tm('5 小时 {five} · 每周 {week}', { five: windowText(credit?.five), week: windowText(credit?.week) }),
           ];
   // T11.2: on Windows the tooltip lists every account's tightest value, within the system's 127-character limit.
   tray.setToolTip(
     isMac
-      ? ['Token 用量助手', accounts?.active.entry.label || '未连接', ...lines].join('\n')
-      : trayTooltip(accountOverview(accounts?.summaries() || [], settings)),
+      ? [tm('Token 用量助手'), accounts?.active.entry.label || tm('未连接'), ...lines].join('\n')
+      : trayTooltip(accountOverview(accounts?.summaries() || [], settings), 127, tm),
   );
   trayMenu = Menu.buildFromTemplate([
     ...(updates?.state.status === 'available'
       ? [
-          { label: `发现新版本 ${updates.state.latest.version}，查看…`, click: () => openUpdate() },
+          {
+            label: tm('发现新版本 {version}，查看…', { version: updates.state.latest.version }),
+            click: () => openUpdate(),
+          },
           { type: 'separator' },
         ]
       : []),
-    { label: '打开用量总览', click: showMain },
+    { label: tm('打开用量总览'), click: showMain },
     {
-      label: '显示悬浮窗',
+      label: tm('显示悬浮窗'),
       type: 'checkbox',
       checked: settings.floating,
       click: (item) => applySettings({ ...settings, floating: item.checked }),
     },
     {
-      label: '刷新用量',
+      label: tm('刷新用量'),
       enabled: !!monitor?.key && !monitor?.state.fetching,
       click: () => {
         resumeIfUnlocked();
@@ -606,7 +674,7 @@ function updateTray() {
     },
     { type: 'separator' },
     {
-      label: '开机启动',
+      label: tm('开机启动'),
       type: 'checkbox',
       checked: settings.launchAtLogin,
       enabled: app.isPackaged,
@@ -614,7 +682,7 @@ function updateTray() {
     },
     { type: 'separator' },
     {
-      label: '退出助手',
+      label: tm('退出助手'),
       click: () => {
         quitting = true;
         app.quit();
@@ -788,9 +856,9 @@ function installIpc() {
   handle('assistant:choose-local', async (event) => {
     mainOnly(event);
     const choice = await dialog.showOpenDialog(mainWindow, {
-      title: '选择 Zcode 用量数据库',
+      title: tm('选择 Zcode 用量数据库'),
       properties: ['openFile'],
-      filters: [{ name: 'SQLite 数据库', extensions: ['sqlite', 'db', 'sqlite3'] }],
+      filters: [{ name: tm('SQLite 数据库'), extensions: ['sqlite', 'db', 'sqlite3'] }],
     });
     if (choice.canceled) return { cancelled: true };
     const file = fs.realpathSync(choice.filePaths[0]);
@@ -837,7 +905,7 @@ function installIpc() {
           userHome: app.getPath('home'),
           chooseHome: async () => {
             const choice = await dialog.showOpenDialog(mainWindow, {
-              title: '选择 Codex 配置目录',
+              title: tm('选择 Codex 配置目录'),
               defaultPath: path.join(app.getPath('home'), '.codex'),
               properties: ['openDirectory'],
             });
@@ -845,12 +913,12 @@ function installIpc() {
           },
           chooseExecutable: async ({ message } = {}) => {
             const choice = await dialog.showOpenDialog(mainWindow, {
-              title: isMac ? '选择官方 Codex.app' : '选择官方 Codex 的 codex.exe',
+              title: isMac ? tm('选择官方 Codex.app') : tm('选择官方 Codex 的 codex.exe'),
               message,
               properties: ['openFile'],
               ...(isMac
                 ? { defaultPath: '/Applications' }
-                : { filters: [{ name: 'Codex 程序', extensions: ['exe'] }] }),
+                : { filters: [{ name: tm('Codex 程序'), extensions: ['exe'] }] }),
             });
             return choice.canceled ? null : choice.filePaths[0];
           },
@@ -1029,7 +1097,7 @@ function installIpc() {
     const text = diagnosticsText,
       stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-');
     const choice = await dialog.showSaveDialog(mainWindow, {
-      title: '保存诊断信息',
+      title: tm('保存诊断信息'),
       defaultPath: `TokenUsageAssistant-diagnostics-${stamp}.json`,
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
@@ -1057,7 +1125,7 @@ function installIpc() {
     });
     const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const choice = await dialog.showSaveDialog(mainWindow, {
-      title: '导出用量明细',
+      title: tm('导出用量明细'),
       defaultPath: `TokenUsageAssistant-usage-${String(query.range || 'today').replace(/[^\w-]/g, '')}-${stamp}.csv`,
       filters: [{ name: 'CSV', extensions: ['csv'] }],
     });
@@ -1102,7 +1170,12 @@ function installIpc() {
   handle('assistant:test-notification', (event) => {
     mainOnly(event);
     if (!settings.notifications) throw inputError('请先开启额度提醒');
-    if (!showNotification('Token 用量助手', `提醒已就绪：剩余额度低于 ${settings.threshold}% 时通知你。`))
+    if (
+      !showNotification(
+        tm('Token 用量助手'),
+        tm('提醒已就绪：剩余额度低于 {threshold}% 时通知你。', { threshold: settings.threshold }),
+      )
+    )
       throw inputError('当前系统不支持通知，请检查系统通知设置');
     return true;
   });
@@ -1160,6 +1233,7 @@ else {
       store = new LocalStore(app.getPath('userData'), safeStorage);
       const saved = store.settings();
       settings = saved.preferences;
+      setMainLanguage(settings.language, systemLanguage());
       bounds = saved.bounds;
       const root = path.resolve(__dirname, '..', 'dist', 'client');
       protocol.handle('companion', (request) => {
@@ -1261,43 +1335,7 @@ else {
       }
       if (isMac && !app.isPackaged)
         app.dock?.setIcon(nativeImage.createFromPath(path.join(__dirname, 'assets', 'app.png')));
-      if (isMac)
-        Menu.setApplicationMenu(
-          Menu.buildFromTemplate([
-            {
-              label: 'Token 用量助手',
-              submenu: [
-                { role: 'about', label: '关于 Token 用量助手' },
-                { type: 'separator' },
-                { role: 'hide', label: '隐藏助手' },
-                { role: 'hideOthers', label: '隐藏其他应用' },
-                { role: 'unhide', label: '显示全部' },
-                { type: 'separator' },
-                { role: 'quit', label: '退出助手' },
-              ],
-            },
-            {
-              label: '编辑',
-              submenu: [
-                { role: 'undo' },
-                { role: 'redo' },
-                { type: 'separator' },
-                { role: 'cut' },
-                { role: 'copy' },
-                { role: 'paste' },
-                { role: 'selectAll' },
-              ],
-            },
-            {
-              label: '窗口',
-              submenu: [
-                { label: '打开用量总览', accelerator: 'CommandOrControl+1', click: showMain },
-                { role: 'minimize' },
-                { role: 'close' },
-              ],
-            },
-          ]),
-        );
+      buildAppMenu();
       mainWindow = secureWindow('main');
       syncWidget();
       installIpc();
