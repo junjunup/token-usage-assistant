@@ -12,6 +12,7 @@ export const kindName = (kind) =>
     zcode: 'Zcode',
     codex: 'Codex',
     'claude-code': 'Claude Code',
+    'claude-code-logs': 'Claude Code 会话日志',
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
     'qwen-code': 'Qwen Code',
@@ -21,7 +22,7 @@ export const kindName = (kind) =>
     crush: 'Crush',
   })[kind] || kind;
 // Kinds whose picker chooses a folder (the rest choose a file).
-const DIRECTORY_KINDS = ['codex', 'gemini-cli', 'kimi-code-cli', 'qwen-code', 'cline'];
+const DIRECTORY_KINDS = ['codex', 'claude-code-logs', 'gemini-cli', 'kimi-code-cli', 'qwen-code', 'cline'];
 const stamp = (value) =>
   value
     ? new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -247,6 +248,11 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
                 value: 'claude-code',
                 label: 'Claude Code',
                 description: hint('claude-code') + '选择本地组件导出的 usage.jsonl',
+              },
+              {
+                value: 'claude-code-logs',
+                label: 'Claude Code 会话日志',
+                description: hint('claude-code-logs') + '选择 Claude Code 目录 · 只读每次回复的用量，不需要启动脚本',
               },
               { value: 'zcode', label: 'Zcode', description: hint('zcode') + '只读 SQLite 用量元数据' },
               {

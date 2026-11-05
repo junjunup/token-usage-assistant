@@ -802,6 +802,7 @@ export function AnalyticsPage({
                     zcode: 'Zcode',
                     codex: 'Codex',
                     'claude-code': 'Claude Code',
+                    'claude-code-logs': 'Claude Code 会话日志',
                     'gemini-cli': 'Gemini CLI',
                     'kimi-code-cli': 'Kimi Code',
                     'qwen-code': 'Qwen Code',

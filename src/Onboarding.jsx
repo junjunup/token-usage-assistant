@@ -14,6 +14,7 @@ const GROUPS = providerGroups(PROVIDERS);
 const TOOLS = [
   ['codex', '选择 Codex 配置目录（通常是 ~/.codex）'],
   ['claude-code', '连接 Claude 订阅时自动添加；也可选择已导出的 usage.jsonl'],
+  ['claude-code-logs', '选择 Claude Code 目录（通常是 ~/.claude），只读会话日志里每次回复的用量'],
   ['opencode', '选择 opencode.db，只读用量元数据'],
   ['zcode', '选择 Zcode 的用量数据库，只读用量元数据'],
   ['harness', '先在 Harness 里启用用量导出插件，再选择导出的 usage.jsonl'],

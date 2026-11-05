@@ -48,6 +48,7 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Tool usage | Zcode | Read-only SQLite metadata | Live-tested (real database on Windows) |
 | Tool usage | OpenCode | Read-only SQLite metadata | Sample-tested |
 | Tool usage | Codex, Claude Code | Usage metadata from local rollout files / OTLP events | Sample-tested |
+| Tool usage | Claude Code session logs | Per-reply usage counts in the session files Claude Code itself writes (no launcher needed; de-duplicated against the launcher source by request id) | Live-tested (macOS, local logs read; not reconciled with the website) |
 | Tool usage | Gemini CLI | Per-reply usage counts in local session files (structure from the official open-source code) | Sample-tested |
 | Tool usage | Kimi Code CLI | Per-call usage records in local sessions (structure from the official open-source code) | Sample-tested |
 | Tool usage | Qwen Code | Per-reply usage counts in local session files (structure from the official open-source code) | Sample-tested |

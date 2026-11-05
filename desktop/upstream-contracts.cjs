@@ -39,6 +39,22 @@ function claudeUsageViolation(u) {
   return null;
 }
 
+/**
+ * Claude Code session-log `message.usage` (T14.1): input_tokens and output_tokens are core; the cache counters and
+ * output_tokens_details.thinking_tokens are optional. Every present count must be a non-negative integer.
+ * @param {any} u
+ * @returns {string|null}
+ */
+function claudeLogUsageViolation(u) {
+  if (!u || typeof u !== 'object' || Array.isArray(u)) return 'shape';
+  if (!count(u.input_tokens) || !count(u.output_tokens)) return 'core';
+  for (const key of ['cache_read_input_tokens', 'cache_creation_input_tokens'])
+    if (u[key] !== undefined && u[key] !== null && !count(u[key])) return 'type';
+  const thinking = u.output_tokens_details?.thinking_tokens;
+  if (thinking !== undefined && thinking !== null && !count(thinking)) return 'type';
+  return null;
+}
+
 /** The optional fields each source can report (Claude Code reports no reasoning tokens at all). */
 /**
  * Gemini CLI `tokens` of a model response (T12.3): input, output and total are core; cached, thoughts and tool
@@ -96,6 +112,8 @@ function clineUsageViolation(m) {
 const SOURCE_OPTIONAL = Object.freeze({
   codex: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write', 'reasoning']),
   claude: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write']),
+  // T14.1: the session logs also report thinking tokens (within output).
+  claudeLog: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'write', 'reasoning']),
   // Gemini has no cache-write count, so only reads and reasoning (thoughts) can be missing.
   gemini: /** @type {(keyof typeof OPTIONAL)[]} */ (['read', 'reasoning']),
   // Kimi Code reports no reasoning count at all; only cache reads can be missing.
@@ -189,6 +207,7 @@ module.exports = {
   SOURCE_OPTIONAL,
   codexUsageViolation,
   claudeUsageViolation,
+  claudeLogUsageViolation,
   geminiUsageViolation,
   kimiCodeUsageViolation,
   qwenUsageViolation,
