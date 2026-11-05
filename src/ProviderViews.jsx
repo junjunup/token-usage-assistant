@@ -19,8 +19,9 @@ import { PROVIDERS, providerInfo } from './generated/provider-catalog.js';
 import { quotaStatus, resetDescription } from './generated/domain.js';
 import { formatAmount } from './generated/balance-domain.js';
 import './providers.css';
+import { t, locale } from './i18n.js';
 const number = (v) => typeof v === 'number' && Number.isFinite(v);
-const format = (v) => (number(v) ? v.toLocaleString('zh-CN', { maximumFractionDigits: 1 }) : '—');
+const format = (v) => (number(v) ? v.toLocaleString(locale(), { maximumFractionDigits: 1 }) : '—');
 // T10.2: USD windows keep every digit the server sent (at least two decimals), never rounded to one.
 const money = (v) => (number(v) ? formatAmount(String(v)) : '—');
 const toneFor = (w, threshold) =>
@@ -34,7 +35,7 @@ const VERIFICATION = {
 export function verificationBadge(provider) {
   const v = providerInfo(provider)?.verification;
   const label = v && VERIFICATION[v.level];
-  return label ? { text: label.text, tone: v.level } : null;
+  return label ? { text: t(label.text), title: t(label.title), tone: v.level } : null;
 }
 export function Bar({ value, label, tone = 'green', small = false }) {
   const length = small ? 20 : 32,
@@ -47,7 +48,7 @@ export function Bar({ value, label, tone = 'green', small = false }) {
       aria-valuenow={clamped ?? undefined}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuetext={clamped === null ? '暂不可获取' : format(value) + '%'}
+      aria-valuetext={clamped === null ? t('暂不可获取') : format(value) + '%'}
     >
       {Array.from({ length }, (_, i) => (
         <span key={i} className={clamped !== null && i < Math.round((clamped / 100) * length) ? 'filled' : ''} />
@@ -57,33 +58,33 @@ export function Bar({ value, label, tone = 'green', small = false }) {
 }
 function metric(w, used = false) {
   return w.applicable === false
-    ? '未包含'
+    ? t('未包含')
     : w.unlimited
-      ? '不限'
+      ? t('不限')
       : format(used ? w.usedPercent : w.remainingPercent) +
         (number(used ? w.usedPercent : w.remainingPercent) ? '%' : '');
 }
 function reset(w, now) {
-  return w.applicable === false ? '当前套餐不含此额度' : resetDescription(w, now);
+  return w.applicable === false ? t('当前套餐不含此额度') : t(resetDescription(w, now));
 }
 function usage(w) {
-  if (w.applicable === false) return '此模型未包含在当前套餐中';
-  if (w.unlimited && w.unit === 'USD') return '这把 Key 未设花费上限';
-  if (w.unlimited) return '平台明确返回不设此窗口限制';
+  if (w.applicable === false) return t('此模型未包含在当前套餐中');
+  if (w.unlimited && w.unit === 'USD') return t('这把 Key 未设花费上限');
+  if (w.unlimited) return t('平台明确返回不设此窗口限制');
   if (w.unit === 'USD' && number(w.remainingAmount) && number(w.cap))
-    return '剩余 ' + money(w.remainingAmount) + ' / 上限 ' + money(w.cap) + ' USD';
-  if (number(w.used) && number(w.cap)) return '已用 ' + format(w.used) + ' / ' + format(w.cap) + ' ' + w.unit;
-  return number(w.remainingPercent) ? '平台提供百分比，未提供可核对的总量' : '此窗口额度暂不可获取';
+    return t('剩余 ') + money(w.remainingAmount) + t(' / 上限 ') + money(w.cap) + ' USD';
+  if (number(w.used) && number(w.cap)) return t('已用 ') + format(w.used) + ' / ' + format(w.cap) + ' ' + t(w.unit);
+  return number(w.remainingPercent) ? t('平台提供百分比，未提供可核对的总量') : t('此窗口额度暂不可获取');
 }
 export function AccountSwitcher({ state, onSelect, onManage }) {
   const accounts = state.accounts || [];
   return (
     <div className="account-switcher">
       <div>
-        <span className="micro-label">CURRENT ACCOUNT / 当前账户</span>
+        <span className="micro-label">{t('CURRENT ACCOUNT / 当前账户')}</span>
         {accounts.length ? (
           <Select
-            label="切换监测账户"
+            label={t('切换监测账户')}
             value={state.activeAccountId}
             disabled={state.connecting}
             onChange={onSelect}
@@ -95,19 +96,19 @@ export function AccountSwitcher({ state, onSelect, onManage }) {
               description:
                 (providerInfo(a.provider)?.name || a.provider) +
                 ' · ' +
-                (providerInfo(a.provider)?.regions.find((r) => r.id === a.region)?.name || a.region) +
-                (a.status === 'auth-error' ? ' · 需要重新连接' : a.status === 'offline' ? ' · 连接中断' : ''),
+                t(providerInfo(a.provider)?.regions.find((r) => r.id === a.region)?.name || a.region) +
+                (a.status === 'auth-error' ? t(' · 需要重新连接') : a.status === 'offline' ? t(' · 连接中断') : ''),
             }))}
           />
         ) : (
-          <strong>尚未添加账户</strong>
+          <strong>{t('尚未添加账户')}</strong>
         )}
       </div>
       <span className="account-monitor-note">
-        {accounts.length ? '已保存 ' + accounts.length + ' 个账户 · 独立刷新与提醒' : '选择平台后在本机连接'}
+        {accounts.length ? t('已保存 ') + accounts.length + t(' 个账户 · 独立刷新与提醒') : t('选择平台后在本机连接')}
       </span>
       <button className="button" onClick={onManage}>
-        管理连接
+        {t('管理连接')}
         <ArrowUpRight size={14} />
       </button>
     </div>
@@ -125,16 +126,16 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
     keyLimits = state.provider === 'openrouter';
   // A key with no limit and no budgets is not "sufficient quota"; it has none set (T10.2 mock A).
   const unlimitedKey = keyLimits && baseTone === 'green' && windows.length > 0 && windows.every((w) => w.unlimited);
-  const status = state.connectionStatus?.quota.label || (unlimitedKey ? '未设上限' : baseStatus),
+  const status = state.connectionStatus?.quota.label || (unlimitedKey ? t('未设上限') : baseStatus),
     tone = state.connectionStatus?.quota.status === 'waiting' ? 'neutral' : baseTone;
   return (
     <div className="provider-dashboard">
       <div className="account-line">
         <span>
           <span className={'status-dot ' + tone} />
-          {account?.label || info?.name} · {keyLimits ? 'Key 用量与上限' : '套餐额度'}
+          {account?.label || info?.name} · {keyLimits ? t('Key 用量与上限') : t('套餐额度')}
         </span>
-        <ProviderStatusLine status={state.providerStatus} fallback={c?.planName || info?.name} />
+        <ProviderStatusLine status={state.providerStatus} fallback={t(c?.planName || info?.name)} />
       </div>
       {pace}
       <LocalConnectionStatus state={state} />
@@ -143,11 +144,11 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
           <WarningCircle size={17} />
           <span>
             {state.credentialIssue || state.data.errors[0].message}
-            {windows.length ? ' 当前显示上次成功数据。' : ''}
+            {windows.length ? t(' 当前显示上次成功数据。') : ''}
           </span>
           {state.data.status === 'auth-error' && (
             <button onClick={onSettings}>
-              重新连接
+              {t('重新连接')}
               <ArrowUpRight size={14} />
             </button>
           )}
@@ -159,37 +160,37 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
             <ShieldCheck size={16} />
             {keyLimits ? (
               <span>
-                KEY LIMITS <span className="label-cn">/ Key 上限与预算</span>
+                KEY LIMITS <span className="label-cn">{t('/ Key 上限与预算')}</span>
               </span>
             ) : (
               <span>
-                PLAN QUOTAS <span className="label-cn">/ 套餐额度</span>
+                PLAN QUOTAS <span className="label-cn">{t('/ 套餐额度')}</span>
               </span>
             )}
           </div>
-          <span className={'status-tag ' + tone}>{status}</span>
+          <span className={'status-tag ' + tone}>{t(status)}</span>
         </div>
         <div className="quota-subhead">
           <span>
             {stale && windows.length
-              ? '上次数据 · '
+              ? t('上次数据 · ')
               : keyLimits
-                ? '这把 Key 的上限 · 不是账户余额 · '
-                : '各窗口分别计算 · '}
+                ? t('这把 Key 的上限 · 不是账户余额 · ')
+                : t('各窗口分别计算 · ')}
             {keyLimits
               ? c?.budgets === null || c?.budgets === undefined
-                ? '预算未返回'
+                ? t('预算未返回')
                 : c.budgets
-                  ? c.budgets + ' 个预算'
-                  : '没有预算'
-              : windows.length + ' 个额度窗口'}
+                  ? c.budgets + t(' 个预算')
+                  : t('没有预算')
+              : windows.length + t(' 个额度窗口')}
           </span>
-          <div className="segmented-control" aria-label="额度显示方式">
+          <div className="segmented-control" aria-label={t('额度显示方式')}>
             <button className={!used ? 'selected' : ''} aria-pressed={!used} onClick={() => setUsed(false)}>
-              剩余
+              {t('剩余')}
             </button>
             <button className={used ? 'selected' : ''} aria-pressed={used} onClick={() => setUsed(true)}>
-              已用
+              {t('已用')}
             </button>
           </div>
         </div>
@@ -198,32 +199,32 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
             <section className="quota-row" key={w.id}>
               <div className="quota-top">
                 <div>
-                  <div className="micro-label provider-group">{w.group}</div>
-                  <h2>{w.label}</h2>
+                  <div className="micro-label provider-group">{t(w.group)}</div>
+                  <h2>{t(w.label)}</h2>
                 </div>
                 <div className={'quota-number ' + toneFor(w, state.settings.threshold) + '-text'}>
                   <strong>{metric(w, used)}</strong>
                   <span className="remaining-label">
                     {w.applicable === false
-                      ? '套餐权益'
+                      ? t('套餐权益')
                       : w.unlimited
                         ? w.unit === 'USD'
-                          ? '上限'
-                          : '额度'
+                          ? t('上限')
+                          : t('额度')
                         : used
-                          ? '已用'
-                          : '剩余'}
+                          ? t('已用')
+                          : t('剩余')}
                   </span>
                 </div>
               </div>
               <Bar
                 value={used ? w.usedPercent : w.remainingPercent}
-                label={w.group + ' ' + w.label + (used ? '已用' : '剩余')}
+                label={t(w.group) + ' ' + t(w.label) + (used ? t('已用') : t('剩余'))}
                 tone={toneFor(w, state.settings.threshold)}
               />
               <div className="quota-meta">
                 <span>{usage(w)}</span>
-                <span title={w.resetAt ? new Date(w.resetAt).toLocaleString('zh-CN') : undefined}>
+                <span title={w.resetAt ? new Date(w.resetAt).toLocaleString(locale()) : undefined}>
                   <Clock size={13} />
                   <b className="mono">
                     <Live>{(now) => reset(w, now)}</Live>
@@ -231,7 +232,11 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
                 </span>
               </div>
               {w.boost !== 1 && (
-                <p className="quota-boost">剩余百分比含平台加赠倍率 ×{format(w.boost)}；已用比例按基础额度显示。</p>
+                <p className="quota-boost">
+                  {t('剩余百分比含平台加赠倍率 ×')}
+                  {format(w.boost)}
+                  {t('；已用比例按基础额度显示。')}
+                </p>
               )}
             </section>
           ))}
@@ -241,22 +246,22 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
             <ShieldCheck size={28} />
             <p>
               {state.data.fetching
-                ? '正在读取套餐额度…'
-                : state.connectionStatus?.quota.message || '暂时没有可展示的额度，连接成功后在这里显示。'}
+                ? t('正在读取套餐额度…')
+                : state.connectionStatus?.quota.message || t('暂时没有可展示的额度，连接成功后在这里显示。')}
             </p>
           </div>
         )}
         <p className="analysis-note">
-          额度观察时间：
+          {t('额度观察时间：')}
           {state.data.updatedAt.credits
-            ? new Date(state.data.updatedAt.credits).toLocaleString('zh-CN')
-            : '等待首条数据'}
-          {state.data.status === 'stale' && state.data.updatedAt.credits ? ' · 最近观察值，尚未确认当前额度' : ''}
+            ? new Date(state.data.updatedAt.credits).toLocaleString(locale())
+            : t('等待首条数据')}
+          {state.data.status === 'stale' && state.data.updatedAt.credits ? t(' · 最近观察值，尚未确认当前额度') : ''}
         </p>
         <div className="quota-footer">
           <Info size={14} />
           <span>
-            <Disclosure summary={c?.note || info?.note} detail={c?.note ? c.noteDetail : null} />
+            <Disclosure summary={t(c?.note || info?.note)} detail={c?.note ? t(c.noteDetail) : null} />
           </span>
         </div>
       </section>
@@ -266,13 +271,15 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
         <p>
           {keyLimits ? (
             <Disclosure
-              summary="只有这把 Key 的上限与花费，没有 Token 明细"
-              detail="上限、预算与花费来自 OpenRouter 官方接口，只针对这把 Key；Token 明细不在此接口中。工具分析是独立来源，与这里不相加。"
+              summary={t('只有这把 Key 的上限与花费，没有 Token 明细')}
+              detail={t(
+                '上限、预算与花费来自 OpenRouter 官方接口，只针对这把 Key；Token 明细不在此接口中。工具分析是独立来源，与这里不相加。',
+              )}
             />
           ) : (
             <Disclosure
-              summary="只有套餐额度，没有 Token 明细与费用"
-              detail="额度来自官方接口；Token 与实际费用不在此接口中。工具分析是独立来源。"
+              summary={t('只有套餐额度，没有 Token 明细与费用')}
+              detail={t('额度来自官方接口；Token 与实际费用不在此接口中。工具分析是独立来源。')}
             />
           )}
         </p>
@@ -294,16 +301,16 @@ function KeySpend({ spend }) {
         <div className="section-title purple-text">
           <Receipt size={16} />
           <span>
-            REPORTED SPEND <span className="label-cn">/ 已报告花费</span>
+            REPORTED SPEND <span className="label-cn">{t('/ 已报告花费')}</span>
           </span>
         </div>
-        <span className="micro-label">USD · 不是账单</span>
+        <span className="micro-label">{t('USD · 不是账单')}</span>
       </div>
       <div className="key-spend-grid">
         {SPEND.map(([key, label, note]) => (
-          <section key={key} aria-label={label + '已报告花费'}>
-            <div className="micro-label">{note}</div>
-            <h2>{label}</h2>
+          <section key={key} aria-label={t(label) + t('已报告花费')}>
+            <div className="micro-label">{t(note)}</div>
+            <h2>{t(label)}</h2>
             <strong className="mono">
               {formatAmount(spend[key])} <small>USD</small>
             </strong>
@@ -311,7 +318,9 @@ function KeySpend({ spend }) {
         ))}
       </div>
       {spend.byok !== null && spend.byok !== '0' && (
-        <p className="analysis-note">另有自带 Key（BYOK）的用量累计 {formatAmount(spend.byok)} USD，不计入以上花费。</p>
+        <p className="analysis-note">
+          {t('另有自带 Key（BYOK）的用量累计')} {formatAmount(spend.byok)} {t('USD，不计入以上花费。')}
+        </p>
       )}
     </section>
   );
@@ -334,25 +343,25 @@ export function ProviderWidget({ state }) {
           {!windows.length && state.connectionStatus
             ? state.connectionStatus.quota.label
             : state.data.status === 'stale'
-              ? '最近观察值 · 等待新数据'
+              ? t('最近观察值 · 等待新数据')
               : state.settings.widgetExpanded
-                ? '全部额度窗口'
-                : '优先显示剩余较低的窗口'}
+                ? t('全部额度窗口')
+                : t('优先显示剩余较低的窗口')}
         </small>
       </div>
       {shown.map((w) => (
         <section className="provider-widget-quota" key={w.id}>
           <div className="widget-row">
             <span>
-              {w.label}
-              <span className="micro-label">{w.group}</span>
+              {t(w.label)}
+              <span className="micro-label">{t(w.group)}</span>
             </span>
             <strong className="mono">{metric(w)}</strong>
           </div>
           <Bar
             value={w.remainingPercent}
             small
-            label={w.group + ' ' + w.label + '剩余'}
+            label={t(w.group) + ' ' + t(w.label) + t('剩余')}
             tone={toneFor(w, state.settings.threshold)}
           />
           <div className="widget-reset">
@@ -362,9 +371,11 @@ export function ProviderWidget({ state }) {
           {state.settings.widgetExpanded && <small className="widget-synced">{usage(w)}</small>}
         </section>
       ))}
-      {!windows.length && <p className="provider-empty">等待额度同步</p>}
+      {!windows.length && <p className="provider-empty">{t('等待额度同步')}</p>}
       {!state.settings.widgetExpanded && windows.length > 2 && (
-        <small className="widget-synced">展开查看全部 {windows.length} 个窗口</small>
+        <small className="widget-synced">
+          {t('展开查看全部')} {windows.length} {t('个窗口')}
+        </small>
       )}
     </>
   );
@@ -374,29 +385,31 @@ const CLAUDE_CONFIG = {
   none: {
     label: '未接入 · 只采集启动脚本打开的会话',
     message: (f) =>
-      `经你确认后，把助手的状态栏组件写进 ${f}，之后任何方式打开的会话都会采集套餐额度；修改前先备份，可随时还原。`,
+      t('经你确认后，把助手的状态栏组件写进 {v0}，之后任何方式打开的会话都会采集套餐额度；修改前先备份，可随时还原。', {
+        v0: f,
+      }),
     action: ['install', '接入所有会话'],
   },
   installed: {
     label: '已接入 Claude Code 设置',
-    message: () => '新打开的会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。',
+    message: () => t('新打开的会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。'),
     action: ['restore', '还原'],
     tone: 'green',
   },
   changed: {
     label: '状态栏已被改动 · 未接入',
-    message: () => 'Claude Code 的状态栏已经不是助手的组件（可能被你或别的工具改过），助手没有再动它。',
+    message: () => t('Claude Code 的状态栏已经不是助手的组件（可能被你或别的工具改过），助手没有再动它。'),
     action: ['install', '重新接入'],
     tone: 'amber',
   },
   unreadable: {
     label: '设置文件看不懂 · 未修改',
-    message: (f) => `${f} 不是有效的 JSON 对象，助手不会修改它。`,
+    message: (f) => t('{v0} 不是有效的 JSON 对象，助手不会修改它。', { v0: f }),
     tone: 'amber',
   },
   blocked: {
     label: '已有自定义状态栏 · 暂不接入',
-    message: () => 'Windows 上暂不支持和你自己的状态栏并存；可以继续用启动脚本打开 Claude Code。',
+    message: () => t('Windows 上暂不支持和你自己的状态栏并存；可以继续用启动脚本打开 Claude Code。'),
   },
 };
 function ClaudeConfigStatus({ config, onChange }) {
@@ -404,17 +417,17 @@ function ClaudeConfigStatus({ config, onChange }) {
   if (!view) return null;
   return (
     <div className="claude-config-status">
-      <span className="micro-label">所有 Claude Code 会话</span>
+      <span className="micro-label">{t('所有 Claude Code 会话')}</span>
       <strong>
         <span className={'status-dot ' + (view.tone || 'neutral')} />
-        {view.label}
-        {config.status === 'installed' && config.chained ? ' · 原状态栏一起显示' : ''}
+        {t(view.label)}
+        {config.status === 'installed' && config.chained ? t(' · 原状态栏一起显示') : ''}
       </strong>
       <p>
         {view.message(config.file)}
         {view.action && onChange && (
           <button type="button" className="text-button" onClick={() => onChange(view.action[0])}>
-            {view.action[1]}
+            {t(view.action[1])}
           </button>
         )}
       </p>
@@ -424,10 +437,10 @@ function ClaudeConfigStatus({ config, onChange }) {
 export function LocalConnectionStatus({ state, onClaudeConfig = null }) {
   if (!state.connectionStatus) return null;
   return (
-    <div className="local-connection-status" aria-label="本机连接状态">
+    <div className="local-connection-status" aria-label={t('本机连接状态')}>
       {[
-        ['quota', '套餐额度'],
-        ['details', '工具明细'],
+        ['quota', t('套餐额度')],
+        ['details', t('工具明细')],
       ].map(([key, title]) => {
         const item = state.connectionStatus[key];
         return (
@@ -439,9 +452,9 @@ export function LocalConnectionStatus({ state, onClaudeConfig = null }) {
                   'status-dot ' + (item.status === 'synced' ? 'green' : item.status === 'error' ? 'amber' : 'neutral')
                 }
               />
-              {item.label}
+              {t(item.label)}
             </strong>
-            <p>{item.message}</p>
+            <p>{t(item.message)}</p>
           </div>
         );
       })}
@@ -552,22 +565,22 @@ export function ConnectionForm({
   const disabled =
     !hasSecret || busy || preview || !!state.credentialIssue || (provider === 'codex' && !!profiles && !profileId);
   const submitLabel = busy
-    ? '正在验证连接'
+    ? t('正在验证连接')
     : provider === 'claude'
-      ? '连接并生成采集配置'
+      ? t('连接并生成采集配置')
       : provider === 'codex'
         ? profiles
-          ? '连接所选配置'
-          : '连接本机 Codex'
+          ? t('连接所选配置')
+          : t('连接本机 Codex')
         : wizard
-          ? '连接并继续'
+          ? t('连接并继续')
           : mode === 'update'
-            ? '验证并更新连接'
-            : '验证并添加账户';
+            ? t('验证并更新连接')
+            : t('验证并添加账户');
   const fields = (
     <>
       <label htmlFor="account-label">
-        账户备注 <span>可选，方便区分多个连接</span>
+        {t('账户备注')} <span>{t('可选，方便区分多个连接')}</span>
       </label>
       <input
         id="account-label"
@@ -583,17 +596,21 @@ export function ConnectionForm({
           <span>
             {provider === 'codex' ? (
               <Disclosure
-                summary="自动识别本机的 Codex 配置"
-                detail="通过官方客户端读取当前登录订阅。有多个配置时可选择，也可手动指定目录。套餐额度与工具明细分别显示状态。"
+                summary={t('自动识别本机的 Codex 配置')}
+                detail={t(
+                  '通过官方客户端读取当前登录订阅。有多个配置时可选择，也可手动指定目录。套餐额度与工具明细分别显示状态。',
+                )}
               />
             ) : (
               <Disclosure
                 summary={
-                  '连接后用生成的 ' +
+                  t('连接后用生成的 ') +
                   (state.platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1') +
-                  ' 启动 Claude Code'
+                  t(' 启动 Claude Code')
                 }
-                detail="在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。"
+                detail={t(
+                  '在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。',
+                )}
               />
             )}
           </span>
@@ -642,7 +659,9 @@ export function ConnectionForm({
             minLength={8}
             maxLength={4096}
             placeholder={
-              info.capabilities.balance && !info.capabilities.quota ? '在本机粘贴官方 API Key' : '在本机粘贴套餐密钥'
+              info.capabilities.balance && !info.capabilities.quota
+                ? t('在本机粘贴官方 API Key')
+                : t('在本机粘贴套餐密钥')
             }
           />
         </>
@@ -650,7 +669,7 @@ export function ConnectionForm({
       {provider === 'commandcode' && (
         <>
           <label htmlFor="org-id">
-            组织 ID <span>可选</span>
+            {t('组织 ID')} <span>{t('可选')}</span>
           </label>
           <input
             id="org-id"
@@ -665,14 +684,14 @@ export function ConnectionForm({
         <div className="codex-profile-choice">
           <p role="status">{profiles.message}</p>
           <Select
-            label="选择 Codex 配置"
+            label={t('选择 Codex 配置')}
             value={profileId}
             onChange={setProfileId}
             disabled={busy}
             menuWidth={520}
             options={profiles.profiles.map((p) => ({ value: p.id, label: p.label, description: p.home }))}
           />
-          <small>确认所选位置后读取登录状态；配置位置不代表已登录账户。</small>
+          <small>{t('确认所选位置后读取登录状态；配置位置不代表已登录账户。')}</small>
         </div>
       )}
     </>
@@ -684,7 +703,7 @@ export function ConnectionForm({
       disabled={busy || preview || !!state.credentialIssue}
       onClick={(e) => submit(e, true)}
     >
-      手动选择目录
+      {t('手动选择目录')}
     </button>
   );
   // T11.4: step 2 of the first-run wizard: the platform and region were picked in step 1.
@@ -692,28 +711,30 @@ export function ConnectionForm({
     return (
       <form className="wz-key" onSubmit={submit}>
         <div className="wz-picked">
-          <b>{info.name}</b>
-          <span>{info.regions.find((r) => r.id === region)?.name}</span>
+          <b>{t(info.name)}</b>
+          <span>{t(info.regions.find((r) => r.id === region)?.name)}</span>
           <button type="button" className="panel-link" disabled={busy} onClick={wizard.onBack}>
-            换一个
+            {t('换一个')}
           </button>
         </div>
-        <p className="provider-form-note">{info.note}</p>
+        <p className="provider-form-note">{t(info.note)}</p>
         {fields}
         <ul className="wz-promise">
           <li>
             <ShieldCheck size={15} />
             {provider === 'codex'
-              ? '不需要填写 Key：通过本机官方 Codex 客户端读取订阅额度，助手不保存它的登录凭据。'
+              ? t('不需要填写 Key：通过本机官方 Codex 客户端读取订阅额度，助手不保存它的登录凭据。')
               : provider === 'claude'
-                ? '不需要填写 Key：由 Claude Code 把额度和用量报告给本机组件，助手不读取 Claude 的登录凭据。'
-                : `${info.credential === 'aksk' ? '密钥' : 'Key '}只加密保存在这台电脑（${
-                    state.platform === 'darwin' ? 'macOS 钥匙串' : 'Windows 系统加密'
-                  }），只发给 ${info.name} 自己的接口，不写进日志。`}
+                ? t('不需要填写 Key：由 Claude Code 把额度和用量报告给本机组件，助手不读取 Claude 的登录凭据。')
+                : t('{v0}只加密保存在这台电脑（{v1}），只发给 {v2} 自己的接口，不写进日志。', {
+                    v0: info.credential === 'aksk' ? t('密钥') : 'Key ',
+                    v1: state.platform === 'darwin' ? t('macOS 钥匙串') : t('Windows 系统加密'),
+                    v2: info.name,
+                  })}
           </li>
           <li>
             <ShieldCheck size={15} />
-            只做官方只读查询：不调用模型、不消耗额度、不修改账户。
+            {t('只做官方只读查询：不调用模型、不消耗额度、不修改账户。')}
           </li>
         </ul>
         {state.credentialIssue && <p className="form-error">{state.credentialIssue}</p>}
@@ -734,61 +755,66 @@ export function ConnectionForm({
       </div>
       <div className="connection-status">
         <span className={'status-dot ' + (state.hasCredential ? 'green' : 'neutral')} />
-        {active ? '当前连接 · ' + active.label : '添加官方套餐或按量账户'}
+        {active ? t('当前连接 · ') + active.label : t('添加官方套餐或按量账户')}
       </div>
       <LocalConnectionStatus state={state} onClaudeConfig={onClaudeConfig} />
       <form onSubmit={submit}>
         <div className="connection-selectors">
           {active && (
             <label>
-              连接操作
+              {t('连接操作')}
               <Select
-                label="连接操作"
+                label={t('连接操作')}
                 value={mode}
                 onChange={chooseMode}
                 disabled={busy}
                 options={[
-                  { value: 'add', label: '添加新连接' },
-                  { value: 'update', label: '更新当前连接' },
+                  { value: 'add', label: t('添加新连接') },
+                  { value: 'update', label: t('更新当前连接') },
                 ]}
               />
             </label>
           )}
           <label>
-            平台
+            {t('平台')}
             <Select
-              label="选择平台"
+              label={t('选择平台')}
               value={provider}
               onChange={changeProvider}
               disabled={busy || mode === 'update'}
-              options={PROVIDERS.map((p) => ({ value: p.id, label: p.name, badge: verificationBadge(p.id) }))}
+              options={PROVIDERS.map((p) => ({ value: p.id, label: t(p.name), badge: verificationBadge(p.id) }))}
             />
           </label>
           <label>
-            地区
+            {t('地区')}
             <Select
-              label="选择地区"
+              label={t('选择地区')}
               value={region}
               onChange={(v) => {
                 setRegion(v);
                 clear();
               }}
               disabled={busy || mode === 'update'}
-              options={info.regions.map((r) => ({ value: r.id, label: r.name }))}
+              options={info.regions.map((r) => ({ value: r.id, label: t(r.name) }))}
             />
           </label>
         </div>
-        <p className="provider-form-note">{info.note}</p>
+        <p className="provider-form-note">{t(info.note)}</p>
         {info.verification && (
           <p className="provider-verification">
             <em className={'ui-select-badge ' + info.verification.level}>{verificationBadge(provider)?.text}</em>
-            {info.verification.note}（{info.verification.date}）
+            {t(info.verification.note)}
+            {t('（')}
+            {info.verification.date}
+            {t('）')}
           </p>
         )}
         {fields}
         <p className="credential-note">
           <ShieldCheck size={14} />
-          凭据使用{state.platform === 'darwin' ? ' macOS 钥匙串' : ' Windows 系统加密'}保存在本机，仅用于官方只读查询。
+          {t('凭据使用')}
+          {state.platform === 'darwin' ? t(' macOS 钥匙串') : t(' Windows 系统加密')}
+          {t('保存在本机，仅用于官方只读查询。')}
         </p>
         <div className="connect-actions">
           <button className="button primary" type="submit" disabled={disabled}>
@@ -799,7 +825,7 @@ export function ConnectionForm({
           {active && (
             <button className="text-button disconnect" type="button" disabled={busy} onClick={onRemove}>
               <SignOut size={14} />
-              移除当前连接
+              {t('移除当前连接')}
             </button>
           )}
         </div>

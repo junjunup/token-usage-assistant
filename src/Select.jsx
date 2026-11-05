@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown, Check } from '@phosphor-icons/react';
 import './Select.css';
+import { t } from './i18n.js';
 
 export function Select({ label, value, options, onChange, disabled = false, className = '', menuWidth = 280 }) {
   const id = useId(),
@@ -134,7 +135,7 @@ export function Select({ label, value, options, onChange, disabled = false, clas
         }}
         title={current ? [current.label, current.description].filter(Boolean).join(' · ') : label}
       >
-        <span>{current?.label || '请选择'}</span>
+        <span>{current?.label || t('请选择')}</span>
         <CaretDown size={13} className={open ? 'expanded' : ''} />
       </button>
       {open &&

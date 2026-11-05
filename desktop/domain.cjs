@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean, providerStatus: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean, providerStatus: boolean, language: string }} Settings */
 const { belowAmount } = require('./balance-domain.cjs');
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
@@ -52,6 +52,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   statusExport: false,
   // T14.3 (D21 ③): show the official status page of connected platforms (Anthropic, OpenAI, Moonshot, MiniMax).
   providerStatus: false,
+  // T14.4 (D21 ④): interface language; 'system' follows the system's preferred language (Chinese or English).
+  language: 'system',
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>
@@ -381,6 +383,7 @@ function patchSettings(current, patch) {
       (value === '' || /^(?:0|[1-9]\d{0,8})(?:\.\d{1,2})?$/.test(value))
     )
       result[key] = value;
+    else if (key === 'language' && ['system', 'zh', 'en'].includes(value)) result[key] = value;
     else if (key === 'menubarForm' && ['ring', 'value', 'two'].includes(value)) result[key] = value;
     else if (
       typeof (/** @type {Record<string, any>} */ (DEFAULT_SETTINGS)[key]) === 'boolean' &&

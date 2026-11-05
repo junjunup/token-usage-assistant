@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { Info } from '@phosphor-icons/react';
 import './disclosure.css';
+import { t } from './i18n.js';
 
 // T6.3: a one-line conclusion with an ⓘ button that expands the full explanation below it.
 // Collapsed by default and not remembered; without a detail the summary renders as plain text.
@@ -16,7 +17,7 @@ export function Disclosure({ summary, detail }) {
         className={'disclosure-toggle' + (open ? ' open' : '')}
         aria-expanded={open}
         aria-controls={id}
-        aria-label={open ? '收起说明' : '展开说明'}
+        aria-label={open ? t('收起说明') : t('展开说明')}
         onClick={() => setOpen(!open)}
       >
         <Info size={12} />

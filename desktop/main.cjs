@@ -165,6 +165,8 @@ function state() {
     ),
     // T13.5: the command that prints the quota snapshot, while that setting is on.
     statusCommand: settings.statusExport && statusExport ? statusExport.command : null,
+    // T14.4: the system's preferred language, for the interface language setting "system".
+    systemLanguage: systemLanguage(),
     // T14.3: the active platform's official status page, while that setting is on and the platform has one.
     providerStatus: activeProviderStatus(),
     // T13.1: whether the status-line helper is in Claude Code's own settings (only once the collector exists).
@@ -220,6 +222,15 @@ function syncProviderStatus() {
   providerStatus.setProviders(accounts.entries.map((e) => e.provider));
   if (settings.providerStatus && !smoke) providerStatus.start();
   else if (providerStatus.running) providerStatus.stop();
+}
+function systemLanguage() {
+  // The native smoke checks Chinese text; CI runners use an English system, so smoke always runs in Chinese.
+  if (smoke) return 'zh-CN';
+  try {
+    return app.getPreferredSystemLanguages?.()[0] || app.getLocale() || null;
+  } catch {
+    return null;
+  }
 }
 function activeProviderStatus() {
   const page = providerStatus?.state(accounts?.active?.entry.provider);
@@ -632,7 +643,13 @@ function panelPayload() {
       target: 'usage',
     });
   }
-  return { ...panelState(summaries, settings), theme: settings.theme, officials };
+  return {
+    ...panelState(summaries, settings),
+    theme: settings.theme,
+    language: settings.language,
+    systemLanguage: systemLanguage(),
+    officials,
+  };
 }
 function panelOnly(event) {
   if (!menubarPanel || event.sender !== menubarPanel.webContents) throw new Error('请在用量面板中操作');

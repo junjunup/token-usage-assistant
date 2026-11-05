@@ -21,6 +21,7 @@ import {
   FileArrowDown,
 } from '@phosphor-icons/react';
 import './analytics.css';
+import { t } from './i18n.js';
 import { Select } from './Select.jsx';
 
 const n = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -54,7 +55,7 @@ export function RangeControl({
   billingUnavailableReason = '连接账户以确认账期',
 }) {
   return (
-    <div className="range-control" role="group" aria-label="统计时间范围">
+    <div className="range-control" role="group" aria-label={t('统计时间范围')}>
       {[
         ['today', '今日'],
         ['7d', '近 7 天'],
@@ -66,10 +67,10 @@ export function RangeControl({
           className={value === id ? 'selected' : ''}
           aria-pressed={value === id}
           disabled={id === 'billing' && !billingAvailable}
-          title={id === 'billing' && !billingAvailable ? billingUnavailableReason : undefined}
+          title={id === 'billing' && !billingAvailable ? t(billingUnavailableReason) : undefined}
           onClick={() => onChange(id)}
         >
-          {label}
+          {t(label)}
         </button>
       ))}
     </div>
@@ -132,12 +133,12 @@ export function HealthStrip({ summary: s, onOpen }) {
         ],
       ].map(([label, value]) => (
         <div key={label}>
-          <span>{label}</span>
+          <span>{t(label)}</span>
           <strong className="mono">{value}</strong>
         </div>
       ))}
       <button onClick={onOpen}>
-        更多分析
+        {t('更多分析')}
         <ArrowUpRight size={15} />
       </button>
     </div>

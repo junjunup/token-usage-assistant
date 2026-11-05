@@ -4,7 +4,7 @@
 
 **A small local desktop app that shows, side by side, how much quota you have left on AI coding platforms and how many tokens your local coding tools actually used.** For Windows x64 and Apple Silicon macOS. Credentials stay on your machine, encrypted; no server, no telemetry, no model calls. Not an official client of any platform.
 
-> **The interface is Chinese only for now.** This README, the [install guide](docs/INSTALL.md#english) and the [privacy notes](docs/PRIVACY.md#english) are available in English.
+> **English interface (in progress):** the overview, platform pages, widget, menu-bar / tray panel, first-run guide and settings follow your system language (or 账户与设置 → Language). Analytics, the coverage report, account links, notifications and native menus are still Chinese; the next release builds will include it. This README, the [install guide](docs/INSTALL.md#english) and the [privacy notes](docs/PRIVACY.md#english) are available in English.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/readme/overview-dark.png">
