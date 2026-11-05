@@ -1,0 +1,52 @@
+{
+  "kind": "native-packaged-module-upgrade",
+  "syntheticOnly": true,
+  "profile": "1.9.0-beta.6-to-1.9.0-beta.7",
+  "fromVersion": "1.9.0-beta.6",
+  "toVersion": "1.9.0-beta.7",
+  "platform": "win32",
+  "electron": "44.9.3",
+  "startedAt": "2026-11-05T11:21:28.798Z",
+  "checks": {
+    "oldPackageRecognized": true,
+    "newPackageIs190Beta7": true,
+    "nativeSafeStorageAvailable": true,
+    "oldVaultDecryptsFiveAccounts": true,
+    "oldPricesHaveImplicitUSD": true,
+    "vaultContainsNoPlaintextSyntheticCredentials": true,
+    "preferencesAndWindowBoundsPreserved": true,
+    "nativeVaultStillDecrypts": true,
+    "allFiveAccountsAndSelectionPreserved": true,
+    "cachedSnapshotsAndHistoryLoaded": true,
+    "legacySourceMigratedIndependently": true,
+    "storedLegacyPriceRatesPreserved": true,
+    "packagedWorkerAnalyzesMigratedSource": true,
+    "reportPricesGainExplicitUSD": true,
+    "estimateUsesOriginalUSDRates": true,
+    "toolDataNotAttributedToSelectedAccount": true,
+    "legacyZcodeQueryStillWorks": true,
+    "fifteenPlatformCapabilitiesPresent": true,
+    "existingFilesRemainByteIdentical": true,
+    "190Beta6RollbackCanReadVaultAndSettings": true,
+    "190Beta6RollbackCanReadLegacySourceAndPrice": true,
+    "upgradeDoesNotAutoAssociate": true,
+    "manualAssociationWorksAfterUpgrade": true,
+    "associationConfigurationSurvivesRestart": true,
+    "newMetadataDoesNotAffectOldVault": true,
+    "newBuildKeepsUnknownPreferences": true,
+    "noNetworkRequests": true,
+    "isolatedUserDataOnly": true
+  },
+  "limitations": [
+    "Does not install or execute the NSIS installer.",
+    "Does not validate system login startup or a physical reboot.",
+    "Does not read or modify real user accounts, app data, billing records, or tool logs."
+  ],
+  "packages": {
+    "oldAsarSha256": "84a721ea26375c26920c89d89774b1a3353dfb4db7a4f463bd2c3a3e6e5bd836",
+    "newAsarSha256": "97f39d972ac4d802c6aa9c95565a706e47d80e7605d3694acd5f9cb66ec157f6"
+  },
+  "status": "passed",
+  "finishedAt": "2026-11-05T11:21:29.080Z",
+  "oldPackageSource": "source rebuild of tag v1.9.0-beta.6 (not a downloaded release binary)"
+}
