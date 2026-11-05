@@ -87,7 +87,19 @@ test('logger buffers and flushes asynchronously', async (t) => {
   logger.info('buffer', 'a');
   logger.info('buffer', 'b');
   assert.ok(!fs.existsSync(path.join(dir, 'app.log')));
-  await new Promise((resolve) => setTimeout(resolve, 60));
+  // T15.1: wait for the flush itself instead of a fixed 60 ms. On a busy Windows runner the timer and the
+  // asynchronous append had sometimes not finished, and an empty or half-written file was parsed.
+  const file = path.join(dir, 'app.log'),
+    deadline = Date.now() + 5000;
+  const complete = () => {
+    try {
+      const text = fs.readFileSync(file, 'utf8');
+      return text.endsWith('\n') && text.trim().split('\n').length >= 2;
+    } catch {
+      return false;
+    }
+  };
+  while (!complete() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
   assert.deepEqual(
     lines(dir).map((l) => l.code),
     ['a', 'b'],

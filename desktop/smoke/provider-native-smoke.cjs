@@ -1,6 +1,5 @@
 // Only invoked by --smoke-test, with an isolated userData directory and synthetic keys.
 const fs = require('node:fs');
-const path = require('node:path');
 const assert = require('node:assert/strict');
 const { AccountManager } = require('../accounts.cjs');
 const { createClient } = require('../providers.cjs');

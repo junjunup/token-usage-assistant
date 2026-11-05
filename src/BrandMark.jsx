@@ -1,4 +1,3 @@
-import React from 'react';
 import mark from '../desktop/assets/brand-mark.svg?raw';
 
 // The exact approved vector inherits the existing theme's icon color.

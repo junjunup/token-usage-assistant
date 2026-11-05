@@ -20,6 +20,12 @@ export default [
     languageOptions: { sourceType: 'module', globals: globals.node },
   },
   {
+    // The Harness plugin is installed by users as shipped (exporter 1.5.0). Its empty catch blocks are deliberate:
+    // errors map to fixed codes and raw causes are never kept. Allowed here instead of editing the shipped files.
+    files: ['integrations/**/*.js'],
+    rules: { 'no-empty': ['warn', { allowEmptyCatch: true }] },
+  },
+  {
     files: ['src/**/*.{js,jsx}'],
     languageOptions: {
       sourceType: 'module',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fieldChangeNote, FIELD_CHANGE_VISIBLE_MS } from './generated/upstream-contracts.js';
 import { Disclosure } from './Disclosure.jsx';
 import { Database, Folder, Plus, ArrowClockwise, WarningCircle, Trash, Check, Info } from '@phosphor-icons/react';

@@ -208,7 +208,6 @@ function scanCodex(db, source, range) {
     latestModified = -Infinity;
   const records = new Map();
   let rejected = 0,
-    unsupported = 0,
     truncated = false;
   db.exec('BEGIN IMMEDIATE');
   try {
@@ -247,9 +246,8 @@ function scanCodex(db, source, range) {
               break;
             }
           }
-      } catch (e) {
+      } catch {
         rejected++;
-        if (e.code === 'unsupported') unsupported++;
       }
       if (truncated) break;
     }
