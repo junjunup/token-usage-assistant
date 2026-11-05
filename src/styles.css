@@ -892,6 +892,37 @@ h1 > span {
   margin: 0;
   line-height: 1.6;
 }
+/* T14.2: balance reminder amounts, one field per currency */
+.balance-threshold-inputs {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.balance-threshold-inputs label {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  font-size: 11px;
+}
+.balance-threshold-inputs label span {
+  padding: 0 0 0 10px;
+  color: var(--muted);
+}
+.balance-threshold-inputs input {
+  width: 72px;
+  border: 0;
+  padding: 8px 10px 8px 6px;
+  font:
+    11px 'Geist Mono',
+    monospace;
+  background: transparent;
+  color: var(--fg);
+}
+.balance-threshold-row .form-error {
+  color: var(--red, #dc2626);
+  margin-top: 6px;
+}
 /* T7.7: the macOS menu-bar subgroup inside PREFERENCES */
 .settings-subhead {
   display: flex;

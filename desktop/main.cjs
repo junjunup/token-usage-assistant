@@ -496,6 +496,15 @@ function showNotification(title, body) {
   return true;
 }
 function quotaAlert(alert) {
+  // T14.2: a balance below the user's reminder amount (same currency, every digit as returned).
+  if (alert.key?.startsWith('balance:')) {
+    const symbol = alert.currency === 'CNY' ? '¥' : alert.currency === 'USD' ? '$' : alert.currency + ' ';
+    showNotification(
+      (alert.accountLabel ? alert.accountLabel + ' · ' : '') + alert.currency + ' 余额偏低',
+      `余额 ${symbol}${formatAmount(alert.total)}，低于 ${symbol}${alert.threshold} 提醒金额。`,
+    );
+    return;
+  }
   const name =
     alert.label || (alert.key === 'monthly' ? '月度套餐额度' : alert.key === 'five' ? '5 小时额度' : '每周额度');
   const prefix = alert.accountLabel ? alert.accountLabel + ' · ' : '';

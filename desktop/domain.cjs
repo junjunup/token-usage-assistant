@@ -13,7 +13,8 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean }} Settings */
+const { belowAmount } = require('./balance-domain.cjs');
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
   credits: '/alpha/billing/credits',
@@ -24,6 +25,10 @@ const DEFAULT_SETTINGS = Object.freeze({
   theme: 'light',
   refreshSeconds: 60,
   threshold: 20,
+  // T14.2 (D21): reminder amounts for balance accounts, per currency, as decimal strings; '' = no reminder (only the
+  // platform's own "unavailable" flag). Never converted between currencies.
+  balanceThresholdCNY: '',
+  balanceThresholdUSD: '',
   notifications: true,
   floating: false,
   pinned: true,
@@ -226,6 +231,27 @@ function monthlyQuota(data) {
     derived: pool !== null,
   };
 }
+/**
+ * T14.2: the balance rows below the user's reminder amount of their own currency (CNY / USD kept apart).
+ * @param {any} balance normalized balance part
+ * @param {{ balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
+ * @returns {{ currency: string, total: string, threshold: string }[]}
+ */
+function balancesBelow(balance, settings) {
+  /** @type {{ currency: string, total: string, threshold: string }[]} */
+  const out = [];
+  for (const row of Array.isArray(balance?.balances) ? balance.balances : []) {
+    const threshold =
+      row?.currency === 'CNY'
+        ? settings?.balanceThresholdCNY
+        : row?.currency === 'USD'
+          ? settings?.balanceThresholdUSD
+          : '';
+    if (belowAmount(row.total, threshold))
+      out.push({ currency: row.currency, total: row.total, threshold: String(threshold) });
+  }
+  return out;
+}
 /** @param {any} state app state */
 function quotaStatus(state) {
   const d = state.data,
@@ -239,7 +265,8 @@ function quotaStatus(state) {
     const balance = d.parts.balance;
     if (!balance) return ['余额数据暂缺', 'neutral'];
     if (!balance.balances.length) return ['余额条目暂未返回', 'neutral'];
-    return balance.isAvailable ? ['有可用余额', 'green'] : ['当前余额不可用于调用', 'amber'];
+    if (!balance.isAvailable) return ['当前余额不可用于调用', 'amber'];
+    return balancesBelow(balance, state.settings).length ? ['余额低于提醒金额', 'amber'] : ['有可用余额', 'green'];
   }
   if (!c) return ['额度数据暂缺', 'neutral'];
   if (Array.isArray(c.windows)) {
@@ -346,6 +373,12 @@ function patchSettings(current, patch) {
     if (key === 'theme' && ['light', 'dark'].includes(value)) result[key] = value;
     else if (key === 'refreshSeconds' && [30, 60, 120, 300].includes(value)) result[key] = value;
     else if (key === 'threshold' && [10, 20, 30].includes(value)) result[key] = value;
+    else if (
+      (key === 'balanceThresholdCNY' || key === 'balanceThresholdUSD') &&
+      typeof value === 'string' &&
+      (value === '' || /^(?:0|[1-9]\d{0,8})(?:\.\d{1,2})?$/.test(value))
+    )
+      result[key] = value;
     else if (key === 'menubarForm' && ['ring', 'value', 'two'].includes(value)) result[key] = value;
     else if (
       typeof (/** @type {Record<string, any>} */ (DEFAULT_SETTINGS)[key]) === 'boolean' &&
@@ -418,6 +451,27 @@ class AlertTracker {
     }
     return alerts;
   }
+  /**
+   * T14.2: a balance account's rows that fell below the reminder amount (one notification per crossing; back above
+   * the amount, or the amount cleared, re-arms it).
+   * @param {any} balance normalized balance part
+   * @param {Settings} settings
+   */
+  checkBalance(balance, settings) {
+    /** @type {any[]} */
+    const alerts = [],
+      below = balancesBelow(balance, settings);
+    for (const row of Array.isArray(balance?.balances) ? balance.balances : []) {
+      const key = 'balance:' + row.currency,
+        hit = below.find((b) => b.currency === row.currency);
+      if (row.total === null || row.total === undefined) continue;
+      const level = hit ? 1 : 0;
+      if (settings.notifications && hit && level > (this.levels[key] ?? 0))
+        alerts.push({ key, level, currency: row.currency, total: hit.total, threshold: hit.threshold });
+      this.levels[key] = level;
+    }
+    return alerts;
+  }
 }
 module.exports = {
   ENDPOINTS,
@@ -439,4 +493,5 @@ module.exports = {
   nextDelay,
   patchSettings,
   AlertTracker,
+  balancesBelow,
 };

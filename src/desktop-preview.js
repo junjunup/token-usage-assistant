@@ -37,6 +37,8 @@ let state = {
     theme: new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light',
     refreshSeconds: 60,
     threshold: 20,
+    balanceThresholdCNY: '',
+    balanceThresholdUSD: '',
     notifications: true,
     floating: false,
     pinned: true,
@@ -360,6 +362,9 @@ if (selectedProvider && scenario === 'offline') {
   state.data.status = 'offline';
   state.data.errors = [{ endpoint: 'credits', status: 503, message: '平台暂时不可用，当前显示上次数据。' }];
 }
+// T14.2: ?balance-threshold=<CNY amount> sets the CNY reminder amount (e.g. 100 with the sample DeepSeek balance).
+if (new URLSearchParams(location.search).get('balance-threshold'))
+  state.settings.balanceThresholdCNY = new URLSearchParams(location.search).get('balance-threshold');
 // T13.5: ?status-command=1 shows the command-line snapshot setting as turned on.
 if (new URLSearchParams(location.search).get('status-command')) {
   state.settings.statusExport = true;

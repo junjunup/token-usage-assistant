@@ -5,7 +5,7 @@
 //   in the UI: quota windows first, money only as the fallback or when its alert is more severe.
 // - Each account stands alone: nothing is added across accounts or currencies, and missing stays "—".
 // - An account whose last refresh failed keeps its last successful values, marked stale with their time.
-const { rankAccounts } = require('./menubar-status.cjs');
+const { rankAccounts, amountsOf } = require('./menubar-status.cjs');
 
 /**
  * @typedef {import('./menubar-status.cjs').AccountSummary} AccountSummary
@@ -21,12 +21,12 @@ const STALE = ['stale', 'offline', 'auth-error', 'partial'];
 
 /**
  * @param {AccountSummary[]} accounts
- * @param {{ threshold: number }} settings
+ * @param {{ threshold: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
  * @returns {AccountOverview}
  */
 function accountOverview(accounts, settings) {
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
-  const rows = rankAccounts(accounts, threshold).map(({ a, focus }) => {
+  const rows = rankAccounts(accounts, threshold, { amounts: amountsOf(settings) }).map(({ a, focus }) => {
     const stamps = Object.values(a.updatedAt || {}).filter((v) => typeof v === 'number' && v > 0);
     return {
       id: a.id,

@@ -19,7 +19,7 @@ Current version: **1.9.0-beta.6** (beta, not signed or notarized). History: [CHA
 
 ## What it does
 
-- **Platform quota and balance**: what is left in each 5-hour / weekly / monthly window and when it resets; the balance of pay-as-you-go platforms. Up to 20 accounts, each refreshed and alerted on its own.
+- **Platform quota and balance**: what is left in each 5-hour / weekly / monthly window and when it resets; the balance of pay-as-you-go platforms (with optional reminder amounts, set separately for CNY and USD). Up to 20 accounts, each refreshed and alerted on its own.
 - **Local tool usage**: tokens, requests, models and projects for Codex, Claude Code, Gemini CLI, Kimi Code CLI, Qwen Code, Cline, Kilo Code, Goose, Crush, Zcode, OpenCode and DeepSeek Harness; optional cost estimates from prices you enter (USD and CNY kept apart); records can be exported as CSV, and an optional `tua-status` command prints every account's quota as JSON or text.
 - **At a glance**: macOS menu bar icon and panel, Windows tray, an always-on-top floating window; light and dark themes.
 - **Honest numbers**: missing data shows "—", never 0; platform quotas and local usage are never added together; no comparison when coverage is incomplete.

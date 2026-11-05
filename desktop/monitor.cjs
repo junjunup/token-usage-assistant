@@ -120,6 +120,9 @@ class UsageMonitor extends EventEmitter {
     if (result.parts.credits && !result.stale)
       for (const alert of this.alerts.check(result.parts.credits, this.settings, monthlyQuota(this.state)))
         this.notify(alert);
+    // T14.2: balance accounts remind below the user's amount (per currency).
+    if (result.parts.balance && !result.stale)
+      for (const alert of this.alerts.checkBalance(result.parts.balance, this.settings)) this.notify(alert);
     try {
       this.persist({ parts: this.state.parts, updatedAt: this.state.updatedAt, alerts: this.alerts.levels });
     } catch (e) {

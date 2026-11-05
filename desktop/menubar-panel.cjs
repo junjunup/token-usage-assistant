@@ -7,7 +7,7 @@
 // - Switching accounts inside the panel is local to the panel; it opens on the account the menu-bar icon shows.
 // T11.3 (D17): cells the platform does not provide are folded; the window the chip stands for is always listed; chip
 // amounts are compact (two decimals, D17 ④); Command Code gets a one-line pace summary of the existing forecast.
-const { menubarStatus, slotsOf, focusOf } = require('./menubar-status.cjs');
+const { menubarStatus, slotsOf, focusOf, amountsOf } = require('./menubar-status.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 
 /**
@@ -114,11 +114,12 @@ function summaryCells(summary) {
 /**
  * @param {AccountSummary} a
  * @param {number} threshold
+ * @param {import('./menubar-status.cjs').BalanceThresholds} [amounts] T14.2 balance reminder amounts
  * @returns {PanelAccount}
  */
-function panelAccount(a, threshold) {
+function panelAccount(a, threshold, amounts = {}) {
   const parts = a.parts || {};
-  const slots = slotsOf(a, threshold);
+  const slots = slotsOf(a, threshold, amounts);
   const windows = slots.filter((s) => s.kind === 'window');
   // The chip says what the menu-bar icon would say for this account (T7.11, same rule as T7.9).
   const focus = focusOf(slots);
@@ -191,16 +192,17 @@ function panelAccount(a, threshold) {
 
 /**
  * @param {AccountSummary[]} accounts
- * @param {{ threshold: number }} settings
+ * @param {{ threshold: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
  * @returns {PanelState}
  */
 function panelState(accounts, settings) {
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
-  const list = Array.isArray(accounts) ? accounts : [];
+  const list = Array.isArray(accounts) ? accounts : [],
+    amounts = amountsOf(settings);
   return {
-    defaultAccountId: menubarStatus(list, { threshold })?.accountId ?? null,
+    defaultAccountId: menubarStatus(list, { ...settings, threshold })?.accountId ?? null,
     threshold,
-    accounts: list.map((a) => panelAccount(a, threshold)),
+    accounts: list.map((a) => panelAccount(a, threshold, amounts)),
   };
 }
 
