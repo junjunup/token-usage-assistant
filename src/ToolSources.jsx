@@ -4,6 +4,7 @@ import { Disclosure } from './Disclosure.jsx';
 import { Database, Folder, Plus, ArrowClockwise, WarningCircle, Trash, Check, Info } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import './tool-sources.css';
+import { t, locale } from './i18n.js';
 
 export const kindName = (kind) =>
   ({
@@ -12,7 +13,7 @@ export const kindName = (kind) =>
     zcode: 'Zcode',
     codex: 'Codex',
     'claude-code': 'Claude Code',
-    'claude-code-logs': 'Claude Code 会话日志',
+    'claude-code-logs': t('Claude Code 会话日志'),
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
     'qwen-code': 'Qwen Code',
@@ -25,8 +26,8 @@ export const kindName = (kind) =>
 const DIRECTORY_KINDS = ['codex', 'claude-code-logs', 'gemini-cli', 'kimi-code-cli', 'qwen-code', 'cline'];
 const stamp = (value) =>
   value
-    ? new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-    : '尚未成功同步';
+    ? new Date(value).toLocaleString(locale(), { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    : t('尚未成功同步');
 const statuses = {
   overlap: '来源重叠',
   ready: '已同步',
@@ -58,7 +59,12 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
         <div className="tool-source-kind">
           <Database size={15} />
           <span>{kindName(source.kind)}</span>
-          {source.formatVersion && <small>格式 v{source.formatVersion}</small>}
+          {source.formatVersion && (
+            <small>
+              {t('格式 v')}
+              {source.formatVersion}
+            </small>
+          )}
         </div>
         <span
           className={
@@ -66,7 +72,7 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
             (status === 'ready' ? 'ready' : status === 'idle' || status === 'disabled' ? 'neutral' : 'attention')
           }
         >
-          {statuses[status] || '等待同步'}
+          {t(statuses[status] || '等待同步')}
         </span>
       </div>
       <form
@@ -76,7 +82,7 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
           if (changed) run(source.id, () => onUpdate(source.id, { label: label.trim() }));
         }}
       >
-        <label htmlFor={'source-label-' + source.id}>数据源名称</label>
+        <label htmlFor={'source-label-' + source.id}>{t('数据源名称')}</label>
         <input
           id={'source-label-' + source.id}
           value={label}
@@ -87,17 +93,19 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
         />
         <button className="button" type="submit" disabled={busy || !changed}>
           <Check size={14} />
-          保存名称
+          {t('保存名称')}
         </button>
       </form>
       <p className="tool-source-path" title={source.file || ''}>
-        {source.file || '尚未选择文件'}
+        {source.file || t('尚未选择文件')}
       </p>
       <div className="tool-source-meta">
-        <span>最近成功 · {stamp(source.lastSuccessAt)}</span>
+        <span>
+          {t('最近成功 ·')} {stamp(source.lastSuccessAt)}
+        </span>
         {source.observedStartAt && (
           <span>
-            已观察记录 · {stamp(source.observedStartAt)} — {stamp(source.observedEndAt)}
+            {t('已观察记录 ·')} {stamp(source.observedStartAt)} — {stamp(source.observedEndAt)}
           </span>
         )}
       </div>
@@ -108,9 +116,11 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
             <Disclosure
               summary={fieldChangeNote(source.fieldChange)}
               detail={
-                '发现于 ' +
+                t('发现于 ') +
                 stamp(source.fieldChange.at) +
-                '，通常是工具升级。核心字段齐全时照常统计；如果读不到数据，请导出诊断信息反馈（只含字段名，不含任何内容）。'
+                t(
+                  '，通常是工具升级。核心字段齐全时照常统计；如果读不到数据，请导出诊断信息反馈（只含字段名，不含任何内容）。',
+                )
               }
             />
           </span>
@@ -132,7 +142,7 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
             disabled={busy}
             onChange={(e) => run(source.id, () => onUpdate(source.id, { enabled: e.target.checked }))}
           />
-          <span>启用此数据源</span>
+          <span>{t('启用此数据源')}</span>
         </label>
         <button
           className="text-button"
@@ -141,7 +151,7 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
           onClick={() => run(source.id, () => onChoose(source.id))}
         >
           <Folder size={14} />
-          更换位置
+          {t('更换位置')}
         </button>
         <button
           className="text-button"
@@ -150,17 +160,17 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
           onClick={() => run(source.id, () => onSync(source.id))}
         >
           <ArrowClockwise size={14} className={busy ? 'spin' : ''} />
-          同步
+          {t('同步')}
         </button>
         <button
           className="text-button tool-source-remove"
           type="button"
           disabled={busy}
-          aria-label={'移除数据源 ' + source.label}
+          aria-label={t('移除数据源 ') + source.label}
           onClick={() => run(source.id, () => onRemove(source.id))}
         >
           <Trash size={14} />
-          移除
+          {t('移除')}
         </button>
       </div>
     </li>
@@ -194,17 +204,17 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
   }, [onDiscover, sources.length]);
   const hint = (value) => {
     const hit = found.find((f) => f.kind === value && !f.added);
-    return hit ? '本机已找到 ' + hit.path + ' · ' : '';
+    return hit ? t('本机已找到 ') + hit.path + ' · ' : '';
   };
   async function run(id, callback) {
     setPending(id);
     setError('');
     try {
       const result = await callback();
-      if (result === false) setError('操作未完成，请检查数据源后重试。');
+      if (result === false) setError(t('操作未完成，请检查数据源后重试。'));
       return result;
     } catch {
-      setError('操作未完成，请检查文件位置及访问权限后重试。');
+      setError(t('操作未完成，请检查文件位置及访问权限后重试。'));
       return false;
     } finally {
       setPending(null);
@@ -222,14 +232,14 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
           <Database size={16} />
           TOOL DATA SOURCES
         </div>
-        <h2 id="tool-sources-title">工具数据源</h2>
-        <p>分别连接本机工具的用量记录。平台账户的切换不会改变记录归属。</p>
+        <h2 id="tool-sources-title">{t('工具数据源')}</h2>
+        <p>{t('分别连接本机工具的用量记录。平台账户的切换不会改变记录归属。')}</p>
       </div>
       <form className="tool-source-add" onSubmit={add}>
         <label>
-          工具
+          {t('工具')}
           <Select
-            label="添加工具类型"
+            label={t('添加工具类型')}
             value={kind}
             onChange={setKind}
             disabled={!!pending}
@@ -237,69 +247,69 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
               {
                 value: 'opencode',
                 label: 'OpenCode',
-                description: hint('opencode') + '选择 opencode.db · 只读用量元数据',
+                description: hint('opencode') + t('选择 opencode.db · 只读用量元数据'),
               },
               {
                 value: 'codex',
                 label: 'Codex',
-                description: hint('codex') + '选择本机 Codex 配置目录（包含 sessions）',
+                description: hint('codex') + t('选择本机 Codex 配置目录（包含 sessions）'),
               },
               {
                 value: 'claude-code',
                 label: 'Claude Code',
-                description: hint('claude-code') + '选择本地组件导出的 usage.jsonl',
+                description: hint('claude-code') + t('选择本地组件导出的 usage.jsonl'),
               },
               {
                 value: 'claude-code-logs',
-                label: 'Claude Code 会话日志',
-                description: hint('claude-code-logs') + '选择 Claude Code 目录 · 只读每次回复的用量，不需要启动脚本',
+                label: t('Claude Code 会话日志'),
+                description: hint('claude-code-logs') + t('选择 Claude Code 目录 · 只读每次回复的用量，不需要启动脚本'),
               },
-              { value: 'zcode', label: 'Zcode', description: hint('zcode') + '只读 SQLite 用量元数据' },
+              { value: 'zcode', label: 'Zcode', description: hint('zcode') + t('只读 SQLite 用量元数据') },
               {
                 value: 'harness',
                 label: 'DeepSeek Harness',
-                description: hint('harness') + '统计插件导出的专用 JSONL 文件',
+                description: hint('harness') + t('统计插件导出的专用 JSONL 文件'),
               },
               {
                 value: 'gemini-cli',
                 label: 'Gemini CLI',
-                description: hint('gemini-cli') + '选择 Gemini CLI 目录 · 只读会话用量计数',
+                description: hint('gemini-cli') + t('选择 Gemini CLI 目录 · 只读会话用量计数'),
               },
               {
                 value: 'kimi-code-cli',
                 label: 'Kimi Code CLI',
-                description: hint('kimi-code-cli') + '选择 Kimi Code 目录 · 只读每次调用的用量记录',
+                description: hint('kimi-code-cli') + t('选择 Kimi Code 目录 · 只读每次调用的用量记录'),
               },
               {
                 value: 'qwen-code',
                 label: 'Qwen Code',
-                description: hint('qwen-code') + '选择 Qwen Code 目录 · 只读会话用量计数',
+                description: hint('qwen-code') + t('选择 Qwen Code 目录 · 只读会话用量计数'),
               },
               {
                 value: 'cline',
                 label: 'Cline',
-                description: hint('cline') + '选择 Cline 数据目录 · 只读每轮对话的用量',
+                description: hint('cline') + t('选择 Cline 数据目录 · 只读每轮对话的用量'),
               },
               {
                 value: 'kilo',
                 label: 'Kilo Code',
-                description: hint('kilo') + '选择 kilo.db · 只读用量元数据',
+                description: hint('kilo') + t('选择 kilo.db · 只读用量元数据'),
               },
               {
                 value: 'goose',
                 label: 'Goose',
-                description: hint('goose') + '选择 sessions.db · 只读会话级汇总',
+                description: hint('goose') + t('选择 sessions.db · 只读会话级汇总'),
               },
               {
                 value: 'crush',
                 label: 'Crush',
-                description: '选择项目里的 .crush/crush.db · 只读会话级汇总，每个项目添加一次',
+                description: t('选择项目里的 .crush/crush.db · 只读会话级汇总，每个项目添加一次'),
               },
             ]}
           />
         </label>
         <label htmlFor="new-source-label">
-          名称 <span>可选</span>
+          {t('名称')} <span>{t('可选')}</span>
           <input
             id="new-source-label"
             value={label}
@@ -311,12 +321,18 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
         </label>
         <button className="button" type="submit" disabled={!!pending}>
           <Plus size={14} />
-          {pending === 'add' ? '正在添加' : DIRECTORY_KINDS.includes(kind) ? '选择目录并添加' : '选择文件并添加'}
+          {pending === 'add'
+            ? t('正在添加')
+            : DIRECTORY_KINDS.includes(kind)
+              ? t('选择目录并添加')
+              : t('选择文件并添加')}
         </button>
       </form>
       {kind === 'opencode' && (
         <p className="analysis-note">
-          选择 OpenCode 的 opencode.db；可在终端运行 opencode db path 查看位置。数据库只读连接，不需要填写 API Key。
+          {t(
+            '选择 OpenCode 的 opencode.db；可在终端运行 opencode db path 查看位置。数据库只读连接，不需要填写 API Key。',
+          )}
         </p>
       )}
       {error && (
@@ -343,9 +359,11 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
       ) : (
         <div className="tool-source-empty">
           <Database size={24} />
-          <span>尚未添加工具数据源</span>
+          <span>{t('尚未添加工具数据源')}</span>
           <small>
-            连接上方订阅账户可添加 Codex / Claude Code 来源，也可选择 OpenCode / Zcode 数据库或 Harness 用量导出。
+            {t(
+              '连接上方订阅账户可添加 Codex / Claude Code 来源，也可选择 OpenCode / Zcode 数据库或 Harness 用量导出。',
+            )}
           </small>
         </div>
       )}
@@ -354,14 +372,16 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
         <div>
           <p>
             <Disclosure
-              summary="只采集用量元数据，不采集对话正文"
-              detail="包括请求标识、时间、模型、项目、会话及 Token；不采集工具结果或凭据。"
+              summary={t('只采集用量元数据，不采集对话正文')}
+              detail={t('包括请求标识、时间、模型、项目、会话及 Token；不采集工具结果或凭据。')}
             />
           </p>
           <p>
             <Disclosure
-              summary="各工具的采集方式不同，移除来源不会改动原文件"
-              detail="Claude Code 从上方连接入口生成本地启动配置；Codex 读取 0.155.x 用量元数据。Harness 需要启用随附的本地统计插件，从启用后开始记录，不补采原始历史会话。OpenCode 选择 opencode.db，仅统计已保存的助手用量记录，不能据此核对完整请求成功率。移除数据源不会修改或删除工具原文件。"
+              summary={t('各工具的采集方式不同，移除来源不会改动原文件')}
+              detail={t(
+                'Claude Code 从上方连接入口生成本地启动配置；Codex 读取 0.155.x 用量元数据。Harness 需要启用随附的本地统计插件，从启用后开始记录，不补采原始历史会话。OpenCode 选择 opencode.db，仅统计已保存的助手用量记录，不能据此核对完整请求成功率。移除数据源不会修改或删除工具原文件。',
+              )}
             />
           </p>
         </div>

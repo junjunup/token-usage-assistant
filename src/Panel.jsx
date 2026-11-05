@@ -11,6 +11,7 @@ import { Live } from './Live.jsx';
 import { resetDescription } from './generated/domain.js';
 import { providerInfo } from './generated/provider-catalog.js';
 import './panel.css';
+import { t, setLanguage, resolveLanguage } from './i18n.js';
 
 // Menu-bar / tray popover panel (T7.6 macOS, T11.2 Windows). Approved mock: docs/island-1.9.0-design/menubar-proposals.html
 // (§三); Windows: docs/design/T11-glance/.
@@ -21,24 +22,24 @@ const barTone = { normal: 'green', amber: 'amber', red: 'red' };
 const CHIPS = 6; // accounts listed before "+N"; up to 20 accounts are possible
 
 function ago(at, now) {
-  if (!at) return '尚未同步';
+  if (!at) return t('尚未同步');
   const minutes = Math.floor((now - at) / 60000);
-  if (minutes < 1) return '刚刚更新';
-  if (minutes < 60) return minutes + ' 分钟前更新';
+  if (minutes < 1) return t('刚刚更新');
+  if (minutes < 60) return minutes + t(' 分钟前更新');
   const hours = Math.floor(minutes / 60);
-  return hours < 24 ? hours + ' 小时前更新' : Math.floor(hours / 24) + ' 天前更新';
+  return hours < 24 ? hours + t(' 小时前更新') : Math.floor(hours / 24) + t(' 天前更新');
 }
 
 function Row({ row }) {
   return (
     <div className="panel-row">
       <div className="panel-row-meta">
-        <span className="panel-muted">{row.label}</span>
-        <span className={'panel-pct ' + row.tone}>{row.text}</span>
+        <span className="panel-muted">{t(row.label)}</span>
+        <span className={'panel-pct ' + row.tone}>{t(row.text)}</span>
       </div>
-      <Bar value={row.percent} label={row.label + ' 剩余'} tone={barTone[row.tone]} small />
+      <Bar value={row.percent} label={t(row.label) + t(' 剩余')} tone={barTone[row.tone]} small />
       <div className="panel-muted panel-reset">
-        {row.window ? <Live>{(now) => resetDescription(row.window, now)}</Live> : '—'}
+        {row.window ? <Live>{(now) => t(resetDescription(row.window, now))}</Live> : '—'}
       </div>
     </div>
   );
@@ -60,9 +61,9 @@ export function PaceLine({ pace, className = 'panel-section' }) {
     <section className={className + ' pace-line ' + pace.tone}>
       <Timer size={14} />
       <span>
-        <b>节奏</b>
-        {pace.text}
-        {pace.reason && <span className="pace-reason">{pace.reason}</span>}
+        <b>{t('节奏')}</b>
+        {t(pace.text)}
+        {pace.reason && <span className="pace-reason">{t(pace.reason)}</span>}
       </span>
     </section>
   );
@@ -93,6 +94,7 @@ export function Panel() {
   });
 
   if (!view) return null;
+  setLanguage(resolveLanguage(view.language, view.systemLanguage));
   const dark = view.theme === 'dark';
   const accounts = view.accounts || [];
   // Each time the panel opens it starts from the account the menu-bar icon shows.
@@ -105,7 +107,7 @@ export function Panel() {
   const open = async (fn) => {
     setError('');
     const r = await fn();
-    if (!r?.ok) setError(r?.error || '操作未完成，请重试。');
+    if (!r?.ok) setError(r?.error || t('操作未完成，请重试。'));
   };
 
   return (
@@ -115,9 +117,9 @@ export function Panel() {
       <main className="panel-card" ref={card} style={{ marginTop: view.arrow ?? 8 }}>
         {!account ? (
           <section className="panel-empty">
-            <p>还没有连接账户。</p>
+            <p>{t('还没有连接账户。')}</p>
             <button className="panel-link" onClick={() => open(() => bridge.panelMain())}>
-              打开主窗口连接 ›
+              {t('打开主窗口连接 ›')}
             </button>
           </section>
         ) : (
@@ -139,22 +141,28 @@ export function Panel() {
               ))}
               {account.balances.map((b) => (
                 <div className="panel-balance" key={b.currency}>
-                  <span className="panel-muted">{b.currency} 余额</span>
-                  <b>{b.text}</b>
+                  <span className="panel-muted">
+                    {b.currency} {t('余额')}
+                  </span>
+                  <b>{t(b.text)}</b>
                 </div>
               ))}
               {account.balances.length > 0 && (
                 <div className="panel-muted panel-reset">
                   {account.available === false
-                    ? '平台标记为当前不可用于调用'
+                    ? t('平台标记为当前不可用于调用')
                     : account.available
-                      ? '可用于调用 · 无重置窗口'
-                      : '可用状态未返回 · 无重置窗口'}
+                      ? t('可用于调用 · 无重置窗口')
+                      : t('可用状态未返回 · 无重置窗口')}
                 </div>
               )}
-              {!account.rows.length && !account.balances.length && <div className="panel-muted">额度数据暂缺</div>}
+              {!account.rows.length && !account.balances.length && (
+                <div className="panel-muted">{t('额度数据暂缺')}</div>
+              )}
               {account.more > 0 && (
-                <div className="panel-muted panel-more">还有 {account.more} 个窗口，在主窗口查看</div>
+                <div className="panel-muted panel-more">
+                  {t('还有')} {account.more} {t('个窗口，在主窗口查看')}
+                </div>
               )}
             </section>
             {account.pace && <PaceLine pace={account.pace} />}
@@ -167,7 +175,7 @@ export function Panel() {
               </section>
             )}
             {accounts.length > 1 && (
-              <section className="panel-section panel-chips" aria-label="切换面板中查看的账户">
+              <section className="panel-section panel-chips" aria-label={t('切换面板中查看的账户')}>
                 {chips.map((a) => (
                   <button
                     key={a.id}
@@ -177,7 +185,7 @@ export function Panel() {
                   >
                     <i className={'panel-dot ' + a.chip.tone} />
                     {a.label}
-                    <span className="panel-mono">{a.chip.text}</span>
+                    <span className="panel-mono">{t(a.chip.text)}</span>
                   </button>
                 ))}
                 {!showAll && (
@@ -190,14 +198,14 @@ export function Panel() {
             <footer className="panel-foot">
               {view.officials?.[account.id] ? (
                 <button className="panel-link" onClick={() => open(() => bridge.panelOfficial(account.id))}>
-                  官方用量页 ›
+                  {t('官方用量页 ›')}
                 </button>
               ) : (
                 <span />
               )}
               {error && <span className="panel-error">{error}</span>}
               <button className="panel-link" onClick={() => open(() => bridge.panelMain())}>
-                主窗口 ›
+                {t('主窗口 ›')}
               </button>
             </footer>
           </>

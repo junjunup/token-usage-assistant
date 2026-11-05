@@ -153,7 +153,10 @@ test('Codex accounts get the 120 s floor, lock and unlock are wired, and the UI 
   assert.match(main, /powerMonitor\.on\('resume', \(\) => \{\s*if \(!resumeIfUnlocked\(\)\) accounts\.refreshAll\(\);/);
   assert.match(main, /getSystemIdleState\(1\) === 'locked'/);
   assert.match(main, /refreshInterval: accounts\?\.active\?\.monitor\.intervalSeconds/);
-  assert.match(read('src/DesktopApp.jsx'), /每 \$\{state\.refreshInterval \|\| settings\.refreshSeconds\} 秒刷新/);
+  assert.match(
+    read('src/DesktopApp.jsx'),
+    /t\('每 \{v0\} 秒刷新', \{ v0: state\.refreshInterval \|\| settings\.refreshSeconds \}\)/,
+  );
 });
 
 test('T8.3: resumeIfUnlocked resumes only when paused and the screen is not locked', async (t) => {

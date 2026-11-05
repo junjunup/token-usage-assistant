@@ -5,6 +5,7 @@ import { kindName } from './ToolSources.jsx';
 import { PROVIDERS, providerInfo } from './generated/provider-catalog.js';
 import { providerGroups, wizardSteps } from './generated/onboarding.js';
 import './onboarding.css';
+import { t } from './i18n.js';
 
 // T11.4 (D10, mock in docs/design/T11.4-onboarding/): the first-run wizard on the overview. It only opens while
 // there is no account and no tool source (desktop/onboarding.cjs); "skip" and "finish" both turn it off for good.
@@ -37,13 +38,17 @@ export function SetupHeading({ mac, onSkip }) {
       <div>
         <div className="eyebrow">GET STARTED</div>
         <h1>
-          <span>//</span> 开始使用
+          <span>//</span> {t('开始使用')}
         </h1>
-        <p>三步连好账户，之后在{mac ? '菜单栏' : '托盘'}和悬浮窗里一眼看全。</p>
+        <p>
+          {t('三步连好账户，之后在')}
+          {mac ? t('菜单栏') : t('托盘')}
+          {t('和悬浮窗里一眼看全。')}
+        </p>
       </div>
       <div className="heading-actions">
         <button className="button" onClick={onSkip}>
-          跳过，稍后在设置里连接
+          {t('跳过，稍后在设置里连接')}
         </button>
       </div>
     </div>
@@ -87,28 +92,29 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
   }
   const done = [
     connected &&
-      `已连接 ${providerInfo(connected.provider).name} · ${
-        providerInfo(connected.provider).regions.find((r) => r.id === connected.region)?.name
-      }`,
-    ...sources.map((s) => `已添加 ${kindName(s.kind)}`),
+      t('已连接 {v0} · {v1}', {
+        v0: providerInfo(connected.provider).name,
+        v1: t(providerInfo(connected.provider).regions.find((r) => r.id === connected.region)?.name),
+      }),
+    ...sources.map((s) => t('已添加 {v0}', { v0: kindName(s.kind) })),
   ].filter(Boolean);
   return (
     <>
-      <section className="panel wz-panel" aria-label="首次使用向导">
+      <section className="panel wz-panel" aria-label={t('首次使用向导')}>
         <ol className="wz-steps">
           {steps.map((title, i) => (
             <li key={title} className={i < step ? 'done' : i === step ? 'current' : ''}>
               <span className="wz-num">{i < step ? <Check size={11} weight="bold" /> : i + 1}</span>
-              {title}
+              {t(title)}
             </li>
           ))}
         </ol>
         {step === 0 && (
           <>
-            <p className="wz-lead">选一个你在用的平台。之后可以在「账户与设置」里继续添加，最多 20 个账户。</p>
+            <p className="wz-lead">{t('选一个你在用的平台。之后可以在「账户与设置」里继续添加，最多 20 个账户。')}</p>
             {GROUPS.map((group) => (
               <section key={group.id} className="wz-group">
-                <div className="wz-group-title">{group.title}</div>
+                <div className="wz-group-title">{t(group.title)}</div>
                 <div className="wz-tiles">
                   {group.providers.map((p) => {
                     const badge = verificationBadge(p.id);
@@ -120,10 +126,10 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
                         onClick={() => choose(p.id)}
                       >
                         <span className="wz-tile-head">
-                          <b>{p.name}</b>
+                          <b>{t(p.name)}</b>
                           {badge && <em className={'ui-select-badge ' + badge.tone}>{badge.text}</em>}
                         </span>
-                        <small>{p.regions.map((r) => r.name).join(' / ')}</small>
+                        <small>{p.regions.map((r) => t(r.name)).join(' / ')}</small>
                       </button>
                     );
                   })}
@@ -132,8 +138,10 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
             ))}
             {info.regions.length > 1 && (
               <div className="wz-region">
-                <span>{info.name} 的站点</span>
-                <span className="wz-chips" role="group" aria-label="选择站点">
+                <span>
+                  {t(info.name)} {t('的站点')}
+                </span>
+                <span className="wz-chips" role="group" aria-label={t('选择站点')}>
                   {info.regions.map((r) => (
                     <button
                       key={r.id}
@@ -141,7 +149,7 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
                       aria-pressed={r.id === region}
                       onClick={() => setRegion(r.id)}
                     >
-                      {r.name}
+                      {t(r.name)}
                     </button>
                   ))}
                 </span>
@@ -149,10 +157,10 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
             )}
             <div className="wz-actions">
               <button className="panel-link" onClick={() => setStep(2)}>
-                只用本机工具，先不连平台
+                {t('只用本机工具，先不连平台')}
               </button>
               <button className="button primary" onClick={() => setStep(1)}>
-                下一步
+                {t('下一步')}
                 <ArrowRight size={15} />
               </button>
             </div>
@@ -180,8 +188,9 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
               </div>
             )}
             <p className="wz-lead">
-              还想看本机编程工具的 Token
-              用量？选你用的工具（只读用量元数据，不读对话内容）。这些统计与平台额度分开，不相加。
+              {t(
+                '还想看本机编程工具的 Token 用量？选你用的工具（只读用量元数据，不读对话内容）。这些统计与平台额度分开，不相加。',
+              )}
             </p>
             <div className="wz-tools">
               {[...TOOLS]
@@ -194,19 +203,22 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
                       <Database size={16} />
                       <span>
                         <b>{kindName(kind)}</b>
-                        <small>{note}</small>
+                        <small>{t(note)}</small>
                       </span>
                       {added ? (
-                        <em className="wz-found">已添加</em>
+                        <em className="wz-found">{t('已添加')}</em>
                       ) : (
                         hit && (
-                          <em className="wz-found" title={'在 ' + hit.path + ' 找到用量数据，添加时会打开这个位置'}>
-                            本机已找到 {hit.path}
+                          <em
+                            className="wz-found"
+                            title={t('在 ') + hit.path + t(' 找到用量数据，添加时会打开这个位置')}
+                          >
+                            {t('本机已找到')} {hit.path}
                           </em>
                         )
                       )}
                       <button className="button" disabled={!!pending || preview} onClick={() => add(kind)}>
-                        {pending === kind ? '正在添加' : added ? '再添加一个' : '添加'}
+                        {pending === kind ? t('正在添加') : added ? t('再添加一个') : t('添加')}
                       </button>
                     </div>
                   );
@@ -216,12 +228,12 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
               <span>
                 {!connected && (
                   <button className="panel-link" onClick={() => setStep(0)}>
-                    返回选择平台
+                    {t('返回选择平台')}
                   </button>
                 )}
               </span>
               <button className="button primary" onClick={() => (win ? setStep(3) : finish())}>
-                {win ? '下一步' : '完成'}
+                {win ? t('下一步') : t('完成')}
                 {win && <ArrowRight size={15} />}
               </button>
             </div>
@@ -238,20 +250,23 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
             <div className="wz-pin">
               <PushPin size={20} />
               <div>
-                <b>把托盘图标固定到任务栏</b>
+                <b>{t('把托盘图标固定到任务栏')}</b>
                 <p>
-                  Windows 可能把新图标收在任务栏的「^」里。想一直显示：右键任务栏 → 任务栏设置 →
-                  其他系统托盘图标，打开「Token 用量助手」（Windows 10 为「选择哪些图标显示在任务栏上」）。
+                  {t(
+                    'Windows 可能把新图标收在任务栏的「^」里。想一直显示：右键任务栏 → 任务栏设置 → 其他系统托盘图标，打开「Token 用量助手」（Windows 10 为「选择哪些图标显示在任务栏上」）。',
+                  )}
                 </p>
                 <p>
-                  托盘图标的刻度环是剩余最少的账户窗口；左键打开用量面板，悬停看各账户的数值。只给说明，不改系统设置。
+                  {t(
+                    '托盘图标的刻度环是剩余最少的账户窗口；左键打开用量面板，悬停看各账户的数值。只给说明，不改系统设置。',
+                  )}
                 </p>
               </div>
             </div>
             <div className="wz-actions">
               <span />
               <button className="button primary" onClick={finish}>
-                开始使用
+                {t('开始使用')}
               </button>
             </div>
           </>
@@ -259,7 +274,7 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
       </section>
       <p className="wz-foot">
         <Info size={14} />
-        只在没有任何账户和工具来源时出现；点「跳过」后不再自动弹出。已有数据的用户升级后不会看到。
+        {t('只在没有任何账户和工具来源时出现；点「跳过」后不再自动弹出。已有数据的用户升级后不会看到。')}
       </p>
     </>
   );
@@ -279,17 +294,22 @@ export function AdvancedSettings({ associations, children }) {
       <button className="st-advanced-head" aria-expanded={open} onClick={() => setOpen(!open)}>
         {open ? <CaretDown size={15} /> : <CaretRight size={15} />}
         <span className="section-title">
-          ADVANCED <span className="label-cn">/ 高级</span>
+          ADVANCED <span className="label-cn">{t('/ 高级')}</span>
         </span>
         <span className="st-advanced-sum">
-          计费账户归组 · 工具记录关联
-          {review > 0 && <span className="amber-text">{review} 项待重新确认</span>}
+          {t('计费账户归组 · 工具记录关联')}
+          {review > 0 && (
+            <span className="amber-text">
+              {review} {t('项待重新确认')}
+            </span>
+          )}
         </span>
-        <span className="st-advanced-state">{open ? '收起' : '展开'}</span>
+        <span className="st-advanced-state">{open ? t('收起') : t('展开')}</span>
       </button>
       <p className="st-advanced-note">
-        只有要把本机工具的记录对到某个计费账户、或要把同一账户的多把 Key
-        归成一组时才需要。默认收起，已有的归组与关联照常生效。
+        {t(
+          '只有要把本机工具的记录对到某个计费账户、或要把同一账户的多把 Key 归成一组时才需要。默认收起，已有的归组与关联照常生效。',
+        )}
       </p>
       {open && <div className="st-advanced-body">{children}</div>}
     </section>

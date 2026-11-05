@@ -39,6 +39,10 @@ let state = {
     threshold: 20,
     balanceThresholdCNY: '',
     balanceThresholdUSD: '',
+    // T14.4: ?lang=en|zh previews a language (default: follow the browser).
+    language: ['en', 'zh'].includes(new URLSearchParams(location.search).get('lang'))
+      ? new URLSearchParams(location.search).get('lang')
+      : 'system',
     notifications: true,
     floating: false,
     pinned: true,
@@ -477,6 +481,7 @@ function snapshot() {
   return {
     ...state,
     overview: accountOverview(previewSummaries(), state.settings),
+    systemLanguage: navigator.language,
     // T14.3: like main.cjs, only while the setting is on.
     providerStatus: state.settings.providerStatus ? state.providerStatusPreview || null : null,
     // T12.1: like main.cjs, the current platform account's pace line (Command Code's comes with its analytics).
@@ -753,6 +758,8 @@ function previewPanel() {
   return {
     ...panelState(summaries, state.settings),
     theme,
+    language: state.settings.language,
+    systemLanguage: navigator.language,
     officials: Object.fromEntries(summaries.map((a) => [a.id, true])),
     anchorX: 290,
     // ?platform=win32: the Windows panel sits against the taskbar without the arrow (T11.2).
