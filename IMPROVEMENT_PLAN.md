@@ -153,7 +153,7 @@
 | 13 接得上、带得走 | T13.5 命令行 / JSON 输出 | 是 | — | D20 ③ | [x] |
 | 14 补齐细节 | T14.1 Claude Code 会话日志用量（不用启动脚本） | 是 | — | D21 ② | [x] |
 | 14 补齐细节 | T14.2 余额告警阈值（按金额，币种分开） | 是（UI 小改） | — | D21 ① | [x] |
-| 14 补齐细节 | T14.3 服务商状态页（默认关闭） | 是（新视觉元素，先给草图） | — | D21 ③ | [ ] |
+| 14 补齐细节 | T14.3 服务商状态页（默认关闭） | 是（新视觉元素，先给草图） | — | D21 ③ | [x] |
 | 14 补齐细节 | T14.4 英文界面 | 是 | — | D21 ④ | [ ] |
 
 **2026-10-23 起的执行顺序（D12，用户按复盘推荐确认）**：T8.9 → T8.11 → T8.12 → T8.1 → T8.2 → T8.3 → T8.4 → T8.5 → T8.6 → T8.7 → T8.10 → T8.8（发布 1.9.0-beta.3）→ T6.1 → T6.2 / T6.3 → T8.14 → 按测量结果再定 T4.2 / T7.2。T8.13 等用户告知 Harness 版本后插入。仍然每次只做一个任务；T8.9–T8.12 不改应用行为，可以在稳固版各任务之间穿插。
@@ -623,6 +623,7 @@
 | 2026-11-05 | T13.5 | 命令行读取额度（D20 ③，设置 `statusExport` 默认关闭）：开启后在数据目录 `cli/` 维护 `status.json` / `status.txt`（`desktop/status-snapshot.cjs`：菜单栏规则排序、缺失为 null、金额原样带币种、不含凭据与身份），并生成只打印它们的命令（Mac `tua-status`，Windows `tua-status.cmd` + `.ps1`，路径写死在脚本里）；值变化或每分钟重写，关闭即删除，smoke 不写，不开网络端口。`task/T13.5-cli-json` `5ba28ac`；CI `41892560358` 通过（macOS 作业第一次没分到运行机器被取消，重跑通过） | 476：470 / 0 / 6 | ①（含实际运行生成的 Mac 命令）；开发版隔离 smoke 通过；设置截图在 `work/t13/shots/` | Windows 命令只有生成内容的测试，没在 Windows 上运行过；没在真实账户上开启过 |
 | 2026-11-05 | T14.1 | Claude Code 会话日志（D21 ②）：新工具种类 `claude-code-logs`（`desktop/claude-log-reader.cjs`），只读 `~/.claude/projects/**/*.jsonl` 里助手行的 `message.usage`、编号、模型、时间（白名单投影）；同一回复多行、恢复 / 分叉复制按（消息编号, 请求编号）只算一次，`<synthetic>` 错误占位跳过；结构契约输入 / 输出为核心、缓存与思考可选；与启动脚本来源按请求编号去重，对不上时暂停合并（`overlap`）；加入自动发现与向导（工具数 12 → 13，smoke 同步）。`task/T14.1-claude-logs` `09b83b1`；CI `41982685622` 通过 | 480：474 / 0 / 6 | ①；③（Claude 代测：本机真实 `~/.claude` 30 天 5951 次回复读取成功、格式正常、0 条关系异常，只看汇总数字）；开发版隔离 smoke 通过；向导截图在 `work/t14/shots/` | 没与 Anthropic 控制台或 ccusage 对数；与启动脚本来源的去重只有合成测试（OTLP 事件里是否带 request_id 未在真实会话上确认） |
 | 2026-11-05 | T14.2 | 余额提醒金额（D21 ①）：设置 `balanceThresholdCNY` / `balanceThresholdUSD`（十进制字符串、最多两位小数、默认空 = 不提醒），`balance-domain.cjs` 的 `belowAmount` 按十进制逐位比较、只比同币种；低于时状态为「余额低于提醒金额」（琥珀），菜单栏 / 托盘、面板、总览、命令行快照同一规则排序（`menubar-status.cjs` 的 `amountsOf`），`AlertTracker.checkBalance` 每次跌破通知一次；余额详情标「低于提醒金额」；PREFERENCES 新增「余额提醒金额」一行（失焦保存、格式不对提示）；诊断信息只写是否设置。`task/T14.2-balance-threshold` `fd3f534`；CI `41990446610` 通过 | 484：478 / 0 / 6 | ①；开发版隔离 smoke 通过；设置行、总览、余额详情的浅色 / 深色截图在 `work/t14/shots/` | 没在真实余额账户上看过变色与通知 |
+| 2026-11-05 | T14.3 | 服务商状态页（D21 ③，设置 `providerStatus` 默认关闭，用户按草图确认）：`desktop/provider-status.cjs` 固定 Anthropic / OpenAI / Moonshot / MiniMax 四个 Statuspage 地址，只对已连接平台每 5 分钟读 `status.indicator`（不带凭据、不跟随重定向、15 秒超时、64 KB 上限、一次只跑一轮），失败保留上次结果；平台详情账户行右侧显示状态（`src/ProviderStatus.jsx`），点「状态页」打开固定地址；PREFERENCES 新增开关；smoke 不联网。调研见 `docs/research/PROVIDER-STATUS.md`。`task/T14.3-provider-status` `3843013`；CI 见合并后 | 487：481 / 0 / 6 | ①；③（Claude 代测：开发机经 Electron net.fetch 实际读到四个状态页）；开发版隔离 smoke 通过；草图与实现截图在 `docs/design/T14.3-provider-status/` | 没在打包版里开过；Windows 上的联网路径只有单元测试 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 

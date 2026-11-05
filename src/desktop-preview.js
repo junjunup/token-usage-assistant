@@ -362,6 +362,30 @@ if (selectedProvider && scenario === 'offline') {
   state.data.status = 'offline';
   state.data.errors = [{ endpoint: 'credits', status: 503, message: '平台暂时不可用，当前显示上次数据。' }];
 }
+// T14.3: ?provider-status=<none|minor|major|critical|maintenance|unknown> shows the status line (setting on).
+{
+  const indicator = new URLSearchParams(location.search).get('provider-status');
+  if (indicator) {
+    state.settings.providerStatus = true;
+    const NAMES = { claude: 'Anthropic', codex: 'OpenAI', kimi: 'Moonshot', minimax: 'MiniMax' };
+    const TEXT = {
+      none: ['运行正常', 'green'],
+      minor: ['部分服务降级', 'amber'],
+      major: ['较大范围故障', 'red'],
+      critical: ['严重故障', 'red'],
+      maintenance: ['维护中', 'neutral'],
+    };
+    const [text, tone] = TEXT[indicator] || ['—', 'neutral'];
+    state.providerStatusPreview = {
+      name: NAMES[new URLSearchParams(location.search).get('provider')] || 'Anthropic',
+      indicator: TEXT[indicator] ? indicator : null,
+      checkedAt: TEXT[indicator] ? Date.now() - 180000 : null,
+      failing: false,
+      text,
+      tone,
+    };
+  }
+}
 // T14.2: ?balance-threshold=<CNY amount> sets the CNY reminder amount (e.g. 100 with the sample DeepSeek balance).
 if (new URLSearchParams(location.search).get('balance-threshold'))
   state.settings.balanceThresholdCNY = new URLSearchParams(location.search).get('balance-threshold');
@@ -453,6 +477,8 @@ function snapshot() {
   return {
     ...state,
     overview: accountOverview(previewSummaries(), state.settings),
+    // T14.3: like main.cjs, only while the setting is on.
+    providerStatus: state.settings.providerStatus ? state.providerStatusPreview || null : null,
     // T12.1: like main.cjs, the current platform account's pace line (Command Code's comes with its analytics).
     pace:
       active && active.provider !== 'commandcode' && active.parts?.credits?.windows?.length
@@ -659,6 +685,7 @@ export const previewBridge = {
   },
   window: async () => ({ ok: false, error: '该功能在 Windows 桌面应用中可用。' }),
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),
+  openStatusPage: async () => ({ ok: false, error: '网页预览不打开外部页面。' }),
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
   openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
   claudeConfig: async () => ({ ok: false, error: '浏览器预览不修改 Claude Code 设置。' }),

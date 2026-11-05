@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld(
     setSettings: (value) => call('assistant:settings', value),
     window: (action) => call('assistant:window', action),
     openOfficial: (target) => call('assistant:official', target),
+    openStatusPage: () => call('assistant:open-status-page'),
     testNotification: () => call('assistant:test-notification'),
     openUpdate: () => call('assistant:open-update'),
     claudeConfig: (action) => call('assistant:claude-config', action),

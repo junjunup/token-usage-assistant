@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean, providerStatus: boolean }} Settings */
 const { belowAmount } = require('./balance-domain.cjs');
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
@@ -50,6 +50,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   claudeStatusQuota: false,
   // T13.5 (D20 ③): keep a quota snapshot and a command that prints it (tua-status) in the assistant's data folder.
   statusExport: false,
+  // T14.3 (D21 ③): show the official status page of connected platforms (Anthropic, OpenAI, Moonshot, MiniMax).
+  providerStatus: false,
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>

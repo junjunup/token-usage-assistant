@@ -1,4 +1,5 @@
 import React from 'react';
+import { ProviderStatusLine } from './ProviderStatus.jsx';
 import { Disclosure } from './Disclosure.jsx';
 import { Coins, Info, WarningCircle, ArrowUpRight } from '@phosphor-icons/react';
 import { formatAmount } from './generated/balance-domain.js';
@@ -41,7 +42,7 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
           <span className={'status-dot ' + tone} />
           {account?.label || brand(state)} · 官方按量账户
         </span>
-        <span>账户余额</span>
+        <ProviderStatusLine status={state.providerStatus} fallback="账户余额" />
       </div>
       {(data.errors.length > 0 || state.credentialIssue) && (
         <div className="inline-warning" role="status">
