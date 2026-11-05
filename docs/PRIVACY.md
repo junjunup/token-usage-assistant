@@ -85,7 +85,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 ## English
 
-Token Usage Assistant is a local desktop app. It only **reads** usage and quota from the platform accounts you connect, and **usage metadata** from the local coding tools you choose. There is no server, no telemetry, and it never calls a model. (The app's interface is currently Chinese only.)
+Token Usage Assistant is a local desktop app. It only **reads** usage and quota from the platform accounts you connect, and **usage metadata** from the local coding tools you choose. There is no server, no telemetry, and it never calls a model. (The interface follows your system language, Chinese or English.)
 
 ### What it reads
 

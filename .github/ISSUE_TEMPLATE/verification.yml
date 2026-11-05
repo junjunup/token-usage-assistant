@@ -35,7 +35,7 @@ body:
     id: version
     attributes:
       label: 应用版本与系统 / App version and OS
-      description: 「账户与设置」页面右上角，例如 1.9.0-beta.6 · Windows 11 / Top right of the settings page
+      description: 「账户与设置」页面右上角，例如 1.9.0-beta.7 · Windows 11 / Top right of the settings page
     validations:
       required: true
   - type: dropdown

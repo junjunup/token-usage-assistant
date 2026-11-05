@@ -72,8 +72,8 @@ test('installer README and public notes stay aligned with the source READMEs', (
   }
   for (const anchor of ['## 中文', '## English']) assert.ok(read('docs/INSTALL.md').includes(anchor), anchor);
   assert.ok(
-    installer.includes('## English') && installer.includes('Chinese only'),
-    'English section says the UI is Chinese only',
+    installer.includes('## English') && installer.includes('Chinese or English'),
+    'English section says the UI follows the system language (T14.4)',
   );
   const notes = read('.github/workflows/publish.yml');
   assert.ok(notes.includes(`${blob}docs/INSTALL.md\n`) && notes.includes(`${blob}docs/INSTALL.md#english`));

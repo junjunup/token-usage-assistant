@@ -22,11 +22,11 @@
 
 每个版本附带 `SHA256SUMS.txt`，下载后可以核对。完整步骤、升级与常见问题见 [安装与升级](https://github.com/junjunup/token-usage-assistant/blob/main/docs/INSTALL.md)。
 
-当前为测试版。已安装的客户端「检查更新」只读取本仓库的 Releases，不会自动下载或安装。
+当前为测试版。已安装的客户端「检查更新」只读取本仓库的 Releases；Windows 安装版在你点「下载并安装」后才从这里下载、核对校验值，再点「重启并安装」才安装，不会自行下载或安装；便携版和 Mac 版只提示。
 
 ## 隐私
 
-- 只调用固定的官方**只读**接口；不读取、不导出对话正文、提示词、回复、工具内容或凭据；第三方数据库只读。
+- 只调用固定的**只读**接口（Kimi Code 订阅额度用的是非官方接口，界面会注明；可选的服务商状态页默认关闭）；不读取、不导出对话正文、提示词、回复、工具内容或凭据；第三方数据库只读。
 - 凭据只在应用里由你自己填写，用系统能力加密保存（Windows DPAPI、macOS 钥匙串）。
 - 没有服务器、没有遥测。逐项说明见 [隐私说明](https://github.com/junjunup/token-usage-assistant/blob/main/docs/PRIVACY.md)。
 
@@ -38,7 +38,7 @@
 
 **A small local desktop app that shows, side by side, how much quota you have left on AI coding platforms and how many tokens your local coding tools actually used.** For Windows x64 and Apple Silicon macOS. Credentials stay on your machine, encrypted; no server, no telemetry, no model calls. Not an official client of any platform.
 
-> **The interface is Chinese only for now.**
+> **The interface follows your system language (Chinese or English); you can switch it in Settings.**
 
 This repository only publishes installers; it has no source. Source code, supported platforms with verification levels, and how numbers are counted: **[source repository](https://github.com/junjunup/token-usage-assistant/blob/main/README.en.md)**.
 
@@ -51,11 +51,11 @@ From **[Releases](https://github.com/junjunup/TokenUsageAssistant/releases)**:
 
 Each release includes `SHA256SUMS.txt` for checking downloads. Full steps, upgrades and FAQ: [Install and upgrade](https://github.com/junjunup/token-usage-assistant/blob/main/docs/INSTALL.md#english).
 
-These are beta releases. "Check for updates" in the app only reads this repository's Releases; it never downloads or installs anything by itself.
+These are beta releases. "Check for updates" in the app only reads this repository's Releases. The installed Windows build downloads and checks a new version only after you click "下载并安装" (Download and install), and installs it only after "重启并安装" (Restart and install); nothing happens by itself. The portable and Mac builds only tell you.
 
 ### Privacy
 
-- Only fixed, official **read-only** APIs are called. Conversation text, prompts, replies, tool content and credentials are never read or exported; third-party databases are opened read-only.
+- Only fixed **read-only** APIs are called (the Kimi Code subscription quota uses an unofficial API, labelled in the app; the optional provider status pages are off by default). Conversation text, prompts, replies, tool content and credentials are never read or exported; third-party databases are opened read-only.
 - You enter credentials in the app yourself; they are encrypted with the system's facilities (Windows DPAPI, macOS Keychain).
 - No server and no telemetry. Details: [Privacy](https://github.com/junjunup/token-usage-assistant/blob/main/docs/PRIVACY.md#english).
 

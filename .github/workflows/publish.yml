@@ -69,7 +69,7 @@ jobs:
           - 校验：SHA256SUMS.txt。完整说明与常见问题：https://github.com/junjunup/token-usage-assistant/blob/main/docs/INSTALL.md
           - 证据等级：CI 打包原生 smoke（隔离样例）；不代表真实账户或真机验收。
 
-          English: beta build; the interface is Chinese only for now. Windows: unsigned, click "More info → Run anyway". macOS: ad-hoc signed, not notarized; on first launch click "Open Anyway" in System Settings → Privacy & Security. Install guide: https://github.com/junjunup/token-usage-assistant/blob/main/docs/INSTALL.md#english
+          English: beta build; the interface follows your system language (Chinese or English). Windows: unsigned, click "More info → Run anyway". macOS: ad-hoc signed, not notarized; on first launch click "Open Anyway" in System Settings → Privacy & Security. Install guide: https://github.com/junjunup/token-usage-assistant/blob/main/docs/INSTALL.md#english
 
           ## 本版改动
 
