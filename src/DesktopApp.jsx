@@ -870,8 +870,8 @@ export function DesktopApp() {
                     <div className="inline-warning" role="status">
                       <WarningCircle size={16} />
                       <span>
-                        {analysis.error || (
-                          <Disclosure summary={analysis.report.message} detail={analysis.report.messageDetail} />
+                        {t(analysis.error) || (
+                          <Disclosure summary={t(analysis.report.message)} detail={t(analysis.report.messageDetail)} />
                         )}
                       </span>
                     </div>
@@ -1534,7 +1534,7 @@ export function DesktopApp() {
         <div className={`toast ${toast.error ? 'warning' : ''}`} role="status">
           <div className="toast-icon">{toast.error ? <WarningCircle size={19} /> : <Check size={19} />}</div>
           <div>
-            <strong>{toast.title}</strong>
+            <strong>{t(toast.title)}</strong>
           </div>
           <IconButton label={t('关闭提示')} onClick={() => setToast(null)}>
             <X size={16} />

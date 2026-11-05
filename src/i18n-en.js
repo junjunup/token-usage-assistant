@@ -94,7 +94,7 @@ export const EN = {
   '在 Claude Code 底部显示本会话额度和最紧的其他账户':
     "Show this session's quota and the tightest other account at the bottom of Claude Code",
   '对用助手生成的启动脚本打开的会话，以及「接入所有会话」后的所有 Claude Code 会话生效，例如「Claude 5h 60% · 最紧 OpenRouter 35%」。文字由本机助手算好后交给状态栏，不联网；关闭时状态栏照旧只显示采集状态。':
-    'Applies to sessions started with the generated launcher, and to every Claude Code session after “connect all sessions”, e.g. “Claude 5h 60% · 最紧 OpenRouter 35%”. The text is computed by the local assistant, without network access; when off, the status line shows only the collection status.',
+    'Applies to sessions started with the generated launcher, and to every Claude Code session after “connect all sessions”, e.g. “Claude 5h 60% · tightest OpenRouter 35%”. The text is computed by the local assistant, without network access; when off, the status line shows only the collection status.',
   '在 Claude Code 状态栏显示额度': 'Show quota in the Claude Code status line',
   命令行读取额度: 'Command-line quota',
   运行: 'Run',
@@ -862,6 +862,581 @@ export const EN = {
   固定托盘图标: 'Pin the tray icon',
   连接本机登录: 'Connect local sign-in',
 
+  // Analytics page
+  未关联项目: 'No project',
+  暂无可比数据: 'Nothing to compare',
+  与上期持平: 'Same as the previous period',
+  上期无记录: 'No records in the previous period',
+  '{v0} {v1}% · 对比上一等长时段': '{v0} {v1}% · vs. the previous period of equal length',
+  请求健康: 'Request health',
+  已完成: 'Completed',
+  失败: 'Failed',
+  '进行中 / 其他': 'In progress / other',
+  '· 估算': '· estimate',
+  '成功率 = 已完成 /（已完成 + 失败）': 'Success rate = completed / (completed + failed)',
+  '取消与进行中单列。平均值只统计已完成请求；上方用量总计包含失败、取消请求已报告的用量。':
+    'Cancelled and in-progress requests are listed apart. Averages count completed requests only; the totals above include usage reported by failed and cancelled requests.',
+  '成功率按接口返回的完成数 / 总请求数计算，字段缺失时不推算。':
+    'Success rate = completed / total requests as reported by the API; not estimated when fields are missing.',
+  估算费用: 'Estimated cost',
+  实际费用: 'Actual cost',
+  记录数: 'Records',
+  今日消耗节奏: "Today's pace",
+  用量趋势: 'Usage trend',
+  趋势指标: 'Trend metric',
+  记录: 'Records',
+  '{v0} {v1} 趋势，精确数值可在下方展开查看': '{v0} {v1} trend; exact values can be expanded below',
+  '币种不同，请按模型筛选查看费用趋势': 'Currencies differ; filter by model to see the cost trend',
+  设置模型单价后可查看估算费用趋势: 'Set model prices to see the estimated cost trend',
+  '尚无足够记录，采集后会在这里显示趋势': 'Not enough records yet; the trend appears here once collected',
+  '账户采样增量 · 未采集区间留空，不补零': 'Account sample increments · gaps stay empty, never zero',
+  '按记录时间归组 · 包含失败、取消时已报告的用量':
+    'Grouped by record time · includes usage reported by failed and cancelled requests',
+  查看数据: 'View data',
+  时间: 'Time',
+  '（估算）': ' (estimate)',
+  '只统计连续采样的增量，可能小于接口总量':
+    'Only increments between continuous samples; may be lower than the API total',
+  '跨分组边界、离线和账期切换的间隔不分摊。首次采样：':
+    'Intervals across bucket edges, offline time and period changes are not spread. First sample: ',
+  当前窗口已达上限: 'This window is at its limit',
+  '按当前速度，预计重置前不会触顶': 'At the current pace, no limit is reached before reset',
+  '约 {v0}后触顶': 'Reaches the limit in about {v0}',
+  '{v0} 小时 {v1} 分钟': '{v0} h {v1} min',
+  该窗口的连续样本不足: 'Not enough continuous samples for this window',
+  账户消耗速度与预测: 'Account pace and forecast',
+  'Token / 分钟': 'Tokens / min',
+  '费用 / 小时': 'Cost / hour',
+  条件估计: 'Conditional estimate',
+  '重置时间 {v0}': 'Resets {v0}',
+  等待有效重置时间: 'Waiting for a valid reset time',
+  按最近: 'Based on the last',
+  分钟的速度推算: 'minutes',
+  '；购买额度仍有余额，窗口触顶后可能转用购买额度':
+    '; purchased credits remain and may be used once a window is at its limit',
+  '基于账户采样，假设消耗速度保持不变；不随上方时间筛选改变。':
+    'Based on account samples, assuming the pace stays the same; not affected by the period above.',
+  '连接账户后开始积累采样，至少 10 分钟后提供预测。':
+    'Samples start once an account is connected; a forecast needs at least 10 minutes.',
+  额度从哪里扣: 'Where usage is charged',
+  购买额度: 'Purchased credits',
+  免费额度: 'Free credits',
+  当前剩余: 'Left now',
+  消耗: 'Spent',
+  所选时段已使用: 'In the selected period',
+  '购买额度。': 'purchased credits were used.',
+  '余额是当前值，消耗是所选时段汇总': 'Balances are current; spend is the selected period',
+  '购买额度不受套餐短周期窗口限制；窗口触顶不等于账户完全不可用。缺失的消耗字段显示“—”。':
+    'Purchased credits are not limited by short plan windows; a window at its limit does not mean the account is unusable. Missing spend fields show “—”.',
+  余额更新于: 'Balance updated',
+  '· 消耗更新于': '· spend updated',
+  缓存利用情况: 'Cache use',
+  缓存读取命中率: 'Cache read hit rate',
+  '缓存读取 Token / 有缓存字段的输入 Token': 'Cache read tokens / input tokens with cache fields',
+  读取缓存估算节省: 'Estimated savings from cache reads',
+  '相较同量普通输入，不含写入溢价': 'Compared with the same regular input, excluding write premiums',
+  '· 已知部分': '· known part',
+  '普通输入 {v0}，缓存读取 {v1}，缓存写入 {v2}': 'Regular input {v0}, cache read {v1}, cache write {v2}',
+  普通输入: 'Regular input',
+  缓存读取: 'Cache read',
+  缓存写入: 'Cache write',
+  缓存数据覆盖: 'Cache data coverage',
+  已报告用量的: 'Of requests with reported usage,',
+  '请求（': 'requests (',
+  次缺少完整缓存字段: 'lack complete cache fields',
+  '输入总量包含缓存读写，拆分后不会重复累计。':
+    'Total input includes cache reads and writes; nothing is counted twice.',
+  '当前筛选下没有完整缓存数据，不将缺失值当作零命中。':
+    'No complete cache data for this filter; missing values are not treated as zero hits.',
+  来源与覆盖范围: 'Sources and coverage',
+  所选范围已覆盖: 'Selected period covered',
+  部分覆盖: 'Partly covered',
+  覆盖范围待确认: 'Coverage not confirmed',
+  'Token 为已报告用量，费用为本机估算': 'Tokens are reported usage; cost is a local estimate',
+  '包含失败、取消请求中明确返回的数值。费用按本机模型单价计算，缺失字段保持未知。':
+    'Includes values reported by failed and cancelled requests. Cost uses your local model prices; missing fields stay unknown.',
+  尚无可确认的时间范围: 'No confirmed time range yet',
+  同步成功: 'Synced',
+  等待可用数据: 'Waiting for data',
+  '· 已达到读取上限': '· read limit reached',
+  '· 完整覆盖': '· fully covered',
+  '· 不保证覆盖全部请求': '· not guaranteed to cover every request',
+  '会话按数据源隔离。仅按已确认的规则关联；切换总览账户不会改变记录归属。已关联':
+    'Sessions are kept per source. Only confirmed rules link records; switching the overview account changes nothing. Linked:',
+  '条，未关联或待确认': '; unlinked or pending:',
+  '条。': '.',
+  '{v0} 次请求未报告用量，不计为零 Token。': '{v0} requests reported no usage and are not counted as zero tokens.',
+  '{v0} 已知 Token · {v1} 次缺少完整用量': '{v0} known tokens · {v1} without complete usage',
+  暂无完整的可比时间范围: 'No complete period to compare',
+  '{v0} · 输入与输出汇总': '{v0} · input and output',
+  '尚无可估算费用，请设置模型单价': 'No estimated cost yet; set model prices',
+  '{v0} 估算 · {v1}': '{v0} estimate · {v1}',
+  '次未定价，显示已定价部分': 'unpriced; showing the priced part',
+  不代表实际账单: 'Not an actual bill',
+  '{v0} · 接口实际费用': '{v0} · actual cost from the API',
+  '未能保存，请检查单价后重试。': 'Not saved. Check the prices and try again.',
+  分析数据来源: 'Data source',
+  账户统计: 'Account',
+  工具分析: 'Tools',
+  请选择具有有效账期的已确认计费账户: 'Choose a confirmed billing account with a valid billing period',
+  更新中: 'Updating',
+  刷新分析: 'Refresh',
+  '导出 CSV': 'Export CSV',
+  取消分析: 'Cancel',
+  '本机工具用量 · 已报告用量口径': 'Local tool usage · reported usage',
+  当前按量连接: 'Current pay-as-you-go connection',
+  当前套餐连接: 'Current plan connection',
+  'Command Code 账户 / 组织汇总': 'Command Code account / organization total',
+  与账户总量独立: 'Separate from account totals',
+  仅提供余额: 'Balance only',
+  仅提供额度: 'Quota only',
+  '更新于 {v0}': 'Updated {v0}',
+  统计未提供: 'Not provided',
+  等待数据: 'Waiting for data',
+  全部已启用: 'All enabled',
+  至少保留一个数据源: 'Keep at least one source',
+  暂无启用的数据源: 'No enabled sources',
+  工具计费账户: 'Billing account',
+  '全部记录（独立统计）': 'All records (counted separately)',
+  '未关联 / 待确认记录': 'Unlinked / pending records',
+  人工确认的关联范围: 'Confirmed link scope',
+  筛选模型: 'Filter by model',
+  全部模型: 'All models',
+  来源未标记: 'Source unlabelled',
+  筛选项目: 'Filter by project',
+  全部项目: 'All projects',
+  会话: 'Session',
+  清除会话筛选: 'Clear session filter',
+  清除筛选: 'Clear filters',
+  管理数据源: 'Manage sources',
+  '记录超过单次读取上限，仅统计最近 100,000 条；请缩小时间范围。':
+    'Over the read limit; only the latest 100,000 records are counted. Narrow the period.',
+  '包含 Codex 已报告用量快照：记录数不等于请求次数。Codex 缺少请求终态，不参与成功率和已完成请求均值；缓存与推理子项不重复累加。':
+    'Includes Codex usage snapshots: records are not requests. Codex has no request outcome, so it is left out of the success rate and averages; cache and reasoning parts are not added twice.',
+  '包含 Goose / Crush 会话级汇总：每条是一个会话的累计用量，不是请求数；跨天的会话整段算在最后更新的那天，按日分布会有偏差。':
+    "Includes Goose / Crush session totals: each record is a session's total, not a request; a session spanning days counts on its last update, so daily splits are approximate.",
+  '正在整理用量数据…': 'Preparing usage data…',
+  当前没有可用统计: 'No statistics available',
+  管理工具数据源: 'Manage tool sources',
+  分币种: 'per currency',
+  '{v0} 次已报告用量 · {v1} 已完成': '{v0} with reported usage · {v1} completed',
+  '{v0} 已完成': '{v0} completed',
+  '{v0} 条记录有缓存字段': '{v0} records with cache fields',
+  '{v0} 次失败 · 按接口计数': '{v0} failed · as reported by the API',
+  分析内容: 'Sections',
+  趋势概览: 'Trend',
+  模型排行: 'Models',
+  项目与会话: 'Projects & sessions',
+  缓存分析: 'Cache',
+  额度与预测: 'Quota & forecast',
+  '沿用上方时间、模型和项目筛选，可继续查看排行及缓存构成。':
+    'Uses the period, model and project filters above for rankings and cache details.',
+  查看模型排行: 'View model ranking',
+  账户汇总暂不提供模型明细: 'Account totals have no model breakdown',
+  模型用量排行: 'Model ranking',
+  模型排行排序: 'Sort models',
+  '按 Token 排序': 'By tokens',
+  按记录数排序: 'By records',
+  按币种及估算费用排序: 'By currency and estimated cost',
+  '模型 / 来源': 'Model / source',
+  '已知 Token 占比': 'Share of known tokens',
+  '估算费用 · 币种': 'Estimated cost · currency',
+  单价: 'Price',
+  次未定价: 'unpriced',
+  编辑: 'Edit',
+  设置单价: 'Set price',
+  这个时间范围没有模型记录: 'No model records in this period',
+  '费用按单价估算，币种之间不相加': 'Cost is estimated from prices; currencies are never added',
+  '不同供应商的同名模型单独计价，币种之间不换算。未定价或缺少完整 Token 分类的请求不会记为免费。':
+    'Models with the same name from different providers are priced separately; currencies are never converted. Unpriced requests or ones without a full token breakdown are never counted as free.',
+  项目与会话来自本机工具记录: 'Projects and sessions come from local tool records',
+  消耗用在了哪里: 'Where usage went',
+  项目: 'Project',
+  最近使用: 'Last used',
+  '会话 {v0}': 'Session {v0}',
+  当前筛选下没有记录: 'No records for this filter',
+  '点击项目看会话，点击会话看趋势': 'Click a project for its sessions, a session for its trend',
+  '只读取用量计数与项目目录，不读取对话正文。': 'Only usage counts and project folders are read, never conversations.',
+  账户接口暂不提供缓存分类: 'The account API has no cache breakdown',
+  额度扣费与触顶预测基于账户数据: 'Charging and limit forecasts are based on account data',
+  查看账户额度: 'View account quota',
+  '数据留在本机 · 工具用量、估算费用与平台额度、实际账单分别展示，不能相加':
+    'Data stays on this computer · tool usage, estimated cost, platform quota and actual bills are shown apart and never added',
+  '账户余额请在总览查看 · 余额变化不作为实际消费': 'See the balance on the overview · balance changes are not spending',
+  '套餐额度请在总览查看 · 不根据额度比例推算 Token 或费用':
+    'See plan quota on the overview · tokens and cost are never derived from quota shares',
+  '历史趋势从助手开始采样时累计 · API 汇总与采样图的覆盖范围可能不同':
+    'History starts when the assistant began sampling · API totals and the sampled chart may cover different ranges',
+  设置估算单价: 'Set estimated prices',
+  关闭单价设置: 'Close',
+  '所选币种 / 百万 Token · 仅用于本机估算，不修改供应商价格。':
+    'Selected currency per million tokens · for local estimates only; provider prices are not changed.',
+  单价币种: 'Price currency',
+  'USD · 美元': 'USD',
+  'CNY · 人民币': 'CNY',
+  输出: 'Output',
+  '{v0}单价': '{v0} price',
+  保存中: 'Saving',
+  保存估算单价: 'Save prices',
+
+  // Account links and coverage report
+  未确认: 'Not confirmed',
+  已移除连接: 'Removed connection',
+  已移除来源: 'Removed source',
+  计费账户与工具关联: 'Billing accounts and tool links',
+  '先归组连接，再关联工具记录': 'Group connections first, then link tool records',
+  '这里的选择不会修改原始日志；切换总览账户不会更改关联。':
+    'Choices here never change original logs; switching the overview account does not change links.',
+  '1. 计费账户归组': '1. Billing groups',
+  连接待确认: 'Connection to confirm',
+  '个连接 · 主查询：': 'connections · primary query:',
+  '人工确认属于同一账户，仅采用主查询连接的数据，不累加共享额度。':
+    'Confirmed as one account; only the primary connection is used and shared quota is never added up.',
+  编辑归组: 'Edit group',
+  移除归组: 'Remove group',
+  计费账户名称: 'Billing account name',
+  '例如：我的 Command Code 账户': 'e.g. My Command Code account',
+  '属于此账户的连接（可多选）': 'Connections of this account (several allowed)',
+  '请先在上方添加平台连接。': 'Add a platform connection above first.',
+  平台数据采用哪个连接: 'Which connection provides platform data',
+  主查询连接: 'Primary connection',
+  确认同一计费账户: 'Confirm one billing account',
+  '我确认所选连接属于同一计费账户。成员或密钥变化后，原关联需重新确认。':
+    'I confirm these connections belong to one billing account. Member or key changes require confirming again.',
+  保存归组: 'Save group',
+  创建计费账户组: 'Create billing group',
+  取消编辑: 'Cancel',
+  '2. 工具记录关联': '2. Tool record links',
+  已移除账户: 'Removed account',
+  全部供应商: 'All providers',
+  '≤ 记录时间': '≤ record time',
+  '（持续生效）': ' (ongoing)',
+  '· 人工关联': '· manual link',
+  编辑关联: 'Edit link',
+  移除关联: 'Remove link',
+  关联工具数据源: 'Tool source',
+  计费账户组: 'Billing group',
+  关联计费账户: 'Billing account',
+  '生效时间（本机时区）': 'Start (local time)',
+  关联生效时间: 'Link start',
+  '结束时间（留空则持续）': 'End (empty = ongoing)',
+  关联结束时间: 'Link end',
+  '供应商标识（可选，精确匹配）': 'Provider id (optional, exact match)',
+  关联供应商: 'Provider',
+  '留空包含全部；可在模型排行查看标识': 'Empty includes all; see ids in the model ranking',
+  '模型名称（可选，精确匹配）': 'Model name (optional, exact match)',
+  关联模型: 'Model',
+  留空包含全部模型: 'Empty includes all models',
+  确认工具记录归属: 'Confirm record ownership',
+  '我确认该来源在此时间和筛选范围内的记录都属于所选账户。留空条件会包含全部供应商或模型，请按实际使用范围确认。':
+    'I confirm all records of this source in this period and filter belong to the chosen account. Empty conditions include every provider or model; confirm only what you actually used.',
+  保存关联: 'Save link',
+  添加关联: 'Add link',
+  新增关联从当前时间开始: 'New links start now',
+  '要关联历史记录，请明确修改开始时间。文件替换、密钥变化、归组成员调整会要求重新确认；不能只凭模型名自动识别计费账户。':
+    'To link past records, change the start time explicitly. Replaced files, key changes and group changes require confirming again; billing accounts are never inferred from model names.',
+  计费账户: 'Billing account',
+  '人工归组 · 采用一个主查询连接': 'Manual group · one primary connection',
+  所选计费账户尚未提供有效账期: 'The selected billing account has no valid billing period yet',
+  读取中: 'Reading',
+  刷新报告: 'Refresh report',
+  管理账户关联: 'Manage links',
+  先建立计费账户关联: 'Set up a billing account link first',
+  '手动确认同账户的连接和工具记录范围后，再查看覆盖范围。':
+    'Confirm the connections and tool record scope of an account, then check coverage.',
+  前往设置: 'Open settings',
+  正在读取覆盖范围: 'Reading coverage',
+  尚无报告: 'No report yet',
+  '{v0} 个来源 · {v1} 处覆盖缺口': '{v0} sources · {v1} coverage gaps',
+  '{v0} 个来源 · 未发现来源缺口': '{v0} sources · no gaps found',
+  请选择报告范围: 'Choose a report range',
+  '· 覆盖范围是本机观察到的范围，不是完整账单': '· coverage is what this computer observed, not a full bill',
+  差值: 'Difference',
+  误差率: 'Error rate',
+  '暂不能计算差值：': 'No difference yet: ',
+  工具来源覆盖: 'Tool source coverage',
+  '所选范围内未发现此来源的缺口；仍不能证明覆盖了其他设备或工具。':
+    'No gaps for this source in the range; other devices or tools are still not covered.',
+  '尚无可用于当前范围的工具来源。': 'No tool sources for this range.',
+  关联状态: 'Link status',
+  已关联: 'Linked',
+  未关联: 'Unlinked',
+  有歧义: 'Ambiguous',
+  已失效: 'Invalid',
+  只有确认过的规则才会归入此账户: 'Only confirmed rules put records in this account',
+  '数字是记录条数。有歧义或已失效的记录不归入任何账户。':
+    'Numbers are records. Ambiguous or invalid records belong to no account.',
+  至: 'to',
+  持续生效: 'ongoing',
+  人工确认: 'Confirmed manually',
+  '平台数据 · 仅一个查询来源': 'Platform data · one query source',
+  个连接共享此归组: 'connections share this group',
+  未同步或上次数据: 'Not synced or last data',
+  '平台 Token 汇总': 'Platform tokens',
+  '平台返回费用 · USD': 'Platform cost · USD',
+  '平台范围：': 'Platform range: ',
+  '。未对齐所选范围时仅供参考。': '. For reference only when it does not match the selected range.',
+  '可用余额 ·': 'Available balance ·',
+  '此平台提供套餐额度；请在对应连接总览查看窗口。没有可直接核对的 Token 或实际账单。':
+    'This platform provides plan quota; see its windows on the overview. There are no tokens or bills to check against.',
+  '平台数据尚不可用。': 'Platform data not available yet.',
+  '组内连接不相加，也不与右侧工具明细相加。': 'Connections in a group are not added, nor added to the tool details.',
+  '工具记录 · 人工关联范围': 'Tool records · confirmed scope',
+  '已知 Token': 'Known tokens',
+  已关联记录: 'Linked records',
+  缺少完整用量: 'Without complete usage',
+  '费用仅按本机单价估算，不能冒充平台实际费用。':
+    'Cost is only estimated from local prices and is not the platform cost.',
+  '已知估算费用：': 'Known estimated cost: ',
+  '· 仅已定价部分': '· priced part only',
+  '工具同步时间：': 'Tools synced: ',
+  '不同口径的数据不相加、不比较': 'Different measures are never added or compared',
+  '余额、额度百分比、工具 Token 与估算费用口径不同。只有账户、区间、单位、口径、覆盖和新鲜度全部对齐时才显示差值。':
+    'Balances, quota percentages, tool tokens and estimated cost are different measures. A difference is shown only when account, range, unit, measure, coverage and freshness all match.',
+
+  '记录只代表已采集的用量，不能确认完整覆盖所选时段。':
+    'Records show only collected usage and cannot confirm full coverage of the period.',
+  '当前与上一等长时段均需完整覆盖，当前无法核对。':
+    'Both this and the previous period need full coverage; they cannot be compared now.',
+
+  '双方不是同一完整账户范围。': 'The two sides do not cover the same whole account.',
+  '平台值为零，不计算误差率。': 'The platform value is zero; no error rate.',
+  '数值缺失或无效。': 'Values are missing or invalid.',
+  '数据未同步或存在延迟。': 'Data is not synced or delayed.',
+  '未确认完整覆盖所选账户和时段。': 'Full coverage of the account and period is not confirmed.',
+  '统计单位或口径不同。': 'Units or measures differ.',
+  '统计起止时间未严格对齐。': 'The start and end times do not match exactly.',
+  '缺少可比较的数据。': 'Nothing comparable.',
+  '账户范围未对齐。': 'The account scopes do not match.',
+  所选范围内没有归入此账户的记录: 'No records of this account in the range',
+  '数据延迟，显示的是上次成功读取的结果': 'Delayed; showing the last successful read',
+  '最后一行仍在写入，已跳过': 'The last line is still being written and was skipped',
+  '本次未能读取，此来源没有计入': 'Not read this time; this source is not counted',
+  '记录超过读取上限，较早的记录未读入': 'Over the read limit; older records were not read',
+  不支持的时间范围: 'Unsupported period',
+
+  // Tool source messages (desktop readers)
+  '已保存的用量记录，不等于请求数': 'saved usage records, not requests',
+  '本次仅读取最近 100000 条记录。': 'Only the latest 100,000 records were read this time.',
+  'Claude Code 本机会话日志的用量': 'Usage from local Claude Code session logs',
+  'Claude Code 目录已移动，请重新选择。': 'The Claude Code folder moved; choose it again.',
+  'Claude 用量导出文件不存在。': 'The Claude usage export file does not exist.',
+  'Cline 数据目录已移动，请重新选择。': 'The Cline data folder moved; choose it again.',
+  'Cline 本机会话里每轮对话的用量': 'Usage of each turn in local Cline sessions',
+  'Codex 本机用量快照，不等于请求次数': 'Local Codex usage snapshots, not requests',
+  'Codex 配置目录已移动，请重新选择。': 'The Codex folder moved; choose it again.',
+  'Gemini CLI 本机会话记录的用量': 'Usage from local Gemini CLI sessions',
+  'Gemini CLI 目录已移动，请重新选择。': 'The Gemini CLI folder moved; choose it again.',
+  'Harness 导出版本或格式不受支持，请按随附说明配置统计插件。':
+    'This Harness export version or format is not supported; set up the usage plugin as described.',
+  'Harness 记录暂时无法读取，请检查导出文件后重试。':
+    'Harness records cannot be read right now; check the export file and retry.',
+  'Kimi Code 本机会话里每次模型调用的用量': 'Usage of each model call in local Kimi Code sessions',
+  'Kimi Code 目录已移动，请重新选择。': 'The Kimi Code folder moved; choose it again.',
+  'Qwen Code 本机会话记录的用量': 'Usage from local Qwen Code sessions',
+  'Qwen Code 目录已移动，请重新选择。': 'The Qwen Code folder moved; choose it again.',
+  'SQLite 数据库': 'SQLite database',
+  '与 Claude Code 启动脚本来源有无法逐条对应的记录，已暂停合并以免重复计算；可单独查看或停用其中一个来源。':
+    'Some records cannot be matched one to one with the Claude Code launcher source, so merging is paused to avoid double counting; view them separately or turn one source off.',
+  '与另一同类工具来源存在重叠记录，已暂停合并；可单独查看或移除副本。':
+    'Records overlap with another source of the same tool; merging is paused. View it separately or remove the copy.',
+  专用用量导出: 'Usage export',
+  '分析已取消。': 'Analysis cancelled.',
+  '分析超过 15 秒，已停止；可缩小范围或重新同步。':
+    'The analysis took over 15 seconds and was stopped; narrow the range or sync again.',
+  '分析进程已退出，请重试。': 'The analysis process exited; please retry.',
+  只覆盖助手运行期间收到的用量事件: 'Only usage events received while the assistant runs',
+  '存在格式不兼容的事件，已排除，采集有缺口。':
+    'Some events had an incompatible format and were left out; collection has gaps.',
+  '导出文件末尾尚未写完，将在下次同步继续读取。':
+    'The end of the export is still being written; it is read on the next sync.',
+  '工具数据源不存在。': 'The tool source does not exist.',
+  '工具数据源配置无法读取，原文件已保留。恢复配置后重新启动。':
+    'The tool source configuration cannot be read; the file was kept. Restore it and restart.',
+  '工具来源选择已失效，请重新选择。': 'The tool source selection is no longer valid; choose again.',
+  '工具记录尚未关联到明确账期，本账期范围不可用。':
+    'Tool records are not linked to a billing period, so “This period” is unavailable.',
+  '所选工具暂时没有可读取的用量记录，请查看各来源的同步状态。':
+    'The selected tools have no readable usage yet; check each source’s sync status.',
+  '所选文件来自另一套 Harness 安装，请添加为新来源。':
+    'This file comes from another Harness installation; add it as a new source.',
+  '按结构契约读取 usage.record：未缓存输入、输出、缓存写入是核心字段，缓存读取可选（缺失时输入总量未知）。撤销（undo）的调用照样计入，分叉会话复制的记录只算一次；不读取对话内容。':
+    'Reads usage.record by structure: uncached input, output and cache writes are core, cache reads optional (without them total input is unknown). Undone calls still count, forked copies count once; conversations are never read.',
+  '按结构契约读取每轮最后一条回复的 metrics：输入、输出是核心字段。输入是否含缓存因服务商而异，所以缓存读写不计入、显示为「—」。一轮可能包含多次模型调用，记录数不等于请求数；分叉会话复制的轮次只算一次；不读取对话内容。旧版（存储迁移前）的任务不读取。':
+    "Reads the metrics of each turn's last reply by structure: input and output are core. Whether input includes cache depends on the provider, so cache reads and writes show “—”. A turn may hold several model calls, so records are not requests; forked copies count once; conversations are never read. Tasks from before the storage migration are not read.",
+  '按结构契约读取，任何版本只要核心字段齐全就照常统计。缺少终态的记录不参与成功率；历史继承与重复快照不累计。':
+    'Read by structure: any version with the core fields is counted. Records without an outcome are left out of the success rate; inherited history and repeated snapshots are not added.',
+  '按结构契约读取：每条模型回复的输入、输出、总量是核心字段，缓存与思考计数可选。回退保留的回复照样计入，分支会话复制的回复按编号只算一次；不读取对话内容。':
+    'Read by structure: input, output and total of each reply are core; cache and thinking counts are optional. Rewound replies still count, branched copies count once by id; conversations are never read.',
+  '按结构契约读取：每条模型回复的输入、输出、总量是核心字段，缓存与思考计数可选。回退（rewind）掉的回复也照样计入，恢复会话复制的历史只算一次；不读取对话内容。':
+    'Read by structure: input, output and total of each reply are core; cache and thinking counts are optional. Rewound replies still count, resumed history counts once; conversations are never read.',
+  '按结构契约读取：每次模型回复的输入、输出是核心字段，缓存与思考计数可选。同一次回复写成多行、恢复或分叉会话复制的记录都只算一次；与启动脚本来源同时启用时，两边都有的请求只算一次。不读取对话内容。':
+    'Read by structure: input and output of each reply are core; cache and thinking counts are optional. A reply written on several lines and resumed or forked copies count once; with the launcher source also on, requests in both count once. Conversations are never read.',
+  '推理 Token': 'Reasoning tokens',
+  '插件状态未确认、已停止或存在采集缺口；仅统计文件中已有的记录。':
+    'The plugin status is unconfirmed, stopped or has gaps; only records in the file are counted.',
+  '数据源已变化，请重新分析。': 'Sources changed; analyze again.',
+  '数据源设置无效。': 'Invalid source settings.',
+  '暂不支持此工具。': 'This tool is not supported.',
+  '暂时无法只读打开 Zcode 数据，请稍后重试或重新选择数据库。':
+    'Zcode data cannot be opened read-only right now; retry later or choose the database again.',
+  '最多添加 20 个工具数据源。': 'Up to 20 tool sources.',
+  '未找到 Harness 用量导出文件，请检查插件或重新选择位置。':
+    'No Harness usage export found; check the plugin or choose the location again.',
+  '未找到本机 Zcode 用量数据库，可在下方选择数据库文件。':
+    'No local Zcode usage database found; choose the database file below.',
+  '本地采集端口暂不可用。': 'The local collector port is unavailable.',
+  '本机分析未完成，原始工具记录不受影响。': 'The local analysis did not finish; tool records are unaffected.',
+  '本机索引或分析无法完成，原始工具记录未修改。':
+    'The local index or analysis could not finish; tool records were not changed.',
+  '来源名称应为 1–120 个字符。': 'Source names are 1–120 characters.',
+  '此来源的用量身份或字段格式无法识别，已停止本次合并；其他来源继续统计。':
+    "This source's usage ids or fields are not recognized; it is left out this time and other sources still count.",
+  '此目录没有 Claude Code 的 projects 会话目录，请选择使用中的 Claude Code 目录（通常是 ~/.claude）。':
+    'This folder has no Claude Code projects folder; choose the Claude Code folder in use (usually ~/.claude).',
+  '此目录没有 Cline 的 sessions 会话目录，请选择 Cline 的数据目录（通常是 ~/.cline/data）。':
+    "This folder has no Cline sessions folder; choose Cline's data folder (usually ~/.cline/data).",
+  '此目录没有 Codex sessions 或 archived_sessions，请选择使用中的 Codex 配置目录。':
+    'This folder has no Codex sessions or archived_sessions; choose the Codex folder in use.',
+  '此目录没有 Gemini CLI 的 tmp 会话目录，请选择使用中的 Gemini CLI 目录（通常是 ~/.gemini）。':
+    'This folder has no Gemini CLI tmp folder; choose the Gemini CLI folder in use (usually ~/.gemini).',
+  '此目录没有 Kimi Code 的 sessions 会话目录，请选择使用中的 Kimi Code 目录（通常是 ~/.kimi-code）。':
+    'This folder has no Kimi Code sessions folder; choose the Kimi Code folder in use (usually ~/.kimi-code).',
+  '此目录没有 Qwen Code 的 projects 会话目录，请选择使用中的 Qwen Code 目录（通常是 ~/.qwen）。':
+    'This folder has no Qwen Code projects folder; choose the Qwen Code folder in use (usually ~/.qwen).',
+  '此账户没有已启用且关联有效的工具数据源。': 'This account has no enabled tool source with a valid link.',
+  '用量文件无法打开，请重新选择。': 'The usage file cannot be opened; choose it again.',
+  '筛选值无效。': 'Invalid filter.',
+  '统计助手步骤 / 用量记录；失败状态与未落盘的重试不可核对。本机统计不代表套餐账单。':
+    'Counts assistant steps / usage records; failures and unsaved retries cannot be checked. Local counts are not a plan bill.',
+  '计费账户关联已失效，请重新选择或确认。': 'The billing link is no longer valid; choose or confirm it again.',
+  '该工具来源已添加；副本也不需要重复添加。': 'This tool source is already added; copies need not be added again.',
+  '请添加并启用工具数据源。': 'Add and enable a tool source.',
+  '请选择 Codex 配置目录。': 'Choose the Codex folder.',
+  '请选择有效的本机用量文件。': 'Choose a valid local usage file.',
+  '请选择用量文件。': 'Choose a usage file.',
+  '账户关联已变化，请重新分析。': 'Account links changed; analyze again.',
+  '这份数据库缺少所需用量字段，暂不支持当前格式。':
+    'This database lacks the usage fields needed; its format is not supported.',
+  '部分来源未成功同步；合计仅包含可读取的记录。': 'Some sources did not sync; totals include readable records only.',
+  '需本机组件已启用。未报告的中间重试、离线及网页聊天不在覆盖范围内。':
+    'Needs the local component. Unreported retries, offline time and web chat are not covered.',
+
+  // Messages from the main process (toasts and inline errors)
+  '启动项设置未成功，请检查系统登录项设置。': 'Launch at login did not work; check the system login items.',
+  '设置无法保存，请检查应用数据目录': 'Settings could not be saved; check the app data folder',
+  '暂无可查看的新版本。': 'No new version to view.',
+  '请先连接 Claude 账户。': 'Connect a Claude account first.',
+  '已还原 Claude Code 的状态栏设置。': 'Claude Code status line restored.',
+  '你已经设置了自己的 Claude Code 状态栏，Windows 上暂不支持和它并存，没有修改。可以继续用启动脚本打开 Claude Code。':
+    'You already have your own Claude Code status line; on Windows the helper cannot run alongside it, so nothing changed. Keep using the launcher.',
+  '已接入：新打开的 Claude Code 会话会自动采集套餐额度。':
+    'Connected: new Claude Code sessions collect plan quota automatically.',
+  'Claude Code 设置没有改成，原文件保持不变。请检查该文件的读写权限后重试。':
+    'Claude Code settings were not changed; the file is untouched. Check its permissions and retry.',
+  请在用量面板中操作: 'Use the usage panel for this',
+  请在详细面板中操作: 'Use the main window for this',
+  不受信任的请求: 'Untrusted request',
+  '操作未完成，请重试或检查本机设置。': 'Something went wrong. Retry or check your settings.',
+  '请等待账户连接完成。': 'Wait for the account connection to finish.',
+  不支持的工具来源: 'Unsupported tool source',
+  请选择数据库文件: 'Choose a database file',
+  '请输入有效的模型单价，单位为所选币种 / 百万 Token。':
+    'Enter a valid model price in the chosen currency per million tokens.',
+  测试模式不保存真实账户: 'Test mode does not save real accounts',
+  '正在连接，请等待当前操作完成。': 'Connecting; wait for it to finish.',
+  'Claude 本机采集器启动失败，请检查端口占用或本机目录权限。':
+    'The local Claude collector could not start; check the port and folder permissions.',
+  'Claude 最近额度已载入，请查看同步状态。': 'Recent Claude quota loaded; check the sync status.',
+  'Claude 组件已就绪，等待首次额度数据。请在项目目录运行生成的':
+    'The Claude collector is ready and waiting for the first quota. In your project folder, run the generated',
+  '工具来源暂未添加，请在工具数据源中检查。': 'The tool source was not added; check Tool sources.',
+  '配置目录未能自动打开，请从工具数据源位置查看启动配置。':
+    'The configuration folder did not open; find the launcher via Tool sources.',
+  '配置目录未能自动打开。': 'The configuration folder did not open.',
+  '请等待当前连接完成。': 'Wait for the current connection to finish.',
+  请在详细面板修改此设置: 'Change this in the main window',
+  请在打包后的桌面版启用开机启动: 'Launch at login works in the packaged app',
+  设置值不正确: 'Invalid setting',
+  不支持的窗口操作: 'Unsupported window action',
+  账户不存在: 'Account not found',
+  不支持的地址: 'Unsupported address',
+  '请先生成诊断信息预览。': 'Preview the diagnostics first.',
+  '诊断信息未能保存，请换一个位置重试。': 'Diagnostics could not be saved; try another location.',
+  '只能导出工具用量明细。': 'Only tool usage records can be exported.',
+  '用量明细暂时无法导出，请稍后重试。': 'Usage records cannot be exported right now; retry later.',
+  '当前范围和筛选下没有可导出的记录。': 'No records to export for this period and filter.',
+  '用量明细未能保存，请换一个位置重试。': 'Usage records could not be saved; try another location.',
+  '请先开启「命令行读取额度」。': 'Turn on “Command-line quota” first.',
+  '暂无可安装的新版本。': 'No new version to install.',
+  '更新还没有下载完成。': 'The update has not finished downloading.',
+  请先开启额度提醒: 'Turn on quota alerts first',
+  '当前系统不支持通知，请检查系统通知设置': 'Notifications are not available; check the system notification settings',
+  'Claude 本地采集端口不可用，请重启或重新连接。':
+    'The local Claude collector port is unavailable; restart or reconnect.',
+
+  // Billing groups, links and coverage (shared modules)
+  'Codex 登录身份需要核实，请重新连接并确认归组。':
+    'The Codex sign-in identity needs checking; reconnect and confirm the group.',
+  '供应商或模型条件无效。': 'Invalid provider or model condition.',
+  '关联或账户状态已变化，请重新核对。': 'Links or account status changed; check again.',
+  '关联规则不存在。': 'The link rule does not exist.',
+  '只能将同平台、同地区和同组织范围的连接归为一个账户。':
+    'Only connections of the same platform, region and organization can form one account.',
+  '同一来源已有时间和条件重叠的关联，请先调整旧规则的结束时间或筛选条件。':
+    'This source already has an overlapping link; change the old rule’s end time or filter first.',
+  '存在未同步、延迟或读取失败的数据，请先检查各来源。':
+    'Some data is not synced, delayed or failed to read; check the sources first.',
+  '工具文件身份或位置已变化，请重新确认关联。': 'The tool file identity or location changed; confirm the link again.',
+  '工具来源已移除。': 'The tool source was removed.',
+  '工具来源无法访问，请先检查文件位置。': 'The tool source cannot be accessed; check the file location.',
+  '工具记录为空或部分记录缺少用量，缺失值不能计为零。':
+    'Tool records are empty or partly lack usage; missing values cannot count as zero.',
+  '工具费用来自本机单价估算，不作为平台实际账单核对。':
+    'Tool cost is estimated from local prices and is not checked against the platform bill.',
+  '平台仅提供余额，余额变化不能与工具 Token 或估算费用核对。':
+    'The platform provides only a balance; balance changes cannot be checked against tool tokens or cost.',
+  '平台仅提供额度窗口，不能换算为工具 Token 或费用。':
+    'The platform provides only quota windows, which cannot be converted to tool tokens or cost.',
+  '平台尚无可用数据，请先同步主查询连接。': 'No platform data yet; sync the primary connection first.',
+  '平台汇总与工具记录的起止时间未严格对齐，当前汇总仅供参考。':
+    'Platform totals and tool records do not cover exactly the same times; totals are for reference only.',
+  '平台汇总的请求统计口径与本机已报告用量口径尚未确认一致。':
+    'The platform’s request counting is not confirmed to match local reported usage.',
+  '平台返回的账户身份已变化，请重新确认归组与关联。':
+    'The account identity reported by the platform changed; confirm groups and links again.',
+  '归组成员已变动，请重新确认此关联。': 'Group members changed; confirm this link again.',
+  '所选连接已在另一计费账户组内。': 'The selected connection is already in another billing group.',
+  '最多保存 200 条关联规则。': 'Up to 200 link rules.',
+  '最多创建 20 个计费账户组。': 'Up to 20 billing groups.',
+  '本机采集不能证明覆盖该账户在所有设备和工具上的完整用量。':
+    'Local collection cannot prove it covers all usage of this account on every device and tool.',
+  '此计费账户尚未关联任何有效工具记录范围。': 'This billing account has no valid tool record scope yet.',
+  '此账户尚未提供有效账期，请改选今日或近 7 天。':
+    'This account has no valid billing period; choose Today or Last 7 days.',
+  '组内连接已移除，请重新确认成员。': 'A connection in the group was removed; confirm the members again.',
+  '计费账户归组需要重新确认。': 'The billing group needs confirming again.',
+  '计费账户组不存在。': 'The billing group does not exist.',
+  '请先建立并确认有效的计费账户组。': 'Create and confirm a valid billing group first.',
+  '请明确确认所选连接属于同一个计费账户。': 'Confirm that the selected connections belong to one billing account.',
+  '请确认所选记录范围属于这个计费账户。': 'Confirm that the selected record scope belongs to this billing account.',
+  '请输入 1–80 个字符的计费账户名称。': 'Enter a billing account name of 1–80 characters.',
+  '请选择一个计费账户组。': 'Choose a billing group.',
+  '请选择有效的关联起止时间；结束时间必须晚于开始时间。':
+    'Choose valid start and end times; the end must be after the start.',
+  '请选择组内一个连接作为平台数据来源。': 'Choose one connection in the group as the platform data source.',
+  '请选择至少一个连接，每个连接只选一次。': 'Choose at least one connection, each only once.',
+  '账户关联无法保存，原设置保持不变。': 'Account links could not be saved; the previous settings are kept.',
+  '账户关联配置无法读取，原文件已保留；关联和核对暂停，请恢复备份后重启。':
+    'The account link configuration cannot be read; the file was kept and links are paused. Restore the backup and restart.',
+  '这些连接返回的账户身份不同，不能归入同一计费账户。':
+    'These connections report different account identities and cannot form one billing account.',
+  '连接身份或密钥已变化，请重新确认归组与关联。':
+    'The connection identity or key changed; confirm groups and links again.',
+  '部分关联需要重新确认，相关记录不会归入账户。':
+    'Some links need confirming again; their records do not count for the account.',
+  '部分连接已不存在，请重新选择。': 'Some connections no longer exist; choose again.',
+
   // Shared domain modules (quota status, windows, panel)
   未连接账户: 'No account connected',
   需要重新连接: 'Reconnect needed',
@@ -951,6 +1526,50 @@ export const EN = {
 
 /** Text built at run time (shared modules, templates with numbers), translated by shape. */
 export const EN_PATTERNS = [
+  [
+    /^(\d+) 个会话文件的用量格式不兼容，已排除。$/,
+    (n) => `${n} session files had an incompatible usage format and were left out.`,
+  ],
+  [
+    /^(\d+) 个会话的用量格式不兼容，已排除。$/,
+    (n) => `${n} sessions had an incompatible usage format and were left out.`,
+  ],
+  [/^(\d+) 个日志的用量格式不兼容，已排除。$/, (n) => `${n} logs had an incompatible usage format and were left out.`],
+  [/^(\d+) 条用量记录没有时间，未计入。$/, (n) => `${n} usage records had no time and were not counted.`],
+  [/^已排除 (\d+) 条早于本会话创建的复制历史。$/, (n) => `${n} copied records older than the session were left out.`],
+  [
+    /^部分字段缺失：(.+)，显示为「—」。$/,
+    (f) =>
+      `Some fields are missing (${f
+        .split('、')
+        .map((x) => EN[x] || x)
+        .join(', ')}) and show “—”.`,
+  ],
+  [/^（与启动脚本来源重复的 (\d+) 次请求只算一次）$/, (n) => `(${n} requests also in the launcher source count once)`],
+  [
+    /^(.+) 会话级汇总：每条是一个会话的累计用量，不是请求数$/,
+    (name) => `${name} session totals: each record is a session's total, not a request`,
+  ],
+  [
+    /^数据字段有变化：(.+)。$/,
+    (body) =>
+      'Data fields changed: ' +
+      body
+        .replace(/新增 /g, 'added ')
+        .replace(/不再提供 /g, 'no longer provided ')
+        .replace(/；/g, '; ')
+        .replace(/、/g, ', ') +
+      '.',
+  ],
+  [/^(\d+) 条记录缺少用量，未计为零$/, (n) => `${n} records lack usage and are not counted as zero`],
+  [
+    /^部分字段缺失：(.+)，显示为「—」$/,
+    (f) =>
+      `Some fields are missing (${f
+        .split('、')
+        .map((x) => EN[x] || x)
+        .join(', ')}) and show “—”`,
+  ],
   [/^(\d+) 天 (\d+) 小时后重置$/, (d, h) => `Resets in ${d}d ${h}h`],
   [/^(\d\d:\d\d:\d\d) 后重置$/, (time) => `Resets in ${time}`],
   [/^(\d+) 小时窗口$/, (n) => `${n}-hour window`],

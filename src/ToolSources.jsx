@@ -114,7 +114,7 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
           <WarningCircle size={14} />
           <span>
             <Disclosure
-              summary={fieldChangeNote(source.fieldChange)}
+              summary={t(fieldChangeNote(source.fieldChange))}
               detail={
                 t('发现于 ') +
                 stamp(source.fieldChange.at) +
@@ -130,7 +130,7 @@ function SourceRow({ source, busy, run, onUpdate, onChoose, onRemove, onSync }) 
         <p className="tool-source-message" role="status">
           <WarningCircle size={14} />
           <span>
-            <Disclosure summary={source.message} detail={source.messageDetail} />
+            <Disclosure summary={t(source.message)} detail={t(source.messageDetail)} />
           </span>
         </p>
       )}
@@ -338,7 +338,7 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
       {error && (
         <p className="tool-source-message" role="alert">
           <WarningCircle size={15} />
-          {error}
+          {t(error)}
         </p>
       )}
       {sources.length ? (

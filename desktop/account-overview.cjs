@@ -58,27 +58,36 @@ function accountOverview(accounts, settings) {
 }
 
 /**
+ * Without a translator: the Chinese source with its {name} placeholders filled.
+ * @param {string} text
+ * @param {Record<string, unknown>} [vars]
+ */
+const plain = (text, vars) =>
+  vars ? text.replace(/\{(\w+)\}/g, (all, key) => (Object.hasOwn(vars, key) ? String(vars[key]) : all)) : text;
+
+/**
  * Tray tooltip (T11.2, Windows): every account's tightest value, most urgent first, within the system's limit
  * (a Windows notification-area tip holds 127 characters). Accounts that do not fit are counted as "另 N 个账户".
  * @param {AccountOverview} overview
  * @param {number} [limit]
+ * @param {(text: string, vars?: Record<string, unknown>) => string} [tr] T14.4: the main process's translator
  * @returns {string}
  */
-function trayTooltip(overview, limit = 127) {
-  const title = 'Token 用量助手';
+function trayTooltip(overview, limit = 127, tr = plain) {
+  const title = tr('Token 用量助手');
   const rows = overview?.rows || [];
-  if (!rows.length) return title + '\n未连接账户';
+  if (!rows.length) return title + '\n' + tr('未连接账户');
   const lines = [title];
   const fits = (/** @type {string[]} */ l) => l.join('\n').length <= limit;
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
-    const line = r.label + ' ' + (r.focus ? r.focus.text : '—') + (r.stale ? '（上次）' : '');
+    const line = r.label + ' ' + (r.focus ? tr(r.focus.text) : '—') + (r.stale ? tr('（上次）') : '');
     const left = rows.length - i - 1;
     const next = [...lines, line];
     // Keep room for the "others" line unless this is the last account.
-    if (fits(left ? [...next, '另 ' + left + ' 个账户'] : next)) lines.push(line);
+    if (fits(left ? [...next, tr('另 {n} 个账户', { n: left })] : next)) lines.push(line);
     else {
-      lines.push('另 ' + (rows.length - i) + ' 个账户');
+      lines.push(tr('另 {n} 个账户', { n: rows.length - i }));
       break;
     }
   }
@@ -90,9 +99,10 @@ function trayTooltip(overview, limit = 127) {
  * account by the menu-bar rule. Unknown parts are left out (never invented); with nothing known the line is ''.
  * @param {AccountOverview} overview
  * @param {Record<string, { used_percentage?: unknown }|undefined>|null} windows this status-line call's rate limits
+ * @param {(text: string, vars?: Record<string, unknown>) => string} [tr] T14.4: the main process's translator
  * @returns {string}
  */
-function claudeStatusLine(overview, windows) {
+function claudeStatusLine(overview, windows, tr = plain) {
   const parts = [];
   const claude = /** @type {[string, string][]} */ ([
     ['five_hour', '5h'],
@@ -113,11 +123,11 @@ function claudeStatusLine(overview, windows) {
     // eslint-disable-next-line no-control-regex -- control characters are matched on purpose (one-line output)
     const label = other.label.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
     parts.push(
-      '最紧 ' +
+      tr('最紧 ') +
         (label.length > 20 ? label.slice(0, 19) + '…' : label) +
         ' ' +
-        other.focus.text +
-        (other.stale ? '（上次）' : ''),
+        tr(other.focus.text) +
+        (other.stale ? tr('（上次）') : ''),
     );
   }
   return parts.join(' · ');

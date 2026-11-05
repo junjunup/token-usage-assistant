@@ -7,8 +7,10 @@ const path = require('node:path');
 const { DEFAULT_SETTINGS, patchSettings } = require('../desktop/domain.cjs');
 
 const load = () => import('../src/i18n.js');
-// The pages translated in T14.4; the rest (analytics, coverage, account links) still read Chinese.
+// Every interface page (T14.4: the main pages first, then analytics, coverage and account links).
 const TRANSLATED = [
+  'AnalyticsPage',
+  'AccountLinks',
   'DesktopApp',
   'AccountsOverview',
   'ProviderViews',
@@ -75,4 +77,34 @@ test('T14.4: every t() string on the translated pages has English; English never
   assert.deepEqual(missing, []);
   // Chinese may remain only inside quotes (the app's own name as the system shows it, sample output).
   for (const [key, value] of Object.entries(EN)) assert.doesNotMatch(value.replace(/“[^”]*”/g, ''), /[㐀-鿿]/, key);
+});
+
+test('T14.4: main-process text (menus, notifications, tray tooltip, status line) follows the same language', () => {
+  const { tm, setMainLanguage, EN } = require('../desktop/i18n-main.cjs');
+  const { trayTooltip, claudeStatusLine } = require('../desktop/account-overview.cjs');
+  const overview = {
+    rows: [
+      { label: 'GLM', provider: 'glm', stale: true, focus: { text: '未启用' } },
+      { label: 'Kimi', provider: 'kimi', stale: false, focus: { text: '64%' } },
+    ],
+  };
+  setMainLanguage('system', 'zh-Hans-CN');
+  assert.equal(tm('退出助手'), '退出助手');
+  assert.equal(trayTooltip(overview), 'Token 用量助手\nGLM 未启用（上次）\nKimi 64%');
+  assert.equal(trayTooltip(overview, 30), 'Token 用量助手\nGLM 未启用（上次）\n另 1 个账户');
+  setMainLanguage('system', 'en-US');
+  assert.equal(tm('退出助手'), 'Quit');
+  assert.equal(tm('{name}偏低', { name: 'Weekly quota' }), 'Weekly quota low');
+  assert.equal(trayTooltip(overview, 127, tm), 'Token Usage Assistant\nGLM Not started (last)\nKimi 64%');
+  assert.equal(claudeStatusLine(overview, null, tm), 'tightest GLM Not started (last)');
+  assert.equal(claudeStatusLine(overview, null), '最紧 GLM 未启用（上次）', 'without a translator: Chinese');
+  setMainLanguage('zh', 'en-US');
+  assert.equal(tm('退出助手'), '退出助手', 'the setting wins over the system');
+  for (const [key, value] of Object.entries(EN)) assert.doesNotMatch(value, /[\u3400-\u9fff]/, key);
+});
+
+test('T14.4: nothing in the interface shadows t() (a local `t` would break every string in its scope)', () => {
+  const shadow = /\b(?:const|let|var)\s+t\b|^\s+t\s*=[^=]|\(\s*t\s*\)\s*=>|\(\s*t\s*,|,\s*t\s*\)\s*=>/m;
+  for (const name of fs.readdirSync(path.join(__dirname, '..', 'src')).filter((f) => /\.(jsx|js)$/.test(f)))
+    assert.doesNotMatch(fs.readFileSync(path.join(__dirname, '..', 'src', name), 'utf8'), shadow, name);
 });
