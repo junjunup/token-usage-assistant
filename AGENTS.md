@@ -2,7 +2,7 @@
 
 Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macOS），独立查看 AI 编程平台的额度/余额与本机编程工具的用量。非任何平台的官方客户端。
 
-- 当前版本：**1.9.0-beta.6**（阶段 10「更多平台」T10.1 Kimi 开放平台余额、T10.2 OpenRouter Key 上限与花费；2026-10-29 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
+- 当前版本：**1.9.0-beta.7**（阶段 11–14：全部账户总览与 Windows 托盘面板、首次启动向导、Windows 自动更新、Claude 一步接入与会话日志、更多工具与平台、导出 CSV 与命令行、余额提醒、服务商状态、英文界面；2026-11-05 发布。四种安装包由 CI 的 Release 工作流产出，见 [docs/RELEASING.md](docs/RELEASING.md)）
 - 当前改进计划：[IMPROVEMENT_PLAN.md](IMPROVEMENT_PLAN.md)，其中第 1 节是用户已拍板的决策（D1–D21）
 - 工作方式：**追赶模式**（D18，2026-11-03）——快速迭代、大刀阔斧改进，红线不让步，见第 7 节
 - 旧规则原文：[docs/history/AGENTS-through-1.8.0-beta.5.md](docs/history/AGENTS-through-1.8.0-beta.5.md)；逐条去向：[docs/history/AGENTS-migration.md](docs/history/AGENTS-migration.md)
@@ -95,7 +95,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
   - 分支上的 Release 打包试跑：只在发版前做，以及改了打包配置、Electron、原生 smoke 本身或打包工具链依赖时做。
   - 本机 Mac 测试包（取代 D1）：用户想试用时才出，文件名加 `-dev.<短 commit>`。
 - **原生 smoke 冻结**：不再新增段落；现有检查被改动弄坏时修好它。新功能靠单元 / 契约测试和开发版截图保证。
-- **发版**：不按阶段发版，只在有值得给人看的东西时发（首发、一次大改之后）；平时只在 main 上推进，版本号只在发版时改。发版走完整流程（升级验证 profile、Release、存档核对、Publish，见 [docs/RELEASING.md](docs/RELEASING.md)），按 D13 每个版本只确认一次。当前：阶段 11 以 T11.9 收尾，达到 1.9.0 正式版门槛（D17 加入 Windows 真机验收）就发 1.9.0，否则发 1.9.0-beta.7。历次版本见 [CHANGELOG.md](CHANGELOG.md)。
+- **发版**：不按阶段发版，只在有值得给人看的东西时发（首发、一次大改之后）；平时只在 main 上推进，版本号只在发版时改。发版走完整流程（升级验证 profile、Release、存档核对、Publish，见 [docs/RELEASING.md](docs/RELEASING.md)），按 D13 每个版本只确认一次。当前：1.9.0-beta.7 已发（2026-11-05，Windows 真机验收未做，未达 1.9.0 门槛）；达到门槛（D17 加入 Windows 真机验收）后发 1.9.0 正式版并首发。历次版本见 [CHANGELOG.md](CHANGELOG.md)。
 - **出包核对**：包内版本和代码必须与源码一致；只改了源码，不得称为已交付。Windows 包由 CI 产出，没在真机上装过的不写成「已验证」。
 - **Mac 包**：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。
   - 签名一律 ad-hoc。2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回。装新版本时正式条目弹一次授权，属于 D4 的已知限制。
@@ -115,7 +115,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
   - 遇到红线冲突、范围变化、计划外失败时，仍立即停下来问。
   - 制定新计划或新阶段时，先在会话里给简短大纲和待定问题，用户同意后才写进改进计划（D14 ⑥）。
 - 有意义的决策变化要同步更新 `PROJECT_HANDOFF.md`（只写当前快照）和 `CHANGELOG.md`（只写用户能感知的变化）。
-- `README.md` 与 `README.en.md` 同结构（T9.8，D14）：改中文 README 时在同一个任务里同步英文版；英文版写明界面目前只有中文。
+- `README.md` 与 `README.en.md` 同结构（T9.8，D14）：改中文 README 时在同一个任务里同步英文版；英文版写明界面跟随系统语言（中文或英文，T14.4）。
 
 ## 8. UI 规则
 

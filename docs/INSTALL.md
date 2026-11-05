@@ -4,7 +4,7 @@
 
 ## 中文
 
-安装包在 [安装包仓库的 Releases](https://github.com/junjunup/TokenUsageAssistant/releases)。当前是测试版，界面只有中文。
+安装包在 [安装包仓库的 Releases](https://github.com/junjunup/TokenUsageAssistant/releases)。当前是测试版；界面跟随系统语言（中文或英文），可在设置里切换。
 
 ### macOS（Apple Silicon，macOS 13 及以上）
 
@@ -51,7 +51,7 @@ Windows 可用：`certutil -hashfile TokenUsageAssistant-Setup-<版本>.exe SHA2
 
 ## English
 
-Installers are on the [installer repository's Releases](https://github.com/junjunup/TokenUsageAssistant/releases). These are beta builds; the interface is Chinese only.
+Installers are on the [installer repository's Releases](https://github.com/junjunup/TokenUsageAssistant/releases). These are beta builds; the interface follows your system language (Chinese or English) and can be switched in Settings.
 
 ### macOS (Apple Silicon, macOS 13+)
 
