@@ -5,7 +5,7 @@
 // - Values as the platforms report them: missing is null (never 0), money is the full decimal string with its
 //   currency, accounts and currencies are never added together, a failed refresh keeps the last values marked stale.
 // - No credentials, identities, emails or organisation ids: only what the overview already shows.
-const { rankAccounts } = require('./menubar-status.cjs');
+const { rankAccounts, amountsOf } = require('./menubar-status.cjs');
 
 const STALE = ['stale', 'offline', 'auth-error', 'partial'];
 const iso = (/** @type {any} */ v) =>
@@ -23,13 +23,13 @@ const iso = (/** @type {any} */ v) =>
 
 /**
  * @param {AccountSummary[]} summaries
- * @param {{ threshold?: number }} settings
+ * @param {{ threshold?: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
  * @param {number} now
  * @returns {Snapshot}
  */
 function statusSnapshot(summaries, settings, now) {
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
-  const accounts = rankAccounts(summaries, threshold).map(({ a, slots, focus }) => {
+  const accounts = rankAccounts(summaries, threshold, { amounts: amountsOf(settings) }).map(({ a, slots, focus }) => {
     const stamps = Object.values(a.updatedAt || {}).filter((v) => typeof v === 'number' && v > 0);
     /** @type {SnapshotBalance[]} */
     const balances = [];

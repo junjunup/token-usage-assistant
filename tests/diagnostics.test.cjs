@@ -14,7 +14,16 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
   const report = buildDiagnostics({
     app: { version: '1.8.0-beta.6', packaged: true, electron: '44.4.4', chrome: '1', node: '24' },
     system: { platform: 'darwin', arch: 'arm64', release: '15.6' },
-    settings: { theme: 'dark', refreshSeconds: 60, threshold: 20, notifications: true, apiKey: secret, label },
+    settings: {
+      theme: 'dark',
+      refreshSeconds: 60,
+      threshold: 20,
+      balanceThresholdCNY: '12.34',
+      balanceThresholdUSD: '',
+      notifications: true,
+      apiKey: secret,
+      label,
+    },
     credentialIssue: '',
     accounts: [
       {
@@ -56,6 +65,8 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
     theme: 'dark',
     refreshSeconds: 60,
     threshold: 20,
+    balanceThresholdCNY: 'set',
+    balanceThresholdUSD: 'none',
     notifications: true,
     floating: null,
     pinned: null,

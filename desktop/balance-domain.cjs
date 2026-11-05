@@ -193,7 +193,35 @@ function compactAmount(value) {
     digits.slice(-2)
   );
 }
+/**
+ * T14.2: whether a balance is below the user's reminder amount in the same currency, compared on the decimal digits
+ * (no binary floating point). null when either side is missing or not a plain decimal: an unknown balance is never
+ * "below", and no threshold means no reminder.
+ * @param {any} total the balance (decimal string)
+ * @param {any} threshold the reminder amount (decimal string; '' = not set)
+ * @returns {boolean|null}
+ */
+function belowAmount(total, threshold) {
+  if (typeof threshold !== 'string' || !threshold) return null;
+  let a, b;
+  try {
+    a = decimal(total);
+    b = decimal(threshold);
+  } catch {
+    return null;
+  }
+  if (a === null || b === null) return null;
+  const scale = (/** @type {string} */ v, /** @type {number} */ n) => {
+    const negative = v.startsWith('-'),
+      [whole, fraction = ''] = v.replace(/^-/, '').split('.');
+    const n2 = BigInt(whole + fraction.padEnd(n, '0'));
+    return negative ? -n2 : n2;
+  };
+  const places = Math.max((a.split('.')[1] || '').length, (b.split('.')[1] || '').length);
+  return scale(a, places) < scale(b, places);
+}
 module.exports = {
+  belowAmount,
   normalizeDeepSeek,
   normalizeKimi,
   normalizeSiliconFlow,

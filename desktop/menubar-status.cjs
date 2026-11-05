@@ -6,7 +6,7 @@
 // - Missing data is "—", never 0; resetAt=0 is "未启用"; balances keep their own currency and are never a gauge.
 // - Within an account, quota windows come first and money is the fallback (T7.9, see focusOf).
 const { monthlyQuota, percentText } = require('./domain.cjs');
-const { formatAmount, compactAmount } = require('./balance-domain.cjs');
+const { formatAmount, compactAmount, belowAmount } = require('./balance-domain.cjs');
 
 /**
  * @typedef {'normal'|'amber'|'red'} Tone
@@ -24,6 +24,16 @@ const { formatAmount, compactAmount } = require('./balance-domain.cjs');
  *   stale: boolean }} MenubarStatus
  */
 
+/** @typedef {{ CNY?: string, USD?: string }} BalanceThresholds */
+/**
+ * T14.2: the balance reminder amounts from the settings.
+ * @param {any} settings
+ * @returns {BalanceThresholds}
+ */
+const amountsOf = (settings) => ({
+  CNY: typeof settings?.balanceThresholdCNY === 'string' ? settings.balanceThresholdCNY : '',
+  USD: typeof settings?.balanceThresholdUSD === 'string' ? settings.balanceThresholdUSD : '',
+});
 const LEVEL = { normal: 0, amber: 1, red: 2 };
 const STALE = ['stale', 'offline', 'auth-error', 'partial'];
 const SYMBOL = /** @type {Record<string, string>} */ ({ CNY: '¥', USD: '$' });
@@ -97,9 +107,10 @@ function windowSlot(id, label, w, threshold) {
  * All slots of one account, in the order the platform reports them.
  * @param {AccountSummary} a
  * @param {number} threshold
+ * @param {BalanceThresholds} [amounts] T14.2: reminder amounts per currency ('' or missing = none)
  * @returns {Slot[]}
  */
-function slotsOf(a, threshold) {
+function slotsOf(a, threshold, amounts = {}) {
   const parts = a.parts || {};
   /** @type {Slot[]} */
   const slots = [];
@@ -118,8 +129,12 @@ function slotsOf(a, threshold) {
         percent: null,
         text: amount === '—' ? '—' : symbol + amount,
         compact: amount === '—' ? '—' : symbol + compactAmount(row.total),
-        // The platform's own availability flag; balance thresholds come after the first version (③).
-        tone: b.isAvailable === false ? 'amber' : 'normal',
+        // The platform's own availability flag, or (T14.2) below the user's amount in the same currency.
+        tone:
+          b.isAvailable === false ||
+          belowAmount(row.total, row.currency === 'CNY' ? amounts.CNY : row.currency === 'USD' ? amounts.USD : '')
+            ? 'amber'
+            : 'normal',
         resetAt: null,
       });
     }
@@ -197,12 +212,12 @@ function focusOf(slots) {
  * list leaves it out so that choosing an account never reorders the list.
  * @param {AccountSummary[]} accounts
  * @param {number} threshold
- * @param {{ preferActive?: boolean }} [options]
+ * @param {{ preferActive?: boolean, amounts?: BalanceThresholds }} [options]
  * @returns {RankedAccount[]}
  */
 function rankAccounts(accounts, threshold, options = {}) {
   const ranked = (Array.isArray(accounts) ? accounts : []).map((a, order) => {
-    const slots = slotsOf(a, threshold);
+    const slots = slotsOf(a, threshold, options.amounts);
     return { a, order, slots, focus: focusOf(slots) };
   });
   const level = (/** @type {RankedAccount} */ r) => (r.focus ? LEVEL[r.focus.tone] : 0);
@@ -225,13 +240,16 @@ function rankAccounts(accounts, threshold, options = {}) {
 
 /**
  * @param {AccountSummary[]} accounts
- * @param {{ threshold: number }} settings
+ * @param {{ threshold: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
  * @returns {MenubarStatus|null} null when there is nothing to show (no accounts): the icon stays the static logo.
  */
 function menubarStatus(accounts, settings) {
   if (!Array.isArray(accounts) || !accounts.length) return null;
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
-  const { a, slots, focus } = rankAccounts(accounts, threshold, { preferActive: true })[0];
+  const { a, slots, focus } = rankAccounts(accounts, threshold, {
+    preferActive: true,
+    amounts: amountsOf(settings),
+  })[0];
   const stale = STALE.includes(String(a.status || ''));
   if (!focus)
     return {
@@ -262,4 +280,4 @@ function menubarStatus(accounts, settings) {
   };
 }
 
-module.exports = { menubarStatus, rankAccounts, slotsOf, shortLabel, focusOf };
+module.exports = { menubarStatus, rankAccounts, slotsOf, shortLabel, focusOf, amountsOf };

@@ -154,6 +154,49 @@ function UpdateNote({ update, current, action }) {
   );
 }
 // T7.7 (macOS menu bar); T11.2: the same settings for the Windows tray, without the icon form (ring only there).
+// T14.2 (D21): reminder amounts for balance accounts, per currency (never converted). Saved when the field loses
+// focus or Enter is pressed; empty = no reminder (only the platform's own "unavailable" flag).
+const AMOUNT = /^(?:0|[1-9]\d{0,8})(?:\.\d{1,2})?$/;
+function BalanceThresholds({ settings, pref }) {
+  const [draft, setDraft] = useState({ CNY: settings.balanceThresholdCNY, USD: settings.balanceThresholdUSD });
+  const [error, setError] = useState('');
+  const save = (currency) => {
+    const value = draft[currency].trim();
+    if (value === settings['balanceThreshold' + currency]) return setError('');
+    if (value && !AMOUNT.test(value)) return setError('请填写不超过两位小数的金额，留空表示不提醒。');
+    setError('');
+    pref({ ['balanceThreshold' + currency]: value });
+  };
+  return (
+    <div className="setting-row balance-threshold-row">
+      <div>
+        <h2>余额提醒金额</h2>
+        <p>按量余额低于这个金额时变色并通知；人民币和美元分开设置，不换汇。留空表示不提醒。</p>
+        {error && <p className="form-error">{error}</p>}
+      </div>
+      <div className="balance-threshold-inputs">
+        {[
+          ['CNY', '¥'],
+          ['USD', '$'],
+        ].map(([currency, symbol]) => (
+          <label key={currency}>
+            <span className="mono">{symbol}</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="不提醒"
+              aria-label={currency + ' 余额提醒金额'}
+              value={draft[currency]}
+              onChange={(e) => setDraft({ ...draft, [currency]: e.target.value })}
+              onBlur={() => save(currency)}
+              onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+            />
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
 function MenubarSettings({ state, settings, pref, mac }) {
   const usage = settings.menubarUsage !== false;
   const place = mac ? '菜单栏' : '托盘';
@@ -1294,6 +1337,12 @@ export function DesktopApp() {
                       options={[10, 20, 30].map((v) => ({ value: v, label: `低于 ${v}%` }))}
                     />
                   </div>
+                  <BalanceThresholds
+                    // A saved change (here or elsewhere) starts the fields over from the settings.
+                    key={settings.balanceThresholdCNY + '|' + settings.balanceThresholdUSD}
+                    settings={settings}
+                    pref={pref}
+                  />
                   <div className="setting-row">
                     <div>
                       <h2>自动刷新</h2>

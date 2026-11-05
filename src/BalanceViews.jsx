@@ -2,7 +2,7 @@ import React from 'react';
 import { Disclosure } from './Disclosure.jsx';
 import { Coins, Info, WarningCircle, ArrowUpRight } from '@phosphor-icons/react';
 import { formatAmount } from './generated/balance-domain.js';
-import { quotaStatus } from './generated/domain.js';
+import { quotaStatus, balancesBelow } from './generated/domain.js';
 import { providerInfo } from './generated/provider-catalog.js';
 import './balance.css';
 const currencyName = (code) => (code === 'CNY' ? '人民币' : '美元');
@@ -31,7 +31,9 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
     rows = balance?.balances || [],
     stale = data.status !== 'connected',
     account = state.accounts?.find((a) => a.id === state.activeAccountId),
-    [status, tone] = quotaStatus(state);
+    [status, tone] = quotaStatus(state),
+    // T14.2: currencies below the user's reminder amount.
+    low = new Set(balance ? balancesBelow(balance, state.settings).map((b) => b.currency) : []);
   return (
     <div className="balance-dashboard">
       <div className="account-line">
@@ -75,13 +77,16 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
         <div className="balance-grid">
           {rows.map((row) =>
             kimiRow(row) ? (
-              <KimiBalance row={row} stale={stale} key={row.currency} />
+              <KimiBalance row={row} stale={stale} low={low.has(row.currency)} key={row.currency} />
             ) : plainRow(row) ? (
               <section className="balance-currency" key={row.currency} aria-label={row.currency + ' 余额'}>
                 <div className="micro-label">
                   {row.currency} / {currencyName(row.currency)}
                 </div>
-                <h2>{stale ? '上次可用余额' : '可用余额'}</h2>
+                <h2>
+                  {stale ? '上次可用余额' : '可用余额'}
+                  {low.has(row.currency) && <LowTag />}
+                </h2>
                 <strong className="balance-total mono">
                   {formatAmount(row.total)} <small>{row.currency}</small>
                 </strong>
@@ -92,7 +97,10 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
                 <div className="micro-label">
                   {row.currency} / {currencyName(row.currency)}
                 </div>
-                <h2>{stale ? '上次可用余额' : '总可用余额'}</h2>
+                <h2>
+                  {stale ? '上次可用余额' : '总可用余额'}
+                  {low.has(row.currency) && <LowTag />}
+                </h2>
                 <strong className="balance-total mono">
                   {formatAmount(row.total)} <small>{row.currency}</small>
                 </strong>
@@ -174,7 +182,8 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
 }
 // T10.1 (D16 ②): the available balance is the main figure; voucher and cash go into the details. Negative cash is
 // arrears and stays visible (a warning is never folded away, T6.3).
-function KimiBalance({ row, stale }) {
+const LowTag = () => <span className="status-tag amber balance-arrears">低于提醒金额</span>;
+function KimiBalance({ row, stale, low }) {
   return (
     <section className="balance-currency" aria-label={row.currency + ' 余额'}>
       <div className="micro-label">
@@ -183,6 +192,7 @@ function KimiBalance({ row, stale }) {
       <h2>
         {stale ? '上次可用余额' : '可用余额'}
         {row.arrears && <span className="status-tag amber balance-arrears">欠费</span>}
+        {low && <LowTag />}
       </h2>
       <strong className="balance-total mono">
         {formatAmount(row.total)} <small>{row.currency}</small>

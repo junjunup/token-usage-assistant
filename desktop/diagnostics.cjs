@@ -12,7 +12,15 @@ const count = (value) => (Number.isFinite(value) && value >= 0 ? value : null);
 function settingsSnapshot(settings = {}) {
   const result = {};
   for (const [key, fallback] of Object.entries(DEFAULT_SETTINGS))
-    result[key] = typeof settings[key] === typeof fallback ? settings[key] : null;
+    result[key] =
+      typeof settings[key] !== typeof fallback
+        ? null
+        : // T14.2: whether a balance reminder amount is set, never the amount.
+          key.startsWith('balanceThreshold')
+          ? settings[key]
+            ? 'set'
+            : 'none'
+          : settings[key];
   return result;
 }
 
