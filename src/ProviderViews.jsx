@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ProviderStatusLine } from './ProviderStatus.jsx';
 import { Disclosure } from './Disclosure.jsx';
 import {
   ShieldCheck,
@@ -133,7 +134,7 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
           <span className={'status-dot ' + tone} />
           {account?.label || info?.name} · {keyLimits ? 'Key 用量与上限' : '套餐额度'}
         </span>
-        <span>{c?.planName || info?.name}</span>
+        <ProviderStatusLine status={state.providerStatus} fallback={c?.planName || info?.name} />
       </div>
       {pace}
       <LocalConnectionStatus state={state} />

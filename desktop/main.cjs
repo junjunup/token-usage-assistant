@@ -32,6 +32,7 @@ const { toolRecordsCsv } = require('./csv-export.cjs');
 const { StatusExport } = require('./status-export.cjs');
 const { discoverTools } = require('./tool-discovery.cjs');
 const { UpdateChecker, PAGE_PREFIX } = require('./update-check.cjs');
+const { ProviderStatus, describe: describeStatus } = require('./provider-status.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
@@ -116,6 +117,7 @@ let accounts,
   updates,
   installer,
   statusExport,
+  providerStatus,
   diagnosticsText = '',
   connectionBusy = false,
   lockCheck = null;
@@ -163,6 +165,8 @@ function state() {
     ),
     // T13.5: the command that prints the quota snapshot, while that setting is on.
     statusCommand: settings.statusExport && statusExport ? statusExport.command : null,
+    // T14.3: the active platform's official status page, while that setting is on and the platform has one.
+    providerStatus: activeProviderStatus(),
     // T13.1: whether the status-line helper is in Claude Code's own settings (only once the collector exists).
     claudeConfig: claudeConfigStatus(),
     data,
@@ -208,6 +212,18 @@ function broadcast() {
   updateTray();
   menubarPanel?.send();
   syncStatusExport();
+  syncProviderStatus();
+}
+// T14.3 (D21 ③): status pages are asked only while the setting is on (never in smoke mode), for connected platforms.
+function syncProviderStatus() {
+  if (!providerStatus || !settings || !accounts) return;
+  providerStatus.setProviders(accounts.entries.map((e) => e.provider));
+  if (settings.providerStatus && !smoke) providerStatus.start();
+  else if (providerStatus.running) providerStatus.stop();
+}
+function activeProviderStatus() {
+  const page = providerStatus?.state(accounts?.active?.entry.provider);
+  return page ? { ...page, ...describeStatus(page.indicator) } : null;
 }
 // T13.5 (D20 ③): the command-line snapshot follows the accounts while the setting is on; off removes its files.
 function syncStatusExport() {
@@ -946,6 +962,12 @@ function installIpc() {
     menubarPanel.hide();
     return shell.openExternal(url);
   });
+  // T14.3: the fixed status page of the active platform (provider-status.cjs), opened in the browser.
+  handle('assistant:open-status-page', () => {
+    const url = ProviderStatus.page(accounts.active.entry.provider);
+    if (!url) throw inputError('不支持的地址');
+    return shell.openExternal(url);
+  });
   handle('assistant:official', (_event, target) => {
     if (!['usage', 'studio'].includes(target)) throw inputError('不支持的地址');
     const { provider, region } = accounts.active.entry;
@@ -1271,6 +1293,7 @@ else {
         fetch: (...args) => net.fetch(...args),
         onChange: () => broadcast(),
       });
+      providerStatus = new ProviderStatus({ fetch: (...args) => net.fetch(...args), onChange: () => broadcast() });
       // T13.5: never in smoke mode (the isolated test directory has no real accounts to export).
       if (!smoke) statusExport = new StatusExport({ dir: store.file('cli') });
       installer = new AutoInstaller({

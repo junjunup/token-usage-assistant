@@ -1309,6 +1309,18 @@ export function DesktopApp() {
                       key: 'statusExport',
                       label: '开启命令行读取额度',
                     },
+                    {
+                      // T14.3 (D21 ③): official status pages, off by default (it adds network requests).
+                      title: '服务商状态',
+                      note: (
+                        <Disclosure
+                          summary="在账户详情显示平台官方状态页的当前状态"
+                          detail="开启后每 5 分钟访问一次已连接平台的公开状态页（不带任何凭据），目前支持 Anthropic（Claude）、OpenAI（Codex）、Moonshot（Kimi 开放平台）、MiniMax；其他平台没有可读取的状态接口，不显示。只作提示，不影响额度、余额和菜单栏颜色。"
+                        />
+                      ),
+                      key: 'providerStatus',
+                      label: '显示服务商状态',
+                    },
                   ].map((item) => (
                     <div className="setting-row" key={item.key}>
                       <div>

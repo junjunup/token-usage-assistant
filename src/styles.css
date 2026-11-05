@@ -892,6 +892,38 @@ h1 > span {
   margin: 0;
   line-height: 1.6;
 }
+/* T14.3: the official status page next to the account line */
+.ps-line b {
+  font-weight: 500;
+  color: var(--fg);
+}
+.ps-line .ps-amber {
+  color: var(--amber);
+}
+.ps-line .ps-red {
+  color: var(--red);
+}
+.ps-line .ps-green {
+  color: var(--fg);
+}
+.ps-sep {
+  opacity: 0.5;
+}
+.ps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.ps-link:hover {
+  color: var(--fg);
+}
 /* T14.2: balance reminder amounts, one field per currency */
 .balance-threshold-inputs {
   display: flex;
