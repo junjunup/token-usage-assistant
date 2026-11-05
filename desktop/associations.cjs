@@ -1,5 +1,4 @@
 const fs = require('node:fs'),
-  path = require('node:path'),
   crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const { atomicWrite } = require('./store.cjs');
@@ -277,7 +276,8 @@ class Associations extends EventEmitter {
     return { groups, rules, issue: this.issue, signature: hash([this.revision, groups, rules]) };
   }
   publicState() {
-    const { signature, ...state } = this.context();
+    const state = this.context();
+    delete state.signature; // internal; context() returns a fresh object
     return state;
   }
   validateRuleFields(value) {

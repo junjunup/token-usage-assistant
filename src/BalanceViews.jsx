@@ -1,4 +1,3 @@
-import React from 'react';
 import { ProviderStatusLine } from './ProviderStatus.jsx';
 import { Disclosure } from './Disclosure.jsx';
 import { Coins, Info, WarningCircle, ArrowUpRight } from '@phosphor-icons/react';

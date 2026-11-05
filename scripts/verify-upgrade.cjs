@@ -155,7 +155,9 @@ const watchdog = setTimeout(() => {
   report.finishedAt = new Date().toISOString();
   try {
     fs.writeFileSync(output(), JSON.stringify(report, null, 2));
-  } catch {}
+  } catch {
+    // The watchdog exits with code 1 either way; the report is best effort.
+  }
   app.exit(1);
 }, 60000);
 
@@ -565,7 +567,9 @@ app
     newAccounts?.dispose();
     try {
       await tools?.dispose();
-    } catch {}
+    } catch {
+      // Cleanup only; the verification result is already recorded.
+    }
     clearTimeout(watchdog);
     try {
       fs.writeFileSync(output(), JSON.stringify(report, null, 2), 'utf8');

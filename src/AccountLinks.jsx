@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Disclosure } from './Disclosure.jsx';
 import { Link, Plus, Info, ArrowClockwise, ListChecks } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';

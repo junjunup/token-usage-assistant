@@ -1,8 +1,7 @@
 const test = require('node:test'),
   assert = require('node:assert/strict'),
   fs = require('node:fs'),
-  path = require('node:path'),
-  crypto = require('node:crypto');
+  path = require('node:path');
 const { Associations } = require('../desktop/associations.cjs');
 const { associateRows, compareEvidence } = require('../desktop/association-rules.cjs');
 const { ToolSources } = require('../desktop/tool-sources.cjs');

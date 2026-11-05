@@ -24,25 +24,27 @@ function session(id = 'session-1', extra = {}) {
 function event(seq, type, data) {
   return { seq, time: BASE + seq, type, data };
 }
-// An exporter may still be appending its last line when a test ends; retry the removal instead of failing on
-// ENOTEMPTY (seen twice locally, 2026-10-30). Assertions are unchanged.
-const CLEANUP = { recursive: true, force: true, maxRetries: 10, retryDelay: 50 };
+const CLEANUP = { recursive: true, force: true };
 async function setup(t, options = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'tua-harness-test-'));
-  t.after(async () => {
-    if (
-      path.dirname(directory) !== path.resolve(os.tmpdir()) ||
-      !path.basename(directory).startsWith('tua-harness-test-')
-    )
-      throw new Error('Unexpected test directory');
-    await fs.rm(directory, CLEANUP);
-  });
   const { UsageExporter, HARNESS_VERSION } = await plugin;
   const exporter = new UsageExporter({
     outputDirectory: directory,
     runtimeVersion: HARNESS_VERSION,
     now: () => BASE,
     ...options,
+  });
+  t.after(async () => {
+    if (
+      path.dirname(directory) !== path.resolve(os.tmpdir()) ||
+      !path.basename(directory).startsWith('tua-harness-test-')
+    )
+      throw new Error('Unexpected test directory');
+    // T15.1: an exporter that was disabled mid-test still has a status write queued (lock file, temporary
+    // status file, rename). Removing the directory under it failed with ENOTEMPTY now and then; wait for the
+    // queue to drain first.
+    await exporter.close();
+    await fs.rm(directory, CLEANUP);
   });
   await exporter.ready;
   return {

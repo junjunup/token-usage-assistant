@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Disclosure } from './Disclosure.jsx';
 import Chart from 'chart.js/auto';
 import {
@@ -211,7 +211,7 @@ function Trend({ report, dark }) {
   const [metric, setMetric] = useState('tokens'),
     [table, setTable] = useState(false);
   const ref = useRef();
-  const bins = report?.bins || [];
+  const bins = useMemo(() => report?.bins || [], [report?.bins]);
   const currency = report?.summary?.currency === undefined ? 'USD' : report.summary.currency;
   const mixed = Object.keys(report?.summary?.costsByCurrency || {}).length > 1;
   const valid = !(metric === 'cost' && mixed) && bins.some((b) => n(b[metric]));

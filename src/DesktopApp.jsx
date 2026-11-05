@@ -23,8 +23,6 @@ import {
   SquaresFour,
   Square,
   Key,
-  Plug,
-  SignOut,
   WarningCircle,
   ArrowsLeftRight,
   FileArrowDown,
@@ -412,9 +410,10 @@ export function DesktopApp() {
       off();
     };
   }, []);
+  const hasState = !!state;
   useEffect(() => {
-    if (state) bridge.ready();
-  }, [!!state]);
+    if (hasState) bridge.ready();
+  }, [hasState]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 5500);

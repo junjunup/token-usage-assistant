@@ -28,8 +28,12 @@ export function useAnalytics(bridge, query, state, enabled = true) {
     const id = setInterval(() => setTick((n) => n + 1), (state?.settings.refreshSeconds || 60) * 1000);
     return () => clearInterval(id);
   }, [enabled, state?.settings.refreshSeconds]);
+  // Only these parts of `state` should trigger a new request, not every state update.
+  const hasState = !!state,
+    summaryAt = state?.data.updatedAt.summary,
+    revision = state?.analyticsRevision;
   useEffect(() => {
-    if (!enabled || !state || !bridge.analytics) return;
+    if (!enabled || !hasState || !bridge.analytics) return;
     let alive = true;
     const requestId = crypto.randomUUID();
     active.current = requestId;
@@ -53,7 +57,7 @@ export function useAnalytics(bridge, query, state, enabled = true) {
       alive = false;
       bridge.cancelAnalytics?.(requestId);
     };
-  }, [queryKey, enabled, !!state, state?.data.updatedAt.summary, state?.analyticsRevision, reload, tick]);
+  }, [bridge, queryKey, enabled, hasState, summaryAt, revision, reload, tick]);
   return {
     report,
     loading,

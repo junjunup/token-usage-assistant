@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown, Check } from '@phosphor-icons/react';
 import './Select.css';

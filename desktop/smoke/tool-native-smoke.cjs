@@ -15,7 +15,7 @@ async function until(win, expression) {
 async function runToolSmoke({ toolSources, analytics, store, accounts, mainWindow, settings, applySettings }) {
   const root = path.join(store.root, 'harness-smoke'),
     file = createHarness(root, [harnessWire()]);
-  const h = toolSources.add({ kind: 'harness', file, label: 'Harness native fixture' });
+  toolSources.add({ kind: 'harness', file, label: 'Harness native fixture' });
   const legacy = await analytics.get({ source: 'local', range: '7d' }),
     both = await analytics.get({ source: 'tools', range: '7d' });
   assert.equal(both.summary.knownTokens, legacy.summary.knownTokens + 120);

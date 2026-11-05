@@ -154,7 +154,7 @@ function normalizeMiniMax(raw, now = Date.now()) {
   /** @type {any[]} */
   const windows = [];
   const names = new Set();
-  for (const [i, model] of raw.model_remains.entries()) {
+  for (const model of raw.model_remains) {
     if (!object(model) || !text(model.model_name)) throw new Error('schema');
     if (names.has(model.model_name)) throw new Error('schema');
     names.add(model.model_name);

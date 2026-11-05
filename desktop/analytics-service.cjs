@@ -82,7 +82,7 @@ class AnalyticsService {
       }, 15000);
       worker.once('message', finish);
       worker.once('error', () => finish(error()));
-      worker.once('exit', (code) => {
+      worker.once('exit', () => {
         if (!settled) finish(error());
       });
     });
