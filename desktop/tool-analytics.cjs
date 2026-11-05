@@ -361,7 +361,9 @@ function normalizeSubscriptionRecord(wire, sourceId) {
                   ? 'goose-sqlite/session-total'
                   : wire.tool === 'crush'
                     ? 'crush-sqlite/session-total'
-                    : 'claude-code/otel-api-event',
+                    : wire.provenance === 'claude-code/session-log'
+                      ? 'claude-code/session-log'
+                      : 'claude-code/otel-api-event',
     // T12.3: one Gemini CLI response record per model reply. T13.2: Goose and Crush keep only each session's
     // running total (one row per session, dated by its last update); a Cline row is one turn.
     recordUnit:

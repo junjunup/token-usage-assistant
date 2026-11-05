@@ -7,6 +7,7 @@ const TOOL_KINDS = Object.freeze(
     'harness',
     'codex',
     'claude-code',
+    'claude-code-logs',
     'opencode',
     'gemini-cli',
     'kimi-code-cli',

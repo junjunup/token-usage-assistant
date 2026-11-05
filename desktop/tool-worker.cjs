@@ -7,6 +7,7 @@ const { aggregateTools, exportRecords } = require('./tool-analytics.cjs');
 // Per-kind scanning and overlap rules come from desktop/tool-kinds/ (T5.3b).
 const { toolKind } = require('./tool-kinds/index.cjs');
 const { associateRows } = require('./association-rules.cjs');
+const { dedupeAgainstOtlp } = require('./claude-log-reader.cjs');
 // timings (optional): per-source diagnostics collected for the main-thread log; never part of the result.
 function execute(
   { operation, indexFile, sourceId, sources, range, filters, prices, associationRules = [] },
@@ -26,8 +27,14 @@ function execute(
     }
     const records = [],
       reports = [],
-      zcodeIdentities = new Set();
-    for (const source of sources) {
+      zcodeIdentities = new Set(),
+      otlpRows = [];
+    // T14.1 (D21 ②): session logs are scanned after the launcher's OTLP sources, so the requests both report count
+    // once; reports keep the sources' order.
+    const ordered = sources
+      .map((source, index) => ({ source, index }))
+      .sort((a, b) => (a.source.kind === 'claude-code-logs') - (b.source.kind === 'claude-code-logs'));
+    for (const { source, index } of ordered) {
       let result, rows;
       const sourceStarted = Date.now();
       try {
@@ -39,6 +46,22 @@ function execute(
           message: '此来源的用量身份或字段格式无法识别，已停止本次合并；其他来源继续统计。',
         };
         rows = [];
+      }
+      if (source.kind === 'claude-code') for (const row of rows) otlpRows.push(row);
+      let duplicates = 0;
+      if (source.kind === 'claude-code-logs' && otlpRows.length && rows.length) {
+        const deduped = dedupeAgainstOtlp(rows, otlpRows);
+        if (deduped.overlap) {
+          rows = [];
+          result.status = 'overlap';
+          result.message =
+            '与 Claude Code 启动脚本来源有无法逐条对应的记录，已暂停合并以免重复计算；可单独查看或停用其中一个来源。';
+        } else {
+          rows = deduped.rows;
+          duplicates = deduped.removed;
+          if (duplicates)
+            result.message = `${result.message || ''}（与启动脚本来源重复的 ${duplicates} 次请求只算一次）`;
+        }
       }
       if (toolKind(source.kind).overlapCheck) {
         const identities = rows.map((r) =>
@@ -53,6 +76,7 @@ function execute(
       const current = rows.filter((r) => r.at >= range.start),
         times = current.map((r) => r.at);
       reports.push({
+        index,
         id: source.id,
         kind: source.kind,
         label: source.label,
@@ -71,6 +95,7 @@ function execute(
         missingUsage: current.filter((r) => !r.usageReported).length,
         ...(result.contract ? { contract: result.contract, missing: result.missing } : {}),
         ...(Array.isArray(result.fields) ? { fields: result.fields } : {}),
+        ...(duplicates ? { duplicates } : {}),
       });
       timings.push({
         kind: source.kind,
@@ -80,6 +105,8 @@ function execute(
       });
       for (const row of rows) records.push(row);
     }
+    reports.sort((a, b) => a.index - b.index);
+    for (const report of reports) delete report.index;
     const available = reports.some((s) => ['ready', 'stale'].includes(s.status));
     if (!available)
       return {

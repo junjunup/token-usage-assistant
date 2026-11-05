@@ -4,7 +4,7 @@ const { TOOL_KINDS, toolKind } = require('../desktop/tool-kinds/index.cjs');
 
 // T5.3b: the registry must reproduce the pre-refactor kinds, labels, pickers and overlap rules exactly. Kinds added
 // later are listed explicitly (T12.3: gemini-cli, T12.4: kimi-code-cli, T12.5: qwen-code, T13.2: cline, kilo, goose,
-// crush) and covered by their own tests.
+// crush, T14.1: claude-code-logs) and covered by their own tests.
 test('tool kinds, default labels and overlap rules match the pre-refactor code', () => {
   assert.deepEqual(
     TOOL_KINDS.map((k) => k.kind),
@@ -13,6 +13,7 @@ test('tool kinds, default labels and overlap rules match the pre-refactor code',
       'harness',
       'codex',
       'claude-code',
+      'claude-code-logs',
       'opencode',
       'gemini-cli',
       'kimi-code-cli',
@@ -29,6 +30,7 @@ test('tool kinds, default labels and overlap rules match the pre-refactor code',
     codex: 'Codex',
     'claude-code': 'Claude Code',
     opencode: 'OpenCode',
+    'claude-code-logs': 'Claude Code 会话日志',
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
     'qwen-code': 'Qwen Code',
@@ -43,6 +45,7 @@ test('tool kinds, default labels and overlap rules match the pre-refactor code',
       'zcode',
       'codex',
       'claude-code',
+      'claude-code-logs',
       'opencode',
       'gemini-cli',
       'kimi-code-cli',
