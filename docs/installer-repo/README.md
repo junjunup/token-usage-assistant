@@ -2,11 +2,11 @@
 
 **中文** · [English](#english)
 
-**一个本机桌面小工具：同时看清 AI 编程平台的剩余额度，和你本机编程工具实际用掉的 Token。** 支持 Windows x64 与 Apple Silicon macOS；凭据只保存在本机并加密，没有服务器、不收集遥测、不调用任何模型。非任何平台的官方客户端。
+**在 Windows 托盘里同时盯住多个 AI 编程平台的额度和余额，每个数字都说得清来源。** 手上开着好几个 Coding Plan 和按量 Key 时，不用再挨个开控制台：哪个账户快用完、什么时候重置、本机工具实际用了多少 Token，一屏看清。Windows 优先，Apple Silicon Mac 也能用；凭据只保存在本机并加密，没有服务器、不收集遥测、不调用任何模型。非任何平台的官方客户端。
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/docs/readme/overview-dark.png">
-  <img src="https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/docs/readme/overview-light.png" alt="用量总览：月度套餐额度、5 小时额度窗口、今日 Token（示例数据）" width="900">
+  <img src="https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/docs/readme/overview-light.png" alt="用量总览：全部账户按剩余最少排序，显示额度窗口、重置时间和按量余额（示例数据）" width="900">
 </picture>
 
 <sub>截图使用应用内置的示例数据，不是真实账户。</sub>
@@ -36,7 +36,7 @@
 
 ## English
 
-**A small local desktop app that shows, side by side, how much quota you have left on AI coding platforms and how many tokens your local coding tools actually used.** For Windows x64 and Apple Silicon macOS. Credentials stay on your machine, encrypted; no server, no telemetry, no model calls. Not an official client of any platform.
+**Watch the quota and balance of several AI coding platforms at once from the Windows tray, and know where every number comes from.** When you juggle several coding plans and pay-as-you-go keys, there is no need to open each console: which account is running out, when it resets, and how many tokens your local tools really used, all on one screen. Windows first; Apple Silicon Macs work too. Credentials stay on your machine, encrypted; no server, no telemetry, no model calls. Not an official client of any platform.
 
 > **The interface follows your system language (Chinese or English); you can switch it in Settings.**
 
