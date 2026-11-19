@@ -50,6 +50,7 @@ import { AllAccountsGrid, GlanceWidget, attentionText } from './AccountsOverview
 import { PaceLine } from './Panel.jsx';
 import { paceLine } from './generated/menubar-panel.js';
 import { AdvancedSettings, SetupHeading, SetupWizard } from './Onboarding.jsx';
+import { LocalToolsOverview } from './LocalToolsOverview.jsx';
 import { wizardPending } from './generated/onboarding.js';
 import { t, locale, setLanguage, resolveLanguage } from './i18n.js';
 
@@ -410,6 +411,10 @@ export function DesktopApp() {
     state,
     !widget && (view === 'analytics' || (view === 'overview' && !generic)),
   );
+  // T16.2 (D23 ④): the overview's local tool usage, today and over 7 days, for every enabled source.
+  const toolsShown = !widget && view === 'overview' && (state?.toolSources || []).some((s) => s.enabled),
+    toolsToday = useAnalytics(bridge, { source: 'tools', range: 'today' }, state, toolsShown),
+    toolsWeek = useAnalytics(bridge, { source: 'tools', range: '7d' }, state, toolsShown);
   const openAnalytics = () => {
     if (analysisSource !== 'account' && range === 'billing' && !toolBillingAvailable) setRange('today');
     setView('analytics');
@@ -641,7 +646,9 @@ export function DesktopApp() {
   ];
   // T11.1: with two or more accounts the overview lists them all and the widget follows the tightest one.
   const overview = state.overview,
-    glance = (overview?.rows?.length || 0) >= 2;
+    glance = (overview?.rows?.length || 0) >= 2,
+    // T16.2 (D23 ④): on the overview the cards are the way in, from the first account on.
+    overviewCards = (overview?.rows?.length || 0) >= 1;
   const changeTheme = () => pref({ theme: dark ? 'light' : 'dark' });
   const refresh = () => action(() => bridge.refresh());
   // Diagnostics export (T3.3): show everything that would be saved, then save exactly that.
@@ -990,21 +997,46 @@ export function DesktopApp() {
                 finish={finishSetup}
               />
             )}
-            {view === 'overview' && !setup && glance && (
+            {view === 'overview' && !setup && overviewCards && (
               <AllAccountsGrid
                 overview={overview}
                 disabled={state.connecting}
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
+                onManage={() => openSettings('accounts')}
               />
             )}
-            {!setup &&
-              (view === 'overview' || view === 'analytics' || (view === 'settings' && settingsTab === 'accounts')) && (
-                <AccountSwitcher
-                  state={state}
-                  onSelect={(id) => action(() => bridge.selectAccount(id))}
-                  onManage={() => openSettings('accounts')}
-                />
-              )}
+            {view === 'overview' && !setup && (
+              <LocalToolsOverview
+                sources={state.toolSources || []}
+                today={toolsToday}
+                week={toolsWeek}
+                loading={toolsToday.loading || toolsWeek.loading}
+                onManage={() => openSettings('tools')}
+                onDetails={() => {
+                  setAnalysisSource('tools');
+                  openAnalytics();
+                }}
+              />
+            )}
+            {!setup && (view === 'analytics' || (view === 'settings' && settingsTab === 'accounts')) && (
+              <AccountSwitcher
+                state={state}
+                onSelect={(id) => action(() => bridge.selectAccount(id))}
+                onManage={() => openSettings('accounts')}
+              />
+            )}
+            {view === 'overview' && !setup && overviewCards && (
+              // T16.2: names the account the details below belong to (the one picked in the cards above).
+              <div className="ao-detail-head">
+                <div className="section-title">
+                  ACCOUNT DETAIL <span className="label-cn">{t('/ 账户详情')}</span>
+                </div>
+                <span className="subtle-label">
+                  {(state.accounts || []).find((a) => a.id === state.activeAccountId)?.label || '—'}
+                  {t(' · 点上面的卡片切换')}
+                </span>
+              </div>
+            )}
             {setup ? null : view === 'overview' ? (
               balanceOnly ? (
                 <BalanceDashboard

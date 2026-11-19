@@ -755,6 +755,8 @@ function aggregateTools(records, range, filters = {}, prices = {}, sourceReports
     },
     bins,
     models: grouped(current, 'modelKey', p),
+    // T16.2 (D23 ④): per-source totals for the overview, with the same dedup, filters and token basis as models.
+    bySource: grouped(current, 'sourceId', p),
     projects: grouped(current, 'project', p),
     sessions: grouped(current, 'session', p),
     options: {

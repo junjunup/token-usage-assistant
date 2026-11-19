@@ -1,0 +1,148 @@
+/* T16.2 (D23): the overview's local tool usage — tokens today and over 7 days, per source. */
+.lt-section {
+  margin-bottom: 30px;
+  padding: 24px 28px 14px;
+}
+.lt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.lt-head .subtle-label {
+  max-width: 420px;
+  text-align: right;
+}
+.lt-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.lt-total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 0 20px;
+}
+.lt-total + .lt-total {
+  padding-left: 24px;
+  border-left: 1px solid var(--line);
+}
+.lt-total strong {
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -1.5px;
+  color: var(--purple);
+  line-height: 1.05;
+}
+.lt-total small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.lt-table {
+  border-top: 1px solid var(--line);
+}
+.lt-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.lt-row-head {
+  padding: 9px 0;
+  font-family: 'Geist Mono', 'Microsoft YaHei UI', monospace;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.lt-row > span:nth-child(2),
+.lt-row > span:nth-child(3) {
+  text-align: right;
+}
+.lt-row small {
+  display: block;
+  margin-top: 2px;
+  font-family: 'Geist', sans-serif;
+  font-size: 9px;
+  color: var(--muted);
+}
+.lt-name strong {
+  font-weight: 500;
+}
+.lt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.lt-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+  flex: none;
+}
+.lt-status.green i {
+  background: var(--green);
+}
+.lt-status.amber i {
+  background: var(--amber);
+}
+.lt-status.amber {
+  color: var(--amber);
+}
+.lt-status.red i {
+  background: var(--red);
+}
+.lt-status.red {
+  color: var(--red);
+}
+.lt-foot {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px -8px 0;
+}
+.lt-empty {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-top: 18px;
+  padding: 18px 0 10px;
+  border-top: 1px solid var(--line);
+}
+.lt-empty p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  .lt-section {
+    padding: 20px 16px 12px;
+  }
+  .lt-row {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .lt-row > span:nth-child(4) {
+    display: none;
+  }
+  .lt-empty {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+/* T16.2: heading above the selected account's details. */
+.ao-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding-top: 4px;
+}
