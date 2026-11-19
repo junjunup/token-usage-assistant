@@ -104,6 +104,7 @@ function PageTabs({ label, value, tabs, onChange }) {
         <button
           key={tab.value}
           role="tab"
+          data-tab={tab.value}
           aria-selected={tab.value === value}
           tabIndex={tab.value === value ? 0 : -1}
           className={tab.value === value ? 'selected' : ''}
@@ -411,9 +412,9 @@ export function DesktopApp() {
     state,
     !widget && (view === 'analytics' || (view === 'overview' && !generic)),
   );
-  // T16.2 (D23 ④): the overview's local tool usage, today and over 7 days, for every enabled source.
+  // T16.2 (D23 ④): the overview's local tool usage for every enabled source. One 7-day query that also carries today
+  // (tool queries run one at a time, so a second one would cancel the first).
   const toolsShown = !widget && view === 'overview' && (state?.toolSources || []).some((s) => s.enabled),
-    toolsToday = useAnalytics(bridge, { source: 'tools', range: 'today' }, state, toolsShown),
     toolsWeek = useAnalytics(bridge, { source: 'tools', range: '7d' }, state, toolsShown);
   const openAnalytics = () => {
     if (analysisSource !== 'account' && range === 'billing' && !toolBillingAvailable) setRange('today');
@@ -1008,9 +1009,8 @@ export function DesktopApp() {
             {view === 'overview' && !setup && (
               <LocalToolsOverview
                 sources={state.toolSources || []}
-                today={toolsToday}
-                week={toolsWeek}
-                loading={toolsToday.loading || toolsWeek.loading}
+                report={toolsWeek.report}
+                loading={toolsWeek.loading}
                 onManage={() => openSettings('tools')}
                 onDetails={() => {
                   setAnalysisSource('tools');

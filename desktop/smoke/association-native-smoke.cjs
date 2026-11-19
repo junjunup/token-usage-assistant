@@ -53,11 +53,13 @@ async function runAssociationSmoke({
   });
   const second = accounts.entries.find((e) => e.label === '备用 Key 样例');
   await mainWindow.webContents.executeJavaScript(
-    'document.querySelector(\'button[aria-label="覆盖范围报告"]\').click()',
+    '(async()=>{document.querySelector(\'button[aria-label="用量分析"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="reconciliation"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="reconciliation"]\').click()})()',
   );
   await until(mainWindow, "!!document.querySelector('.reconciliation-empty')");
   checks.emptyState = true;
-  await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户与设置"]\').click()');
+  await mainWindow.webContents.executeJavaScript(
+    '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="advanced"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="advanced"]\').click()})()',
+  );
   // T11.4: account links sit in the "advanced" area, collapsed while nothing needs re-confirming.
   await until(mainWindow, "!!document.querySelector('.st-advanced-head')");
   assert.equal(
@@ -140,7 +142,7 @@ async function runAssociationSmoke({
   assert.equal((await analytics.get({ source: 'tools', billingGroupId: g.id })).summary.total, 120);
   checks.activeSelectionDoesNotReattribute = true;
   await mainWindow.webContents.executeJavaScript(
-    'document.querySelector(\'button[aria-label="覆盖范围报告"]\').click()',
+    '(async()=>{document.querySelector(\'button[aria-label="用量分析"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="reconciliation"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="reconciliation"]\').click()})()',
   );
   await until(
     mainWindow,

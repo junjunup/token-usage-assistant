@@ -1,6 +1,6 @@
 // @ts-check
 // Pure tool metadata analytics. Platform balances, quotas and credentials never enter this module.
-const { makeBins, priceKey } = require('./analytics-core.cjs');
+const { makeBins, priceKey, rangeFor } = require('./analytics-core.cjs');
 const { summarizeAssociations } = require('./association-rules.cjs');
 // T5.5: JSDoc types only. Wire/raw records and reports are `any` (validated at runtime here); normalized tool
 // records are open objects; possibly missing token counts stay `number|null`.
@@ -675,6 +675,10 @@ function aggregateTools(records, range, filters = {}, prices = {}, sourceReports
       (!filters.project || r.project === filters.project) &&
       (!filters.session || r.session === filters.session);
   const current = inRange.filter(match),
+    // T16.2 (D23 ④): a 7-day query also carries today, per source, for the overview. One query instead of two,
+    // because a second worker run would cancel the first.
+    dayStart = range.id === '7d' ? rangeFor('today', range.end).start : null,
+    todayRows = dayStart === null ? null : current.filter((r) => r.at >= dayStart),
     duration = range.end - range.start,
     previousRange = { start: range.start - duration, end: range.start },
     coverage = coverageFor(reports, range),
@@ -757,6 +761,10 @@ function aggregateTools(records, range, filters = {}, prices = {}, sourceReports
     models: grouped(current, 'modelKey', p),
     // T16.2 (D23 ④): per-source totals for the overview, with the same dedup, filters and token basis as models.
     bySource: grouped(current, 'sourceId', p),
+    today:
+      todayRows === null
+        ? null
+        : { start: dayStart, summary: summarize(todayRows, p), bySource: grouped(todayRows, 'sourceId', p) },
     projects: grouped(current, 'project', p),
     sessions: grouped(current, 'session', p),
     options: {

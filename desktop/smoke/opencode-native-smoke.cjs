@@ -83,6 +83,10 @@ async function runOpenCodeSmoke({
     restored.dispose();
   }
   assert.ok(!fs.readFileSync(store.file('accounts.encrypted.json'), 'utf8').includes('native-opencode-synthetic-key'));
+  // T16.2: leave the overview (it runs its own local tools query, and tool queries run one at a time).
+  await mainWindow.webContents.executeJavaScript(
+    '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\').click()})()',
+  );
   const file = createOpenCode(store.file('opencode-fixture.db')),
     source = toolSources.add({ kind: 'opencode', file, label: 'OpenCode · 本机样例' });
   const result = await analytics.get({ source: 'tools', range: '7d', sourceIds: [source.id] });
@@ -90,7 +94,9 @@ async function runOpenCodeSmoke({
   assert.equal(result.accountId, null);
   assert.equal(result.credits, null);
   assert.ok(!JSON.stringify(result).includes('PRIVATE_'));
-  await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户与设置"]\').click()');
+  await mainWindow.webContents.executeJavaScript(
+    '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\').click()})()',
+  );
   await until(
     mainWindow,
     "[...document.querySelectorAll('.tool-source-label input')].some(e=>e.value==='OpenCode · 本机样例')",

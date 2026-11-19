@@ -42,12 +42,14 @@ function statusOf(row) {
   return { tone: row.status === 'error' ? 'red' : 'muted', text: t(row.message) || t('等待可用数据') };
 }
 
-export function LocalToolsOverview({ sources = [], today, week, loading, onDetails, onManage }) {
-  const enabled = sources.filter((s) => s.enabled);
-  const byId = (report) => new Map((report?.bySource || []).map((row) => [row.id, row])),
-    todayRows = byId(today?.report),
-    weekRows = byId(week?.report),
-    reports = new Map((week?.report?.sourceReports || []).map((row) => [row.id, row]));
+// `report` is the 7-day tools report; its `today` part (same dedup and filters) gives the today column.
+export function LocalToolsOverview({ sources = [], report, loading, onDetails, onManage }) {
+  const enabled = sources.filter((s) => s.enabled),
+    usable = report?.summary ? report : null;
+  const byId = (part) => new Map((part?.bySource || []).map((row) => [row.id, row])),
+    todayRows = byId(usable?.today),
+    weekRows = byId(usable),
+    reports = new Map((report?.sourceReports || []).map((row) => [row.id, row]));
   return (
     <section className="panel lt-section" aria-label={t('本机工具用量')}>
       <div className="lt-head">
@@ -77,8 +79,8 @@ export function LocalToolsOverview({ sources = [], today, week, loading, onDetai
       ) : (
         <>
           <div className="lt-totals">
-            <Total label={t('今天')} report={today?.report} loading={loading} />
-            <Total label={t('近 7 天')} report={week?.report} loading={loading} />
+            <Total label={t('今天')} report={usable?.today} loading={loading} />
+            <Total label={t('近 7 天')} report={usable} loading={loading} />
           </div>
           <div className="lt-table" role="table" aria-label={t('各来源用量')}>
             <div className="lt-row lt-row-head" role="row">

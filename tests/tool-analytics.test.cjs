@@ -408,3 +408,26 @@ test('T16.2: per-source totals follow the same dedup and token basis, and add up
     ['h-source'],
   );
 });
+
+test('T16.2: a 7-day query carries today with the same dedup, per source, and nothing for other ranges', () => {
+  const week = rangeFor('7d', now),
+    rows = [
+      z(),
+      z({ id: 'z-earlier', started_at: now - 2 * 86400000, input_tokens: 300, computed_total_tokens: 320 }),
+      h(),
+      h({ revision: 9, updatedAt: now - 500, usage: { ...wire().usage, outputTokens: 30 } }),
+    ];
+  const r = aggregateTools(rows, week, {}, prices, [report('z-source'), report('h-source')]),
+    alone = aggregateTools(rows, range, {}, prices, [report('z-source'), report('h-source')]);
+  assert.equal(r.today.start, range.start);
+  // Today inside the 7-day answer equals a separate "today" query.
+  assert.equal(r.today.summary.knownTokens, alone.summary.knownTokens);
+  assert.equal(r.today.summary.requests, alone.summary.requests);
+  assert.deepEqual(
+    r.today.bySource.map((row) => [row.id, row.knownTokens]),
+    alone.bySource.map((row) => [row.id, row.knownTokens]),
+  );
+  // The earlier day counts for the week only.
+  assert.equal(r.summary.knownTokens, alone.summary.knownTokens + 320);
+  assert.equal(alone.today, null);
+});

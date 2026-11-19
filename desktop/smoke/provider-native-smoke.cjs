@@ -29,7 +29,7 @@ async function runProviderSmoke({ accounts, store, mainWindow, widgetWindow, set
     assert.ok(c.windows.length >= 3);
     await until(
       mainWindow,
-      "document.querySelector('.provider-dashboard') && document.querySelector('.account-switcher').textContent.includes('" +
+      "document.querySelector('.provider-dashboard') && document.querySelector('.ao-detail-head')?.textContent.includes('" +
         provider +
         " fixture')",
     );
@@ -84,7 +84,8 @@ async function runProviderSmoke({ accounts, store, mainWindow, widgetWindow, set
   accounts.remove();
   assert.equal(accounts.entries.length, 2);
   assert.ok(!accounts.runtimes.has(lastId));
-  await until(mainWindow, "document.querySelector('.account-switcher').textContent.includes('glm fixture')");
+  // T16.2: on the overview the selected account is named above its details (the switcher row moved to analytics).
+  await until(mainWindow, "document.querySelector('.ao-detail-head')?.textContent.includes('glm fixture')");
   return {
     ok: true,
     checks,

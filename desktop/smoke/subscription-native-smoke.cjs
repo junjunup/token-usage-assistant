@@ -227,6 +227,10 @@ async function runSubscriptionSmoke({
       });
       assert.equal(res.status, 200);
     }
+    // T16.2: leave the overview (it runs its own local tools query, and tool queries run one at a time).
+    await mainWindow.webContents.executeJavaScript(
+      '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\').click()})()',
+    );
     const claudeSource = toolSources.add({
       kind: 'claude-code',
       file: path.join(collector.home, 'usage.jsonl'),
@@ -250,9 +254,11 @@ async function runSubscriptionSmoke({
     checks.fourToolSelector = true;
     await capture(mainWindow, store.file('subscription-tools-dark.png'));
     await mainWindow.webContents.executeJavaScript(
-      'document.querySelector(\'button[aria-label="账户与设置"]\').click()',
+      '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\').click()})()',
     );
     await until(mainWindow, "document.querySelectorAll('.tool-source-row').length===4");
+    // T16.1: the connection form is on the accounts tab.
+    await mainWindow.webContents.executeJavaScript('document.querySelector(\'[data-tab="accounts"]\').click()');
     await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="选择平台"]\').click()');
     await until(
       mainWindow,
