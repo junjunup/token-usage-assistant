@@ -24,8 +24,8 @@ import {
   Square,
   Key,
   WarningCircle,
-  ArrowsLeftRight,
   FileArrowDown,
+  Wrench,
   AppWindow,
   Folder,
 } from '@phosphor-icons/react';
@@ -83,6 +83,36 @@ function Section({ icon: Icon, children, tone = '' }) {
     <div className={`section-title ${tone}`}>
       <Icon size={16} />
       <span>{children}</span>
+    </div>
+  );
+}
+// T16.1 (D23): one row of page tabs (analytics: details / coverage; settings: five groups). Arrow keys move between
+// tabs, as in a native tab list.
+function PageTabs({ label, value, tabs, onChange }) {
+  const move = (e, i) => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = tabs[(i + step + tabs.length) % tabs.length];
+    onChange(next.value);
+    e.currentTarget.parentElement.querySelectorAll('[role="tab"]')[tabs.indexOf(next)]?.focus();
+  };
+  return (
+    <div className="page-tabs" role="tablist" aria-label={label}>
+      {tabs.map((tab, i) => (
+        <button
+          key={tab.value}
+          role="tab"
+          aria-selected={tab.value === value}
+          tabIndex={tab.value === value ? 0 : -1}
+          className={tab.value === value ? 'selected' : ''}
+          onClick={() => onChange(tab.value)}
+          onKeyDown={(e) => move(e, i)}
+        >
+          {tab.label}
+          {tab.count > 0 && <span className="page-tab-count">{tab.count}</span>}
+        </button>
+      ))}
     </div>
   );
 }
@@ -339,6 +369,8 @@ function GlanceStatus({ overview, expanded }) {
 export function DesktopApp() {
   const [state, setState] = useState(null),
     [view, setView] = useState('overview'),
+    // T16.1 (D23 ⑤): settings are split into tabs; links elsewhere open the tab they are about.
+    [settingsTab, setSettingsTab] = useState('accounts'),
     [used, setUsed] = useState(false),
     [details, setDetails] = useState(false),
     [toast, setToast] = useState(null),
@@ -386,9 +418,12 @@ export function DesktopApp() {
   if (state?.toolSources && sourceIds.some((id) => !state.toolSources.some((s) => s.id === id && s.enabled)))
     setSourceIds(sourceIds.filter((id) => state.toolSources.some((s) => s.id === id && s.enabled)));
   // Where the next view change should land: the top, or a settings group a link points at (T7.10).
-  const jumpTo = useRef(null);
-  const openSettingsAt = (id) => {
+  const jumpTo = useRef(null),
+    [linksOpen, setLinksOpen] = useState(false);
+  const openSettings = (tab, id = null) => {
     jumpTo.current = id;
+    setLinksOpen(id === 'account-links');
+    setSettingsTab(tab);
     setView('settings');
   };
   useEffect(() => {
@@ -396,7 +431,7 @@ export function DesktopApp() {
     jumpTo.current = null;
     if (target) target.scrollIntoView({ block: 'start' });
     else document.querySelector('.native-app .main-content')?.scrollTo({ top: 0 });
-  }, [view]);
+  }, [view, settingsTab]);
   useEffect(() => {
     let alive = true;
     const off = bridge.onState((s) => {
@@ -462,6 +497,129 @@ export function DesktopApp() {
   const [status, tone] = quotaStatus(state),
     dark = settings.theme === 'dark',
     mac = state.platform === 'darwin';
+  // Links that need the user to re-confirm them are counted on the "advanced" tab, so they never hide (AGENTS §8).
+  const linksReview = [...(state.associations?.groups || []), ...(state.associations?.rules || [])].filter(
+    (item) => item.valid === false,
+  ).length;
+  // T16.1 (D23 ⑤): the switches, now spread over the alerts / system / advanced tabs; wording unchanged.
+  const prefItems = Object.fromEntries(
+    [
+      {
+        title: t('额度提醒'),
+        note: t('套餐账户独立监测，窗口低于阈值时提醒；按量余额不使用百分比阈值。'),
+        key: 'notifications',
+        label: t('开启额度提醒'),
+      },
+      {
+        title: t('悬浮窗'),
+        note: t('独立桌面窗口，关闭主面板后仍可查看额度。'),
+        key: 'floating',
+        label: t('开启悬浮窗'),
+      },
+      {
+        title: t('开机启动'),
+        note: state.packaged
+          ? mac
+            ? state.loginItem?.status === 'requires-approval'
+              ? t('需要在系统设置的登录项中允许启动。')
+              : state.loginItem?.status === 'enabled'
+                ? t('系统已登记登录启动，登录后在菜单栏运行。')
+                : t('在系统登录时启动；测试版需在 Mac 上验证登记结果。')
+            : t('登录 Windows 后在托盘中运行。')
+          : t('打包后的桌面版可启用此项。'),
+        key: 'launchAtLogin',
+        label: t('开启开机启动'),
+      },
+      {
+        // T5.2: the check only tells the user. T12.8: the installed Windows build can also download
+        // and install the update, each step only after a click.
+        title: t('检查更新'),
+        note:
+          settings.updateCheck && state.update?.status === 'available' ? (
+            <UpdateNote update={state.update} current={state.version} action={action} />
+          ) : state.update?.install ? (
+            <Disclosure
+              summary={t('每 24 小时检查一次；有新版本时点一下即可下载安装')}
+              detail={t(
+                '启动时和每 24 小时向 GitHub 请求公开版本列表，不发送账户或设备信息。发现新版本后，点「下载并安装」才从安装包仓库下载安装包并核对校验值，下载完再点「重启并安装」；不会自动下载，也不会在退出时自动安装。',
+              )}
+            />
+          ) : (
+            <Disclosure
+              summary={t('每 24 小时检查一次，只提示不下载')}
+              detail={t('启动时和每 24 小时向 GitHub 请求公开版本列表，不发送账户或设备信息。')}
+            />
+          ),
+        key: 'updateCheck',
+        label: t('开启检查更新'),
+      },
+      {
+        // T12.7 (D19 ④): format C, e.g. "Claude 5h 60% · 最紧 OpenRouter 35%".
+        title: t('Claude Code 状态栏'),
+        note: (
+          <Disclosure
+            summary={t('在 Claude Code 底部显示本会话额度和最紧的其他账户')}
+            detail={t(
+              '对用助手生成的启动脚本打开的会话，以及「接入所有会话」后的所有 Claude Code 会话生效，例如「Claude 5h 60% · 最紧 OpenRouter 35%」。文字由本机助手算好后交给状态栏，不联网；关闭时状态栏照旧只显示采集状态。',
+            )}
+          />
+        ),
+        key: 'claudeStatusQuota',
+        label: t('在 Claude Code 状态栏显示额度'),
+      },
+      {
+        // T13.5 (D20 ③): a snapshot file and a command that prints it; no network service.
+        title: t('命令行读取额度'),
+        note: state.statusCommand ? (
+          <>
+            {t('运行')} <code>{/\s/.test(state.statusCommand) ? `"${state.statusCommand}"` : state.statusCommand}</code>
+            {t('（加 --text 输出文字）')}{' '}
+            <button className="text-button" onClick={() => action(() => bridge.showStatusCommand())}>
+              {t('在文件夹中显示')}
+              <Folder size={13} />
+            </button>
+          </>
+        ) : (
+          <Disclosure
+            summary={t('生成一个命令，打印全部账户的额度（JSON 或文字）')}
+            detail={t(
+              '开启后，助手在自己的数据目录里保存一份额度快照，并放一个命令（Mac 为 tua-status，Windows 为 tua-status.cmd）打印它，方便脚本和其他工具读取。只含额度百分比、重置时间和余额，不含密钥；不开放网络端口。助手关闭时命令显示最后一次的值和时间；关闭此项会删除这些文件。',
+            )}
+          />
+        ),
+        key: 'statusExport',
+        label: t('开启命令行读取额度'),
+      },
+      {
+        // T14.3 (D21 ③): official status pages, off by default (it adds network requests).
+        title: t('服务商状态'),
+        note: (
+          <Disclosure
+            summary={t('在账户详情显示平台官方状态页的当前状态')}
+            detail={t(
+              '开启后每 5 分钟访问一次已连接平台的公开状态页（不带任何凭据），目前支持 Anthropic（Claude）、OpenAI（Codex）、Moonshot（Kimi 开放平台）、MiniMax；其他平台没有可读取的状态接口，不显示。只作提示，不影响额度、余额和菜单栏颜色。',
+            )}
+          />
+        ),
+        key: 'providerStatus',
+        label: t('显示服务商状态'),
+      },
+    ].map((item) => [item.key, item]),
+  );
+  const toggleRow = (key) => (
+    <div className="setting-row" key={key}>
+      <div>
+        <h2>{prefItems[key].title}</h2>
+        <p>{prefItems[key].note}</p>
+      </div>
+      <Toggle
+        label={prefItems[key].label}
+        checked={settings[key]}
+        disabled={key === 'launchAtLogin' && !state.packaged}
+        onChange={(v) => pref({ [key]: v })}
+      />
+    </div>
+  );
   const stale = (kind) =>
     ['stale', 'offline', 'auth-error'].includes(data.status) ||
     data.errors.some((e) => e.endpoint === kind || e.endpoint === 'identity');
@@ -673,15 +831,12 @@ export function DesktopApp() {
             >
               <ChartBar size={21} />
             </IconButton>
-            <IconButton label={t('用量分析')} className={view === 'analytics' ? 'active' : ''} onClick={openAnalytics}>
-              <SquaresFour size={21} />
-            </IconButton>
             <IconButton
-              label={t('覆盖范围报告')}
-              className={view === 'reconciliation' ? 'active' : ''}
-              onClick={() => setView('reconciliation')}
+              label={t('用量分析')}
+              className={view === 'analytics' || view === 'reconciliation' ? 'active' : ''}
+              onClick={openAnalytics}
             >
-              <ArrowsLeftRight size={21} />
+              <SquaresFour size={21} />
             </IconButton>
             <IconButton
               label={t('账户与设置')}
@@ -708,11 +863,9 @@ export function DesktopApp() {
               <span>
                 {view === 'overview'
                   ? 'Usage'
-                  : view === 'analytics'
+                  : view === 'analytics' || view === 'reconciliation'
                     ? 'Analytics'
-                    : view === 'reconciliation'
-                      ? 'Coverage'
-                      : 'Settings'}
+                    : 'Settings'}
               </span>
               <span className="desktop-badge">DESKTOP</span>
             </div>
@@ -739,16 +892,20 @@ export function DesktopApp() {
             ) : (
               <div className="page-heading">
                 <div>
-                  <div className="eyebrow">YOUR USAGE, AT A GLANCE</div>
+                  <div className="eyebrow">
+                    {view === 'overview'
+                      ? 'YOUR USAGE, AT A GLANCE'
+                      : view === 'settings'
+                        ? 'SETTINGS'
+                        : 'WHERE IT WENT'}
+                  </div>
                   <h1>
                     <span>//</span>{' '}
                     {view === 'overview'
                       ? t('用量总览')
-                      : view === 'analytics'
+                      : view === 'analytics' || view === 'reconciliation'
                         ? t('用量分析')
-                        : view === 'reconciliation'
-                          ? t('覆盖范围报告')
-                          : t('账户与设置')}
+                        : t('设置')}
                   </h1>
                   <p>
                     {view === 'overview'
@@ -784,6 +941,31 @@ export function DesktopApp() {
                 </div>
               </div>
             )}
+            {!setup && (view === 'analytics' || view === 'reconciliation') && (
+              <PageTabs
+                label={t('用量分析')}
+                value={view}
+                onChange={(v) => (v === 'analytics' ? openAnalytics() : setView(v))}
+                tabs={[
+                  { value: 'analytics', label: t('用量明细') },
+                  { value: 'reconciliation', label: t('数据覆盖') },
+                ]}
+              />
+            )}
+            {!setup && view === 'settings' && (
+              <PageTabs
+                label={t('设置')}
+                value={settingsTab}
+                onChange={(v) => openSettings(v)}
+                tabs={[
+                  { value: 'accounts', label: t('账户') },
+                  { value: 'tools', label: t('本机工具') },
+                  { value: 'alerts', label: t('提醒') },
+                  { value: 'system', label: t('外观与系统') },
+                  { value: 'advanced', label: t('高级'), count: linksReview },
+                ]}
+              />
+            )}
             {view === 'overview' && !setup && state.platform === 'win32' && settings.trayPinHint !== false && (
               <div className="inline-note" role="status">
                 <PushPin size={16} />
@@ -815,18 +997,19 @@ export function DesktopApp() {
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
               />
             )}
-            {view !== 'reconciliation' && !setup && (
-              <AccountSwitcher
-                state={state}
-                onSelect={(id) => action(() => bridge.selectAccount(id))}
-                onManage={() => setView('settings')}
-              />
-            )}
+            {!setup &&
+              (view === 'overview' || view === 'analytics' || (view === 'settings' && settingsTab === 'accounts')) && (
+                <AccountSwitcher
+                  state={state}
+                  onSelect={(id) => action(() => bridge.selectAccount(id))}
+                  onManage={() => openSettings('accounts')}
+                />
+              )}
             {setup ? null : view === 'overview' ? (
               balanceOnly ? (
                 <BalanceDashboard
                   state={state}
-                  onSettings={() => setView('settings')}
+                  onSettings={() => openSettings('accounts')}
                   onTools={() => {
                     setAnalysisSource('tools');
                     openAnalytics();
@@ -835,7 +1018,7 @@ export function DesktopApp() {
               ) : generic ? (
                 <ProviderDashboard
                   state={state}
-                  onSettings={() => setView('settings')}
+                  onSettings={() => openSettings('accounts')}
                   pace={state.pace && <PaceLine pace={state.pace} className="overview-pace" />}
                 />
               ) : (
@@ -851,7 +1034,7 @@ export function DesktopApp() {
                           )}
                         </p>
                       </div>
-                      <button className="button primary" onClick={() => setView('settings')}>
+                      <button className="button primary" onClick={() => openSettings('accounts')}>
                         {t('连接账户')}
                         <ArrowUpRight size={15} />
                       </button>
@@ -900,7 +1083,7 @@ export function DesktopApp() {
                       <span>
                         {t('菜单栏空间不足，用量图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。')}
                       </span>
-                      <button onClick={() => openSettingsAt('menubar-settings')}>
+                      <button onClick={() => openSettings('system', 'menubar-settings')}>
                         {t('菜单栏设置')}
                         <ArrowUpRight size={14} />
                       </button>
@@ -919,7 +1102,7 @@ export function DesktopApp() {
                           <ArrowsClockwise size={14} />
                         </button>
                       ) : (
-                        <button onClick={() => (data.status === 'auth-error' ? setView('settings') : refresh())}>
+                        <button onClick={() => (data.status === 'auth-error' ? openSettings('accounts') : refresh())}>
                           {data.status === 'auth-error' ? t('重新连接') : t('重试')}
                           <ArrowUpRight size={14} />
                         </button>
@@ -1194,7 +1377,7 @@ export function DesktopApp() {
                         ? t('低于 {v0}% 时提醒你，其余时间保持安静。', { v0: settings.threshold })
                         : t('额度提醒已关闭。')}
                     </span>
-                    <button onClick={() => setView('settings')}>
+                    <button onClick={() => openSettings('alerts')}>
                       {t('调整提醒')}
                       <ArrowUpRight size={13} />
                     </button>
@@ -1216,7 +1399,7 @@ export function DesktopApp() {
                   setSourceIds(ids);
                   setFilters({ model: '', project: '', session: '' });
                 }}
-                onManageSources={() => setView('settings')}
+                onManageSources={() => openSettings('tools')}
                 quotaOnly={generic}
                 balanceOnly={balanceOnly}
                 report={analysis.report}
@@ -1255,245 +1438,171 @@ export function DesktopApp() {
                 }}
               />
             ) : view === 'reconciliation' ? (
-              <ReconciliationPage state={state} bridge={bridge} onSettings={() => setView('settings')} />
+              <ReconciliationPage
+                state={state}
+                bridge={bridge}
+                onSettings={() => openSettings('advanced', 'account-links')}
+              />
             ) : (
               <div className="native-settings">
-                <ConnectionForm
-                  state={state}
-                  preview={browserPreview}
-                  action={(value) => action(() => bridge.connect(value), t('本机连接已保存，可在总览查看账户数据。'))}
-                  onConnected={() => setView('overview')}
-                  onRemove={() => setDialog('disconnect')}
-                  onClaudeConfig={(change) => action(() => bridge.claudeConfig(change), t('已更新'))}
-                />
-                {state.toolSourceIssue && (
-                  <div className="inline-warning" role="status">
-                    {state.toolSourceIssue}
-                  </div>
-                )}
-                <ToolSources
-                  sources={state.toolSources || []}
-                  onAdd={(kind, label) => action(() => bridge.addToolSource({ kind, label }))}
-                  onUpdate={(id, patch) => action(() => bridge.updateToolSource(id, patch))}
-                  onChoose={(id) => action(() => bridge.chooseToolSource(id))}
-                  onRemove={(id) => action(() => bridge.removeToolSource(id))}
-                  onSync={(id) => action(() => bridge.syncToolSource(id))}
-                  onDiscover={discoverTools}
-                />
-                <AdvancedSettings associations={state.associations}>
-                  <AccountLinks
+                {settingsTab === 'accounts' && (
+                  <ConnectionForm
                     state={state}
-                    run={(kind, value) => action(() => bridge[kind](value), t('账户关联已更新。'))}
+                    preview={browserPreview}
+                    action={(value) => action(() => bridge.connect(value), t('本机连接已保存，可在总览查看账户数据。'))}
+                    onConnected={() => setView('overview')}
+                    onRemove={() => setDialog('disconnect')}
+                    onClaudeConfig={(change) => action(() => bridge.claudeConfig(change), t('已更新'))}
                   />
-                </AdvancedSettings>
-                <section className="settings-panel panel">
-                  <Section icon={GearSix}>PREFERENCES</Section>
-                  {[
-                    {
-                      title: t('额度提醒'),
-                      note: t('套餐账户独立监测，窗口低于阈值时提醒；按量余额不使用百分比阈值。'),
-                      key: 'notifications',
-                      label: t('开启额度提醒'),
-                    },
-                    {
-                      title: t('悬浮窗'),
-                      note: t('独立桌面窗口，关闭主面板后仍可查看额度。'),
-                      key: 'floating',
-                      label: t('开启悬浮窗'),
-                    },
-                    {
-                      title: t('开机启动'),
-                      note: state.packaged
-                        ? mac
-                          ? state.loginItem?.status === 'requires-approval'
-                            ? t('需要在系统设置的登录项中允许启动。')
-                            : state.loginItem?.status === 'enabled'
-                              ? t('系统已登记登录启动，登录后在菜单栏运行。')
-                              : t('在系统登录时启动；测试版需在 Mac 上验证登记结果。')
-                          : t('登录 Windows 后在托盘中运行。')
-                        : t('打包后的桌面版可启用此项。'),
-                      key: 'launchAtLogin',
-                      label: t('开启开机启动'),
-                    },
-                    {
-                      // T5.2: the check only tells the user. T12.8: the installed Windows build can also download
-                      // and install the update, each step only after a click.
-                      title: t('检查更新'),
-                      note:
-                        settings.updateCheck && state.update?.status === 'available' ? (
-                          <UpdateNote update={state.update} current={state.version} action={action} />
-                        ) : state.update?.install ? (
-                          <Disclosure
-                            summary={t('每 24 小时检查一次；有新版本时点一下即可下载安装')}
-                            detail={t(
-                              '启动时和每 24 小时向 GitHub 请求公开版本列表，不发送账户或设备信息。发现新版本后，点「下载并安装」才从安装包仓库下载安装包并核对校验值，下载完再点「重启并安装」；不会自动下载，也不会在退出时自动安装。',
-                            )}
-                          />
-                        ) : (
-                          <Disclosure
-                            summary={t('每 24 小时检查一次，只提示不下载')}
-                            detail={t('启动时和每 24 小时向 GitHub 请求公开版本列表，不发送账户或设备信息。')}
-                          />
-                        ),
-                      key: 'updateCheck',
-                      label: t('开启检查更新'),
-                    },
-                    {
-                      // T12.7 (D19 ④): format C, e.g. "Claude 5h 60% · 最紧 OpenRouter 35%".
-                      title: t('Claude Code 状态栏'),
-                      note: (
-                        <Disclosure
-                          summary={t('在 Claude Code 底部显示本会话额度和最紧的其他账户')}
-                          detail={t(
-                            '对用助手生成的启动脚本打开的会话，以及「接入所有会话」后的所有 Claude Code 会话生效，例如「Claude 5h 60% · 最紧 OpenRouter 35%」。文字由本机助手算好后交给状态栏，不联网；关闭时状态栏照旧只显示采集状态。',
-                          )}
-                        />
-                      ),
-                      key: 'claudeStatusQuota',
-                      label: t('在 Claude Code 状态栏显示额度'),
-                    },
-                    {
-                      // T13.5 (D20 ③): a snapshot file and a command that prints it; no network service.
-                      title: t('命令行读取额度'),
-                      note: state.statusCommand ? (
-                        <>
-                          {t('运行')}{' '}
-                          <code>
-                            {/\s/.test(state.statusCommand) ? `"${state.statusCommand}"` : state.statusCommand}
-                          </code>
-                          {t('（加 --text 输出文字）')}{' '}
-                          <button className="text-button" onClick={() => action(() => bridge.showStatusCommand())}>
-                            {t('在文件夹中显示')}
-                            <Folder size={13} />
-                          </button>
-                        </>
-                      ) : (
-                        <Disclosure
-                          summary={t('生成一个命令，打印全部账户的额度（JSON 或文字）')}
-                          detail={t(
-                            '开启后，助手在自己的数据目录里保存一份额度快照，并放一个命令（Mac 为 tua-status，Windows 为 tua-status.cmd）打印它，方便脚本和其他工具读取。只含额度百分比、重置时间和余额，不含密钥；不开放网络端口。助手关闭时命令显示最后一次的值和时间；关闭此项会删除这些文件。',
-                          )}
-                        />
-                      ),
-                      key: 'statusExport',
-                      label: t('开启命令行读取额度'),
-                    },
-                    {
-                      // T14.3 (D21 ③): official status pages, off by default (it adds network requests).
-                      title: t('服务商状态'),
-                      note: (
-                        <Disclosure
-                          summary={t('在账户详情显示平台官方状态页的当前状态')}
-                          detail={t(
-                            '开启后每 5 分钟访问一次已连接平台的公开状态页（不带任何凭据），目前支持 Anthropic（Claude）、OpenAI（Codex）、Moonshot（Kimi 开放平台）、MiniMax；其他平台没有可读取的状态接口，不显示。只作提示，不影响额度、余额和菜单栏颜色。',
-                          )}
-                        />
-                      ),
-                      key: 'providerStatus',
-                      label: t('显示服务商状态'),
-                    },
-                  ].map((item) => (
-                    <div className="setting-row" key={item.key}>
-                      <div>
-                        <h2>{item.title}</h2>
-                        <p>{item.note}</p>
+                )}
+                {settingsTab === 'tools' && (
+                  <>
+                    {state.toolSourceIssue && (
+                      <div className="inline-warning" role="status">
+                        {state.toolSourceIssue}
                       </div>
-                      <Toggle
-                        label={item.label}
-                        checked={settings[item.key]}
-                        disabled={item.key === 'launchAtLogin' && !state.packaged}
-                        onChange={(v) => pref({ [item.key]: v })}
+                    )}
+                    <ToolSources
+                      sources={state.toolSources || []}
+                      onAdd={(kind, label) => action(() => bridge.addToolSource({ kind, label }))}
+                      onUpdate={(id, patch) => action(() => bridge.updateToolSource(id, patch))}
+                      onChoose={(id) => action(() => bridge.chooseToolSource(id))}
+                      onRemove={(id) => action(() => bridge.removeToolSource(id))}
+                      onSync={(id) => action(() => bridge.syncToolSource(id))}
+                      onDiscover={discoverTools}
+                    />
+                  </>
+                )}
+                {settingsTab === 'alerts' && (
+                  <section className="settings-panel panel">
+                    <Section icon={Bell}>
+                      ALERTS <span className="label-cn">{t('/ 提醒')}</span>
+                    </Section>
+                    {toggleRow('notifications')}
+                    <div className="setting-row">
+                      <div>
+                        <h2>{t('提醒阈值')}</h2>
+                        <p>{t('任一窗口低于阈值时通知。')}</p>
+                      </div>
+                      <Select
+                        label={t('提醒阈值')}
+                        value={settings.threshold}
+                        disabled={!settings.notifications}
+                        onChange={(value) => pref({ threshold: Number(value) })}
+                        menuWidth={160}
+                        options={[10, 20, 30].map((v) => ({ value: v, label: t('低于 {v0}%', { v0: v }) }))}
                       />
                     </div>
-                  ))}
-                  <div className="setting-row">
-                    <div>
-                      <h2>{t('提醒阈值')}</h2>
-                      <p>{t('任一窗口低于阈值时通知。')}</p>
-                    </div>
-                    <Select
-                      label={t('提醒阈值')}
-                      value={settings.threshold}
-                      disabled={!settings.notifications}
-                      onChange={(value) => pref({ threshold: Number(value) })}
-                      menuWidth={160}
-                      options={[10, 20, 30].map((v) => ({ value: v, label: t('低于 {v0}%', { v0: v }) }))}
+                    <BalanceThresholds
+                      // A saved change (here or elsewhere) starts the fields over from the settings.
+                      key={settings.balanceThresholdCNY + '|' + settings.balanceThresholdUSD}
+                      settings={settings}
+                      pref={pref}
                     />
-                  </div>
-                  <BalanceThresholds
-                    // A saved change (here or elsewhere) starts the fields over from the settings.
-                    key={settings.balanceThresholdCNY + '|' + settings.balanceThresholdUSD}
-                    settings={settings}
-                    pref={pref}
-                  />
-                  <div className="setting-row">
-                    <div>
-                      <h2>{t('自动刷新')}</h2>
-                      <p>{t('查询失败时自动降低频率，联网后恢复。')}</p>
+                    <div className="settings-bottom">
+                      <span>
+                        <Check size={14} />
+                        {t('设置自动保存在本机')}
+                      </span>
+                      <div className="settings-actions">
+                        <button
+                          className="button"
+                          disabled={!settings.notifications}
+                          onClick={() => action(() => bridge.testNotification(), t('已请求系统显示测试通知。'))}
+                        >
+                          <Bell size={15} />
+                          {t('测试通知')}
+                        </button>
+                      </div>
                     </div>
-                    <Select
-                      label={t('自动刷新间隔')}
-                      value={settings.refreshSeconds}
-                      onChange={(value) => pref({ refreshSeconds: Number(value) })}
-                      menuWidth={160}
-                      options={[30, 60, 120, 300].map((v) => ({
-                        value: v,
-                        label: t('每 {v0}', { v0: v >= 60 ? t('{v0} 分钟', { v0: v / 60 }) : t('{v0} 秒', { v0: v }) }),
-                      }))}
-                    />
-                  </div>
-                  <div className="setting-row">
-                    <div>
-                      <h2>{t('深色外观')}</h2>
-                      <p>{t('同时应用到主面板和悬浮窗。')}</p>
+                  </section>
+                )}
+                {settingsTab === 'system' && (
+                  <section className="settings-panel panel">
+                    <Section icon={GearSix}>
+                      SYSTEM <span className="label-cn">{t('/ 外观与系统')}</span>
+                    </Section>
+                    {toggleRow('floating')}
+                    {toggleRow('launchAtLogin')}
+                    {toggleRow('updateCheck')}
+                    <div className="setting-row">
+                      <div>
+                        <h2>{t('自动刷新')}</h2>
+                        <p>{t('查询失败时自动降低频率，联网后恢复。')}</p>
+                      </div>
+                      <Select
+                        label={t('自动刷新间隔')}
+                        value={settings.refreshSeconds}
+                        onChange={(value) => pref({ refreshSeconds: Number(value) })}
+                        menuWidth={160}
+                        options={[30, 60, 120, 300].map((v) => ({
+                          value: v,
+                          label: t('每 {v0}', {
+                            v0: v >= 60 ? t('{v0} 分钟', { v0: v / 60 }) : t('{v0} 秒', { v0: v }),
+                          }),
+                        }))}
+                      />
                     </div>
-                    <Toggle
-                      label={t('开启深色外观')}
-                      checked={dark}
-                      onChange={(v) => pref({ theme: v ? 'dark' : 'light' })}
-                    />
-                  </div>
-                  <div className="setting-row">
-                    <div>
-                      <h2>{t('语言')} · Language</h2>
-                      <p>{t('界面语言；跟随系统时，中文系统显示中文，其他显示英文。')}</p>
+                    <div className="setting-row">
+                      <div>
+                        <h2>{t('语言')} · Language</h2>
+                        <p>{t('界面语言；跟随系统时，中文系统显示中文，其他显示英文。')}</p>
+                      </div>
+                      <Select
+                        label={t('语言')}
+                        value={settings.language || 'system'}
+                        onChange={(value) => pref({ language: value })}
+                        menuWidth={160}
+                        options={[
+                          { value: 'system', label: t('跟随系统') },
+                          { value: 'zh', label: '中文' },
+                          { value: 'en', label: 'English' },
+                        ]}
+                      />
                     </div>
-                    <Select
-                      label={t('语言')}
-                      value={settings.language || 'system'}
-                      onChange={(value) => pref({ language: value })}
-                      menuWidth={160}
-                      options={[
-                        { value: 'system', label: t('跟随系统') },
-                        { value: 'zh', label: '中文' },
-                        { value: 'en', label: 'English' },
-                      ]}
-                    />
-                  </div>
-                  {(mac || state.platform === 'win32') && (
-                    <MenubarSettings state={state} settings={settings} pref={pref} mac={mac} />
-                  )}
-                  <div className="settings-bottom">
-                    <span>
-                      <Check size={14} />
-                      {t('设置自动保存在本机')}
-                    </span>
-                    <div className="settings-actions">
-                      <button className="button" onClick={openDiagnostics}>
-                        <FileArrowDown size={15} />
-                        {t('导出诊断信息')}
-                      </button>
-                      <button
-                        className="button"
-                        disabled={!settings.notifications}
-                        onClick={() => action(() => bridge.testNotification(), t('已请求系统显示测试通知。'))}
-                      >
-                        <Bell size={15} />
-                        {t('测试通知')}
-                      </button>
+                    {(mac || state.platform === 'win32') && (
+                      <MenubarSettings state={state} settings={settings} pref={pref} mac={mac} />
+                    )}
+                    <div className="settings-bottom">
+                      <span>
+                        <Check size={14} />
+                        {t('设置自动保存在本机')}
+                      </span>
                     </div>
-                  </div>
-                </section>
+                  </section>
+                )}
+                {settingsTab === 'advanced' && (
+                  <>
+                    <section className="settings-panel panel">
+                      <Section icon={Wrench}>
+                        ADVANCED <span className="label-cn">{t('/ 高级')}</span>
+                      </Section>
+                      {toggleRow('claudeStatusQuota')}
+                      {toggleRow('statusExport')}
+                      {toggleRow('providerStatus')}
+                      <div className="settings-bottom">
+                        <span>
+                          <Check size={14} />
+                          {t('设置自动保存在本机')}
+                        </span>
+                        <div className="settings-actions">
+                          <button className="button" onClick={openDiagnostics}>
+                            <FileArrowDown size={15} />
+                            {t('导出诊断信息')}
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                    <div id="account-links">
+                      <AdvancedSettings associations={state.associations} initialOpen={linksOpen}>
+                        <AccountLinks
+                          state={state}
+                          run={(kind, value) => action(() => bridge[kind](value), t('账户关联已更新。'))}
+                        />
+                      </AdvancedSettings>
+                    </div>
+                  </>
+                )}
               </div>
             )}
             <footer className="main-footer">
