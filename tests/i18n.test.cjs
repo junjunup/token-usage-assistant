@@ -21,6 +21,9 @@ const TRANSLATED = [
   'Disclosure',
   'Select',
   'ToolSources',
+  // T16.2, T17.3
+  'LocalToolsOverview',
+  'AccountList',
 ];
 
 test('T14.4: the language setting defaults to the system and accepts only system / zh / en', async () => {

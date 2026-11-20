@@ -472,17 +472,21 @@ export function ConnectionForm({
   onRemove,
   onClaudeConfig = null,
   wizard = null,
+  fixedMode = null,
 }) {
   // In the wizard (T11.4) every connection is a new one; updating or removing stays in settings.
   const active = wizard ? null : state.accounts?.find((a) => a.id === state.activeAccountId);
-  const [mode, setMode] = useState('add'),
-    [provider, setProvider] = useState(wizard?.provider || 'glm'),
-    [region, setRegion] = useState(wizard?.region || 'cn'),
-    [label, setLabel] = useState(''),
+  // T17.3 (D24 ②): opened from the account list as "add" or "edit this account"; the list chooses, so the mode
+  // selector is hidden and an edit starts from the account's own platform, region and name.
+  const editing = fixedMode === 'update' && !!active;
+  const [mode, setMode] = useState(editing ? 'update' : 'add'),
+    [provider, setProvider] = useState(editing ? active.provider : wizard?.provider || 'glm'),
+    [region, setRegion] = useState(editing ? active.region : wizard?.region || 'cn'),
+    [label, setLabel] = useState(editing ? active.label : ''),
     [apiKey, setKey] = useState(''),
     [accessKeyId, setAk] = useState(''),
     [secretKey, setSk] = useState(''),
-    [orgId, setOrg] = useState('');
+    [orgId, setOrg] = useState(editing ? active.orgId || '' : '');
   const [pending, setPending] = useState(false),
     [profiles, setProfiles] = useState(null),
     [profileId, setProfileId] = useState('');
@@ -519,7 +523,7 @@ export function ConnectionForm({
     }
   }
   const [formAccount, setFormAccount] = useState(state.activeAccountId);
-  if (formAccount !== state.activeAccountId) {
+  if (formAccount !== state.activeAccountId && !fixedMode) {
     setFormAccount(state.activeAccountId);
     setMode('add');
     setLabel('');
@@ -753,14 +757,23 @@ export function ConnectionForm({
         <Key size={16} />
         ACCOUNT CONNECTION
       </div>
-      <div className="connection-status">
-        <span className={'status-dot ' + (state.hasCredential ? 'green' : 'neutral')} />
-        {active ? t('当前连接 · ') + active.label : t('添加官方套餐或按量账户')}
-      </div>
-      <LocalConnectionStatus state={state} onClaudeConfig={onClaudeConfig} />
+      {fixedMode === 'add' ? (
+        <div className="connection-status">
+          <span className="status-dot neutral" />
+          {t('添加官方套餐或按量账户')}
+        </div>
+      ) : (
+        <>
+          <div className="connection-status">
+            <span className={'status-dot ' + (state.hasCredential ? 'green' : 'neutral')} />
+            {active ? (editing ? t('编辑 · ') : t('当前连接 · ')) + active.label : t('添加官方套餐或按量账户')}
+          </div>
+          <LocalConnectionStatus state={state} onClaudeConfig={onClaudeConfig} />
+        </>
+      )}
       <form onSubmit={submit}>
         <div className="connection-selectors">
-          {active && (
+          {active && !fixedMode && (
             <label>
               {t('连接操作')}
               <Select
@@ -822,7 +835,7 @@ export function ConnectionForm({
             {submitLabel}
           </button>
           {manualButton}
-          {active && (
+          {active && !fixedMode && (
             <button className="text-button disconnect" type="button" disabled={busy} onClick={onRemove}>
               <SignOut size={14} />
               {t('移除当前连接')}

@@ -59,6 +59,20 @@ export const EN = {
   不再提示: "Don't remind me",
   '显示已忽略的 {v0} 个发现': 'Show {v0} ignored finds',
   'Claude Code（启动脚本）': 'Claude Code (launch script)',
+  // T17.3 (D24): settings account list
+  '编辑 ·': 'Editing ·',
+  '/ 账户': '',
+  '已保存 {v0} 个账户，最多 20 个；每个账户独立刷新、独立提醒。':
+    '{v0} accounts saved (up to 20); each refreshes and alerts on its own.',
+  '还没有账户。添加一个官方套餐或按量账户开始监测。': 'No accounts yet. Add a plan or pay-as-you-go account to start.',
+  添加账户: 'Add account',
+  取消添加: 'Cancel',
+  已保存的账户: 'Saved accounts',
+  平台与站点: 'Platform and site',
+  上次成功: 'Last success',
+  总览当前显示: 'Shown on the overview',
+  数据未更新: 'Not updated',
+  正常: 'OK',
   // T17.2 (D24): account status on cards and the panel
   'Key 已失效或被撤销': 'The key was rejected or revoked',
   '，显示': '; showing the value from',

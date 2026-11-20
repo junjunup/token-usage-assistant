@@ -45,6 +45,7 @@ import { monthlyQuota, quotaStatus, resetDescription } from './generated/domain.
 import { useAnalytics } from './useAnalytics.js';
 import { AnalyticsPage, RangeControl, HealthStrip } from './AnalyticsPage.jsx';
 import { ToolSources, kindName } from './ToolSources.jsx';
+import { AccountList } from './AccountList.jsx';
 import { AccountLinks, ReconciliationPage } from './AccountLinks.jsx';
 import { AllAccountsGrid, GlanceWidget, attentionText } from './AccountsOverview.jsx';
 import { PaceLine } from './Panel.jsx';
@@ -373,6 +374,8 @@ export function DesktopApp() {
     [view, setView] = useState('overview'),
     // T16.1 (D23 ⑤): settings are split into tabs; links elsewhere open the tab they are about.
     [settingsTab, setSettingsTab] = useState('accounts'),
+    // T17.3: the account the settings form is open for ({ mode: 'add' } or { mode: 'update', id }), or none.
+    [accountEdit, setAccountEdit] = useState(null),
     [used, setUsed] = useState(false),
     [details, setDetails] = useState(false),
     [toast, setToast] = useState(null),
@@ -431,6 +434,11 @@ export function DesktopApp() {
     setLinksOpen(id === 'account-links');
     setSettingsTab(tab);
     setView('settings');
+  };
+  // T17.3: open the accounts tab with the form for a new account, for the current one, or closed.
+  const openAccount = (mode) => {
+    setAccountEdit(mode === 'update' ? { mode, id: state?.activeAccountId } : mode ? { mode } : null);
+    openSettings('accounts');
   };
   useEffect(() => {
     const target = jumpTo.current && document.getElementById(jumpTo.current);
@@ -1003,7 +1011,7 @@ export function DesktopApp() {
                 overview={overview}
                 disabled={state.connecting}
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
-                onManage={() => openSettings('accounts')}
+                onManage={() => openAccount(null)}
               />
             )}
             {view === 'overview' && !setup && (
@@ -1023,11 +1031,11 @@ export function DesktopApp() {
                 }}
               />
             )}
-            {!setup && (view === 'analytics' || (view === 'settings' && settingsTab === 'accounts')) && (
+            {!setup && view === 'analytics' && (
               <AccountSwitcher
                 state={state}
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
-                onManage={() => openSettings('accounts')}
+                onManage={() => openAccount(null)}
               />
             )}
             {view === 'overview' && !setup && overviewCards && (
@@ -1046,7 +1054,7 @@ export function DesktopApp() {
               balanceOnly ? (
                 <BalanceDashboard
                   state={state}
-                  onSettings={() => openSettings('accounts')}
+                  onSettings={() => openAccount('update')}
                   onTools={() => {
                     setAnalysisSource('tools');
                     openAnalytics();
@@ -1055,7 +1063,7 @@ export function DesktopApp() {
               ) : generic ? (
                 <ProviderDashboard
                   state={state}
-                  onSettings={() => openSettings('accounts')}
+                  onSettings={() => openAccount('update')}
                   pace={state.pace && <PaceLine pace={state.pace} className="overview-pace" />}
                 />
               ) : (
@@ -1071,7 +1079,7 @@ export function DesktopApp() {
                           )}
                         </p>
                       </div>
-                      <button className="button primary" onClick={() => openSettings('accounts')}>
+                      <button className="button primary" onClick={() => openAccount('add')}>
                         {t('连接账户')}
                         <ArrowUpRight size={15} />
                       </button>
@@ -1139,7 +1147,7 @@ export function DesktopApp() {
                           <ArrowsClockwise size={14} />
                         </button>
                       ) : (
-                        <button onClick={() => (data.status === 'auth-error' ? openSettings('accounts') : refresh())}>
+                        <button onClick={() => (data.status === 'auth-error' ? openAccount('update') : refresh())}>
                           {data.status === 'auth-error' ? t('重新连接') : t('重试')}
                           <ArrowUpRight size={14} />
                         </button>
@@ -1483,14 +1491,46 @@ export function DesktopApp() {
             ) : (
               <div className="native-settings">
                 {settingsTab === 'accounts' && (
-                  <ConnectionForm
-                    state={state}
-                    preview={browserPreview}
-                    action={(value) => action(() => bridge.connect(value), t('本机连接已保存，可在总览查看账户数据。'))}
-                    onConnected={() => setView('overview')}
-                    onRemove={() => setDialog('disconnect')}
-                    onClaudeConfig={(change) => action(() => bridge.claudeConfig(change), t('已更新'))}
-                  />
+                  <>
+                    <AccountList
+                      state={state}
+                      editing={accountEdit}
+                      disabled={state.connecting}
+                      // Each button also closes the form it opened.
+                      onAdd={() => setAccountEdit(accountEdit?.mode === 'add' ? null : { mode: 'add' })}
+                      // Editing or removing an account makes it the current one first (the form and the remove
+                      // dialog act on the current account).
+                      onEdit={async (id) => {
+                        if (accountEdit?.mode === 'update' && accountEdit.id === id) return setAccountEdit(null);
+                        if (id !== state.activeAccountId) await action(() => bridge.selectAccount(id));
+                        setAccountEdit({ mode: 'update', id });
+                      }}
+                      onRemove={async (id) => {
+                        if (id !== state.activeAccountId) await action(() => bridge.selectAccount(id));
+                        setDialog('disconnect');
+                      }}
+                      form={
+                        (accountEdit || !(state.accounts || []).length) &&
+                        (accountEdit?.mode !== 'update' || accountEdit.id === state.activeAccountId) ? (
+                          <ConnectionForm
+                            key={(accountEdit?.mode || 'add') + '|' + state.activeAccountId}
+                            fixedMode={accountEdit?.mode || 'add'}
+                            state={state}
+                            preview={browserPreview}
+                            action={(value) =>
+                              action(() => bridge.connect(value), t('本机连接已保存，可在总览查看账户数据。'))
+                            }
+                            onConnected={() => {
+                              setAccountEdit(null);
+                              setView('overview');
+                            }}
+                            onRemove={() => setDialog('disconnect')}
+                            onClaudeConfig={(change) => action(() => bridge.claudeConfig(change), t('已更新'))}
+                          />
+                        ) : null
+                      }
+                    />
+                  </>
                 )}
                 {settingsTab === 'tools' && (
                   <>
@@ -1690,7 +1730,9 @@ export function DesktopApp() {
         <div className="dialog-title">
           <h2 id="dialog-title">
             {dialog === 'disconnect'
-              ? t('移除本机连接')
+              ? t('移除本机连接') +
+                ' · ' +
+                ((state.accounts || []).find((a) => a.id === state.activeAccountId)?.label || '')
               : dialog === 'billing'
                 ? t('额度与账期口径')
                 : dialog === 'diagnostics'
