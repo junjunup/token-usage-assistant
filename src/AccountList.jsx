@@ -1,4 +1,4 @@
-import { PencilSimple, Plus, Trash, UserList } from '@phosphor-icons/react';
+import { PencilSimple, Plus, Trash, UserList, X } from '@phosphor-icons/react';
 import { providerInfo } from './generated/provider-catalog.js';
 import { t, locale } from './i18n.js';
 import './account-list.css';
@@ -54,8 +54,8 @@ export function AccountList({ state, editing, disabled, onAdd, onEdit, onRemove,
           disabled={disabled || accounts.length >= 20}
           onClick={onAdd}
         >
-          <Plus size={15} />
-          {t('添加账户')}
+          {editing?.mode === 'add' ? <X size={15} /> : <Plus size={15} />}
+          {editing?.mode === 'add' ? t('取消添加') : t('添加账户')}
         </button>
       </div>
       {form && editing?.mode !== 'update' && <div className="al-form adding">{form}</div>}
@@ -96,8 +96,8 @@ export function AccountList({ state, editing, disabled, onAdd, onEdit, onRemove,
                     disabled={disabled}
                     onClick={() => onEdit(a.id)}
                   >
-                    <PencilSimple size={13} />
-                    {status.tone === 'red' ? t('重新连接') : t('编辑')}
+                    {open ? <X size={13} /> : <PencilSimple size={13} />}
+                    {open ? t('收起') : status.tone === 'red' ? t('重新连接') : t('编辑')}
                   </button>
                   <button className="text-button" disabled={disabled} onClick={() => onRemove(a.id)}>
                     <Trash size={13} />

@@ -1496,10 +1496,12 @@ export function DesktopApp() {
                       state={state}
                       editing={accountEdit}
                       disabled={state.connecting}
-                      onAdd={() => setAccountEdit({ mode: 'add' })}
+                      // Each button also closes the form it opened.
+                      onAdd={() => setAccountEdit(accountEdit?.mode === 'add' ? null : { mode: 'add' })}
                       // Editing or removing an account makes it the current one first (the form and the remove
                       // dialog act on the current account).
                       onEdit={async (id) => {
+                        if (accountEdit?.mode === 'update' && accountEdit.id === id) return setAccountEdit(null);
                         if (id !== state.activeAccountId) await action(() => bridge.selectAccount(id));
                         setAccountEdit({ mode: 'update', id });
                       }}
