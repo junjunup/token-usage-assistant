@@ -67,6 +67,8 @@ export const EN = {
   '还没有账户。添加一个官方套餐或按量账户开始监测。': 'No accounts yet. Add a plan or pay-as-you-go account to start.',
   添加账户: 'Add account',
   取消添加: 'Cancel',
+  // T17.5
+  暂无预测: 'No forecast yet',
   已保存的账户: 'Saved accounts',
   平台与站点: 'Platform and site',
   上次成功: 'Last success',

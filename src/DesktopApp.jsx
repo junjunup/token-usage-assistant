@@ -1078,7 +1078,7 @@ export function DesktopApp() {
                 <ProviderDashboard
                   state={state}
                   onSettings={() => openAccount('update')}
-                  pace={state.pace && <PaceLine pace={state.pace} className="overview-pace" />}
+                  pace={state.pace && <PaceLine pace={state.pace} className="overview-pace" fold />}
                 />
               ) : (
                 <>
@@ -1134,7 +1134,7 @@ export function DesktopApp() {
                   </div>
                   {/* T11.3: the forecast below in one line, for the current Command Code account. */}
                   {state.hasCredential && analysis.report?.prediction && (
-                    <PaceLine pace={paceLine(analysis.report.prediction)} className="overview-pace" />
+                    <PaceLine pace={paceLine(analysis.report.prediction)} className="overview-pace" fold />
                   )}
                   {mac && state.menubar?.hidden === true && settings.menubarUsage !== false && (
                     <div className="inline-warning" role="status">
