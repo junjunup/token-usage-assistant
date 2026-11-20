@@ -882,14 +882,14 @@ export function DesktopApp() {
             <div className="breadcrumb">
               <span className="brand">{t('Token 用量助手')}</span>
               <span className="slash">/</span>
+              {/* T17.6 (D24 ③): the page name in the interface language; no "DESKTOP" badge. */}
               <span>
                 {view === 'overview'
-                  ? 'Usage'
+                  ? t('用量总览')
                   : view === 'analytics' || view === 'reconciliation'
-                    ? 'Analytics'
-                    : 'Settings'}
+                    ? t('用量分析')
+                    : t('设置')}
               </span>
-              <span className="desktop-badge">DESKTOP</span>
             </div>
             <div className="window-actions">
               <span className="version-tag">v{state.version}</span>
@@ -929,15 +929,6 @@ export function DesktopApp() {
                         ? t('用量分析')
                         : t('设置')}
                   </h1>
-                  <p>
-                    {view === 'overview'
-                      ? t('掌握使用节奏，安心专注下一次创作。')
-                      : view === 'analytics'
-                        ? t('看清消耗的变化，也看清每一份用量的去向。')
-                        : view === 'reconciliation'
-                          ? t('看清本机记录覆盖了哪些时段、缺了什么，以及哪些记录已归入账户。')
-                          : t('本机连接账户，让助手按你的节奏工作。')}
-                  </p>
                 </div>
                 <div className="heading-actions">
                   {view === 'overview' ? (
@@ -947,19 +938,14 @@ export function DesktopApp() {
                         {data.fetching ? t('正在刷新') : t('刷新')}
                       </button>
                       <button
-                        className={`button primary ${settings.floating ? 'selected' : ''}`}
+                        className={`button ${settings.floating ? 'selected' : ''}`}
                         onClick={() => pref({ floating: !settings.floating })}
                       >
                         <PushPin size={16} />
                         {settings.floating ? t('收起悬浮窗') : t('显示悬浮窗')}
                       </button>
                     </>
-                  ) : (
-                    <button className="button" onClick={() => setView('overview')}>
-                      {t('返回总览')}
-                      <ArrowUpRight size={16} />
-                    </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )}
@@ -967,16 +953,17 @@ export function DesktopApp() {
               // T17.4 (D24 ②): the data source is the page's first choice, so it is a page tab, next to coverage.
               <PageTabs
                 label={t('用量分析')}
+                // 'local', not 'tools': tab values double as data-tab ids, and settings already has 'tools'.
                 value={
-                  view === 'reconciliation' ? 'reconciliation' : analysisSource === 'account' ? 'account' : 'tools'
+                  view === 'reconciliation' ? 'reconciliation' : analysisSource === 'account' ? 'account' : 'local'
                 }
                 onChange={(v) => {
                   if (v === 'reconciliation') return setView(v);
-                  chooseSource(v);
+                  chooseSource(v === 'local' ? 'tools' : v);
                   setView('analytics');
                 }}
                 tabs={[
-                  { value: 'tools', label: t('本机工具') },
+                  { value: 'local', label: t('本机工具') },
                   { value: 'account', label: t('账户统计') },
                   { value: 'reconciliation', label: t('数据覆盖') },
                 ]}
@@ -1058,9 +1045,14 @@ export function DesktopApp() {
                 <div className="section-title">
                   ACCOUNT DETAIL <span className="label-cn">{t('/ 账户详情')}</span>
                 </div>
-                <span className="subtle-label">
+                <span className="subtle-label ao-detail-meta">
                   {(state.accounts || []).find((a) => a.id === state.activeAccountId)?.label || '—'}
                   {t(' · 点上面的卡片切换')}
+                  {/* T17.6: the official console of this account, not of "the platform" on every page. */}
+                  <button className="text-button" onClick={() => action(() => bridge.openOfficial('usage'))}>
+                    {t('打开官方平台')}
+                    <ArrowSquareOut size={13} />
+                  </button>
                 </span>
               </div>
             )}
@@ -1718,10 +1710,6 @@ export function DesktopApp() {
                   )}
                 </span>
               </div>
-              <button onClick={() => action(() => bridge.openOfficial('usage'))}>
-                {t('打开官方平台')}
-                <ArrowSquareOut size={14} />
-              </button>
             </footer>
           </main>
         </div>
