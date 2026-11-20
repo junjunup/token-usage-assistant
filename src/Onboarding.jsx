@@ -283,18 +283,20 @@ export function SetupWizard({ state, preview, connect, addSource, discover, fini
 // T11.4: "billing account groups / tool record links" sit in a collapsed "advanced" area in settings. Collapsed by
 // default and not remembered (T6.3); links that need the user to re-confirm them keep it open and are counted on the
 // header, because a prompt that needs action is never folded away (AGENTS §8).
-export function AdvancedSettings({ associations, children }) {
+// T16.1: it now sits in the settings' "advanced" tab, so its own header names what it holds; a link that asks to
+// manage the links (from the coverage report) opens it.
+export function AdvancedSettings({ associations, children, initialOpen = false }) {
   const data = associations || { groups: [], rules: [] },
     review = [...(data.groups || []), ...(data.rules || [])].filter((item) => item.valid === false).length,
     attention = review > 0 || !!data.issue;
-  const [open, setOpen] = useState(attention);
+  const [open, setOpen] = useState(attention || initialOpen);
   if (attention && !open) setOpen(true);
   return (
     <section className={'panel st-advanced' + (open ? ' open' : '')}>
       <button className="st-advanced-head" aria-expanded={open} onClick={() => setOpen(!open)}>
         {open ? <CaretDown size={15} /> : <CaretRight size={15} />}
         <span className="section-title">
-          ADVANCED <span className="label-cn">{t('/ 高级')}</span>
+          LINKS <span className="label-cn">{t('/ 账户关联')}</span>
         </span>
         <span className="st-advanced-sum">
           {t('计费账户归组 · 工具记录关联')}

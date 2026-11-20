@@ -87,9 +87,43 @@ test('T11.4: the app keeps the wizard open while it is used, and finishing or sk
 test('T11.4: account links sit in a collapsed "advanced" area that opens by itself when something needs re-confirming', () => {
   const app = read('src/DesktopApp.jsx'),
     wizard = read('src/Onboarding.jsx');
-  assert.match(app, /<AdvancedSettings associations=\{state\.associations\}>\s*<AccountLinks/);
+  assert.match(
+    app,
+    /<AdvancedSettings associations=\{state\.associations\} initialOpen=\{linksOpen\}>\s*<AccountLinks/,
+  );
   assert.match(wizard, /filter\(\(item\) => item\.valid === false\)/);
   assert.match(wizard, /attention = review > 0 \|\| !!data\.issue;/);
-  assert.match(wizard, /useState\(attention\)/);
+  assert.match(wizard, /useState\(attention \|\| initialOpen\)/);
   assert.match(wizard, /if \(attention && !open\) setOpen\(true\);/);
+});
+
+test('T16.1: three navigation items, coverage inside analytics, settings in tabs that never hide a pending link', () => {
+  const app = read('src/DesktopApp.jsx'),
+    rail = app.slice(app.indexOf('<div className="rail-nav">'), app.indexOf('<div className="rail-bottom">'));
+  // Overview, analytics, settings; the coverage report is a tab of analytics, not a rail item.
+  assert.equal((rail.match(/<IconButton/g) || []).length, 3);
+  assert.doesNotMatch(rail, /reconciliation'\)/);
+  assert.match(app, /\{ value: 'reconciliation', label: t\('数据覆盖'\) \}/);
+  // Five settings tabs; links waiting for re-confirmation are counted on the advanced tab.
+  for (const tab of ['accounts', 'tools', 'alerts', 'system', 'advanced'])
+    assert.match(app, new RegExp(`settingsTab === '${tab}'`));
+  assert.match(app, /\{ value: 'advanced', label: t\('高级'\), count: linksReview \}/);
+  assert.match(app, /const linksReview = \[[\s\S]*?\]\.filter\(\s*\(item\) => item\.valid === false,?\s*\)\.length;/);
+  // Every switch is still reachable, with the same setting key; dark mode stays on the rail only.
+  for (const key of [
+    'notifications',
+    'floating',
+    'launchAtLogin',
+    'updateCheck',
+    'claudeStatusQuota',
+    'statusExport',
+    'providerStatus',
+  ])
+    assert.match(app, new RegExp(`toggleRow\\('${key}'\\)`));
+  assert.doesNotMatch(app, /t\('开启深色外观'\)/);
+  assert.match(app, /onClick=\{changeTheme\}/);
+  // Links into settings land on the tab they are about.
+  assert.match(app, /openSettings\('system', 'menubar-settings'\)/);
+  assert.match(app, /onManageSources=\{\(\) => openSettings\('tools'\)\}/);
+  assert.match(app, /onSettings=\{\(\) => openSettings\('advanced', 'account-links'\)\}/);
 });
