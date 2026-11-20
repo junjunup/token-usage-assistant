@@ -133,7 +133,7 @@ test('T16.2: the overview lists accounts from the first one, has no switcher row
     tools = read('src/LocalToolsOverview.jsx');
   assert.match(app, /overviewCards = \(overview\?\.rows\?\.length \|\| 0\) >= 1;/);
   // The switcher row is only on analytics (T17.3: on settings the account list replaces it).
-  assert.match(app, /\{!setup && view === 'analytics' && \(/);
+  assert.match(app, /\{!setup && view === 'analytics' && analysisSource === 'account' && \(/);
   // Local tools: today and 7 days, every enabled source, never added to account figures.
   // One 7-day query that carries today: tool queries run one at a time, so two would cancel each other.
   assert.equal((app.match(/source: 'tools', range:/g) || []).length, 1);
@@ -204,4 +204,24 @@ test('T17.3: the accounts tab is a list with edit and remove; the form opens for
   assert.match(list, /'auth-error': \{ tone: 'red', text: '需要重新连接' \}/);
   assert.match(list, /row\?\.synced \? when\(row\.updatedAt\) : '—'/);
   assert.match(list, /accounts\.length >= 20/);
+});
+
+test('T17.4–T17.6: analytics source tabs, folded status notes, a lighter page frame', () => {
+  const app = read('src/DesktopApp.jsx'),
+    views = read('src/ProviderViews.jsx'),
+    panel = read('src/Panel.jsx');
+  // T17.4: local tools / account statistics / coverage are page tabs; the account picker is for account data only.
+  assert.match(
+    app,
+    /\{ value: 'local', label: t\('本机工具'\) \},\s*\{ value: 'account', label: t\('账户统计'\) \},\s*\{ value: 'reconciliation', label: t\('数据覆盖'\) \}/,
+  );
+  assert.match(app, /\{!setup && view === 'analytics' && analysisSource === 'account' && \(/);
+  assert.match(app, /sourceTabs=\{false\}/);
+  // T17.5: explanations behind ⓘ, except a problem the user must act on.
+  assert.match(views, /item\.status === 'error' && <p>\{t\(item\.message\)\}<\/p>/);
+  assert.match(panel, /if \(fold && pace\.text === '—' && pace\.reason\)/);
+  // T17.6: no DESKTOP badge, tagline or "back to overview"; the official console link sits with the account.
+  assert.doesNotMatch(app, /desktop-badge|掌握使用节奏|t\('返回总览'\)/);
+  assert.equal((app.match(/bridge\.openOfficial\('usage'\)/g) || []).length, 1);
+  assert.match(app, /ao-detail-meta[\s\S]{0,400}bridge\.openOfficial\('usage'\)/);
 });
