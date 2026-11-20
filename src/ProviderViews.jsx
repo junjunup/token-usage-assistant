@@ -452,9 +452,14 @@ export function LocalConnectionStatus({ state, onClaudeConfig = null }) {
                   'status-dot ' + (item.status === 'synced' ? 'green' : item.status === 'error' ? 'amber' : 'neutral')
                 }
               />
-              {t(item.label)}
+              {/* T17.5 (D24 ②): the how and why behind ⓘ; a problem the user must act on stays visible (T6.3). */}
+              {item.status === 'error' ? (
+                t(item.label)
+              ) : (
+                <Disclosure summary={t(item.label)} detail={item.message ? t(item.message) : null} />
+              )}
             </strong>
-            <p>{t(item.message)}</p>
+            {item.status === 'error' && <p>{t(item.message)}</p>}
           </div>
         );
       })}

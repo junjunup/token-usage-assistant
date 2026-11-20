@@ -5,6 +5,7 @@ import '@fontsource/geist/600.css';
 import '@fontsource/geist-mono/400.css';
 import '@fontsource/geist-mono/500.css';
 import { Timer } from '@phosphor-icons/react';
+import { Disclosure } from './Disclosure.jsx';
 import { previewPanelBridge } from './desktop-preview.js';
 import { Bar } from './ProviderViews.jsx';
 import { Live } from './Live.jsx';
@@ -56,7 +57,18 @@ function Cell({ cell, token = false }) {
 }
 
 // T11.3: the analytics forecast in one line (Command Code only); unknown stays "—" with the forecast's reason.
-export function PaceLine({ pace, className = 'panel-section' }) {
+export function PaceLine({ pace, className = 'panel-section', fold = false }) {
+  // T17.5 (D24 ②): in the main window a forecast that is not available yet is one short line, the reason behind ⓘ.
+  if (fold && pace.text === '—' && pace.reason)
+    return (
+      <section className={className + ' pace-line ' + pace.tone}>
+        <Timer size={14} />
+        <span>
+          <b>{t('节奏')}</b>
+          <Disclosure summary={t('暂无预测')} detail={t(pace.reason)} />
+        </span>
+      </section>
+    );
   return (
     <section className={className + ' pace-line ' + pace.tone}>
       <Timer size={14} />
