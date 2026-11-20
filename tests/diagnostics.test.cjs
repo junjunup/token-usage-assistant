@@ -83,6 +83,7 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
     statusExport: null,
     providerStatus: null,
     language: null,
+    ignoredFound: null,
   });
   assert.deepEqual(report.accounts, [
     {

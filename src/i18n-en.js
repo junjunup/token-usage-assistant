@@ -59,6 +59,14 @@ export const EN = {
   不再提示: "Don't remind me",
   '显示已忽略的 {v0} 个发现': 'Show {v0} ignored finds',
   'Claude Code（启动脚本）': 'Claude Code (launch script)',
+  // T17.2 (D24): account status on cards and the panel
+  'Key 已失效或被撤销': 'The key was rejected or revoked',
+  '，显示': '; showing the value from',
+  '连接中断 · 上次的值': 'Offline · last value',
+  连接中断: 'Offline',
+  'Key 已失效，请在主窗口重新连接；显示的是上次成功的值。':
+    'The key was rejected; reconnect in the main window. Showing the last successful value.',
+  'Key 已失效，请在主窗口重新连接。': 'The key was rejected; reconnect in the main window.',
   '/ 账户详情': '',
   '· 点上面的卡片切换': '· pick another card above to switch',
   切换浅色模式: 'Switch to light mode',

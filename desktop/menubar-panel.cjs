@@ -167,8 +167,17 @@ function panelAccount(a, threshold, amounts = {}) {
     provider: a.provider,
     status: String(a.status || ''),
     stale,
-    // T7.10: an account that never synced has no earlier values to fall back on.
-    notice: !stale ? null : stamps.length ? '数据未更新，显示的是上次成功的值。' : '尚未同步成功，暂无数据。',
+    // T7.10: an account that never synced has no earlier values to fall back on. T17.2 (D24 ①): a rejected key says
+    // so, so its last values are not read as the current state.
+    notice: !stale
+      ? null
+      : a.status === 'auth-error'
+        ? stamps.length
+          ? 'Key 已失效，请在主窗口重新连接；显示的是上次成功的值。'
+          : 'Key 已失效，请在主窗口重新连接。'
+        : stamps.length
+          ? '数据未更新，显示的是上次成功的值。'
+          : '尚未同步成功，暂无数据。',
     // Compact place (D17 ④): money at two decimals or "<0.01"; the rows and cells keep every digit.
     chip: focus ? { text: focus.compact, tone: focus.tone } : { text: '—', tone: 'normal' },
     rows,

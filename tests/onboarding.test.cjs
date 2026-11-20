@@ -176,3 +176,12 @@ test('T17.1: the overview lists tools found but not added; adding still goes thr
   // The launch-script source is named after how it collects, apart from the session logs.
   assert.match(read('src/ToolSources.jsx'), /'claude-code': t\('Claude Code（启动脚本）'\)/);
 });
+
+test('T17.2: account cards name a rejected key and a lost connection instead of showing a bare last value', () => {
+  const cards = read('src/AccountsOverview.jsx');
+  assert.match(cards, /if \(row\.status === 'auth-error'\)\s*return \{ text: t\('需要重新连接'\)/);
+  assert.match(cards, /if \(row\.status === 'offline'\)/);
+  // The last value stays (AGENTS §2), greyed so it is not read as the current balance or window.
+  assert.match(cards, /note\?\.kind === 'auth' \? 'aa-dim' : textTone\(row\.tone\)/);
+  assert.match(cards, /t\('上次的值'\)/);
+});

@@ -145,10 +145,12 @@ test('T7.10: the stale notice only promises earlier values when there were any',
   assert.equal(notice(commandcode()), null);
   assert.equal(notice(commandcode({ status: 'offline' })), '数据未更新，显示的是上次成功的值。');
   assert.equal(notice(commandcode({ status: 'stale', parts: {}, updatedAt: {} })), '尚未同步成功，暂无数据。');
+  // T17.2 (D24 ①): a rejected key says so, with or without earlier values.
   assert.equal(
     notice(commandcode({ status: 'auth-error', parts: {}, updatedAt: undefined })),
-    '尚未同步成功，暂无数据。',
+    'Key 已失效，请在主窗口重新连接。',
   );
+  assert.equal(notice(commandcode({ status: 'auth-error' })), 'Key 已失效，请在主窗口重新连接；显示的是上次成功的值。');
 });
 
 test('T7.11: the account chip says what the menu-bar icon says (quota windows first, money as the fallback)', () => {

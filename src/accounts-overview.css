@@ -175,3 +175,11 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+/* T17.2 (D24): a rejected key is named in red and its last value is greyed, so it is not read as current. */
+.aa-stale.auth {
+  color: var(--red);
+  font-weight: 500;
+}
+.aa-dim {
+  color: var(--muted);
+}
