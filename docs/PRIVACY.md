@@ -40,7 +40,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 - Gemini CLI：读取 `~/.gemini/tmp/<项目>/chats/` 下会话文件里每条模型回复的用量计数（输入、输出、缓存、思考、总量）、模型名、时间和编号；同一文件里的提示词、回复、思考过程、工具调用和摘要一律跳过，不解码、不保存。
 - Claude Code：只采集你通过生成的启动脚本运行之后的用量事件；本机组件只监听 `127.0.0.1`。
 - Claude Code 会话日志（T14.1，可选，由你添加）：读取 `~/.claude/projects/` 下 Claude Code 自己写的会话文件里每次模型回复的用量计数（输入、输出、缓存读写、思考）、模型名、时间、会话编号、消息与请求编号；提示词、回复、思考过程、工具调用、工作目录和分支一律跳过，不解码、不保存。与启动脚本来源同时启用时按请求编号去重。
-- 接入所有 Claude Code 会话（T13.1，可选）：只有你在「账户与设置 → 账户连接」点「接入所有会话」并在确认框里同意后，应用才修改 Claude Code 的用户设置 `~/.claude/settings.json`（设置了 `CLAUDE_CONFIG_DIR` 时用那里的）里的 `statusLine` 一项，其他设置原样保留。修改前把原文件备份到上面的 `claude-collector/`；你原来的状态栏命令会继续运行（macOS；Windows 上已有自己的状态栏时不接入）。点「还原」放回原来的 `statusLine`。这样只多采集额度窗口，不加遥测设置；逐请求的 Token 明细来自启动脚本打开的会话，或你另外添加的「Claude Code 会话日志」来源。
+- 接入所有 Claude Code 会话（T13.1，可选）：只有你在 Claude 账户的「账户连接」里点「接入所有会话」并在确认框里同意后，应用才修改 Claude Code 的用户设置 `~/.claude/settings.json`（设置了 `CLAUDE_CONFIG_DIR` 时用那里的）里的 `statusLine` 一项，其他设置原样保留。修改前把原文件备份到上面的 `claude-collector/`；你原来的状态栏命令会继续运行（macOS；Windows 上已有自己的状态栏时不接入）。点「还原」放回原来的 `statusLine`。这样只多采集额度窗口，不加遥测设置；逐请求的 Token 明细来自启动脚本打开的会话，或你另外添加的「Claude Code 会话日志」来源。
 - DeepSeek Harness：可选插件，只导出启用之后的用量元数据。
 
 ### 不读什么
@@ -59,9 +59,9 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 ### 联网
 
 - 只访问你已连接平台的上述官方地址。
-- 检查更新：启动时和每 24 小时访问一次 GitHub 的公开版本列表（`api.github.com`），不发送账户或设备信息；可在「账户与设置」里关闭。
+- 检查更新：启动时和每 24 小时访问一次 GitHub 的公开版本列表（`api.github.com`），不发送账户或设备信息；可在设置里关闭。
 - 下载更新（只有 Windows 安装版，T12.8）：只有你在「检查更新」里点了「下载并安装」，才从安装包仓库 `junjunup/TokenUsageAssistant` 的发布页（`github.com` 及其下载服务器）读取更新说明文件并下载新版安装包，核对说明文件里的 SHA-512 后存到本机的 `%LOCALAPPDATA%\commandcode-companion-updater`；再点「重启并安装」才运行安装程序（带正常的安装界面）。不发送账户或设备信息，不会自动下载，也不会在退出时自动安装。安装包没有代码签名，校验值和安装包来自同一个发布页，可信程度与你手动从那里下载相同。便携版和 Mac 版只提示，不下载。
-- 服务商状态（T14.3，默认关闭）：只有你在「账户与设置 → PREFERENCES」打开「服务商状态」后，应用才每 5 分钟访问一次你已连接平台的公开状态页：Anthropic `status.claude.com`、OpenAI `status.openai.com`、Moonshot `status.moonshot.cn`、MiniMax `status.minimax.io`（只读 `/api/v2/status.json` 里的整体状态）。地址固定在应用里，请求不带任何凭据、Cookie 或账户信息，不跟随重定向；其他平台不访问。关闭后不再访问，也不保留结果。
+- 服务商状态（T14.3，默认关闭）：只有你在设置里打开「服务商状态」后，应用才每 5 分钟访问一次你已连接平台的公开状态页：Anthropic `status.claude.com`、OpenAI `status.openai.com`、Moonshot `status.moonshot.cn`、MiniMax `status.minimax.io`（只读 `/api/v2/status.json` 里的整体状态）。地址固定在应用里，请求不带任何凭据、Cookie 或账户信息，不跟随重定向；其他平台不访问。关闭后不再访问，也不保留结果。
 - 没有统计、遥测或广告。
 
 ### 诊断信息
@@ -74,7 +74,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 ### 命令行读取额度
 
-默认关闭。只有你在「账户与设置 → PREFERENCES」打开「命令行读取额度」后，应用才在数据目录的 `cli/` 里保存 `status.json` 与 `status.txt`（全部账户的额度百分比、重置时间、余额金额和更新时间，账户名称为你起的备注），并放一个只打印这两个文件的命令（Mac `tua-status`，Windows `tua-status.cmd` 与 `tua-status.ps1`）。不含密钥或账户身份信息，不开放网络端口；关闭这一项会删除这些文件。
+默认关闭。只有你在设置里打开「命令行读取额度」后，应用才在数据目录的 `cli/` 里保存 `status.json` 与 `status.txt`（全部账户的额度百分比、重置时间、余额金额和更新时间，账户名称为你起的备注），并放一个只打印这两个文件的命令（Mac `tua-status`，Windows `tua-status.cmd` 与 `tua-status.ps1`）。不含密钥或账户身份信息，不开放网络端口；关闭这一项会删除这些文件。
 
 ### 怎么删除
 
@@ -121,7 +121,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 - Gemini CLI: for each model reply in the session files under `~/.gemini/tmp/<project>/chats/`, its usage counts (input, output, cached, thoughts, total), model name, time and id; prompts, replies, thoughts, tool calls and summaries in the same files are skipped, never decoded or kept.
 - Claude Code: only usage events after you start it with the generated launcher; the local component listens on `127.0.0.1` only.
 - Claude Code session logs (T14.1, optional, added by you): for each model reply in the session files Claude Code itself writes under `~/.claude/projects/`, its usage counts (input, output, cache reads / writes, thinking), model name, time, session id and message / request ids; prompts, replies, thinking, tool calls, working directory and branch are skipped, never decoded or kept. When the launcher source is also on, requests are de-duplicated by request id.
-- Connecting every Claude Code session (T13.1, optional): only after you click "接入所有会话" under 账户与设置 → 账户连接 and agree in the confirmation does the app change the `statusLine` entry of Claude Code's user settings `~/.claude/settings.json` (or the one in `CLAUDE_CONFIG_DIR`), keeping every other setting. The original file is backed up into `claude-collector/` first; your own status-line command keeps running (macOS; on Windows an existing status line is left alone and nothing is connected). "还原" (restore) puts the previous `statusLine` back. This adds quota windows only, no telemetry settings; per-request token details come from sessions started with the launcher, or from the "Claude Code session logs" source if you add it.
+- Connecting every Claude Code session (T13.1, optional): only after you click "接入所有会话" (Connect every session) in the Claude account's connection section and agree in the confirmation does the app change the `statusLine` entry of Claude Code's user settings `~/.claude/settings.json` (or the one in `CLAUDE_CONFIG_DIR`), keeping every other setting. The original file is backed up into `claude-collector/` first; your own status-line command keeps running (macOS; on Windows an existing status line is left alone and nothing is connected). "还原" (restore) puts the previous `statusLine` back. This adds quota windows only, no telemetry settings; per-request token details come from sessions started with the launcher, or from the "Claude Code session logs" source if you add it.
 - DeepSeek Harness: an optional plugin exports usage metadata from the time it is enabled.
 
 ### What it never reads
@@ -142,7 +142,7 @@ Only on your computer:
 - Only the official addresses above, for the platforms you connect.
 - Update check: at start and every 24 hours, GitHub's public release list (`api.github.com`), sending no account or device information; it can be turned off in settings.
 - Downloading an update (Windows installed build only, T12.8): only after you click "下载并安装" (download and install) does the app read the update description from the installer repository `junjunup/TokenUsageAssistant` (`github.com` and its download servers), download the new installer, check its SHA-512 and keep it in `%LOCALAPPDATA%\commandcode-companion-updater`; the installer (with its normal window) runs only after a second click. No account or device information is sent, nothing downloads on its own and nothing installs on quit. The installers are not code-signed: the checksum comes from the same release page, the same trust as downloading it there yourself. The portable and Mac builds only tell you.
-- Provider status (T14.3, off by default): only after you turn on "服务商状态" under 账户与设置 → PREFERENCES does the app, every 5 minutes, read the public status page of the platforms you connected: Anthropic `status.claude.com`, OpenAI `status.openai.com`, Moonshot `status.moonshot.cn`, MiniMax `status.minimax.io` (only the overall status in `/api/v2/status.json`). The addresses are fixed in the app; requests carry no credentials, cookies or account information and follow no redirects; other platforms are not contacted. Turning it off stops the requests and keeps nothing.
+- Provider status (T14.3, off by default): only after you turn on "服务商状态" (Provider status) in settings does the app, every 5 minutes, read the public status page of the platforms you connected: Anthropic `status.claude.com`, OpenAI `status.openai.com`, Moonshot `status.moonshot.cn`, MiniMax `status.minimax.io` (only the overall status in `/api/v2/status.json`). The addresses are fixed in the app; requests carry no credentials, cookies or account information and follow no redirects; other platforms are not contacted. Turning it off stops the requests and keeps nothing.
 - No analytics, telemetry or ads.
 
 ### Diagnostics
@@ -155,7 +155,7 @@ Created only when you click "导出 CSV" (export CSV) under 用量分析 → 工
 
 ### Command-line quota
 
-Off by default. Only after you turn on "命令行读取额度" under 账户与设置 → PREFERENCES does the app keep `status.json` and `status.txt` in `cli/` inside its data folder (every account's quota percentages, reset times, balance amounts and update times, with the account names you gave them) and put a command there that only prints these files (macOS `tua-status`, Windows `tua-status.cmd` and `tua-status.ps1`). No keys or account identities, no network port; turning it off deletes these files.
+Off by default. Only after you turn on "命令行读取额度" (Read quotas from the command line) in settings does the app keep `status.json` and `status.txt` in `cli/` inside its data folder (every account's quota percentages, reset times, balance amounts and update times, with the account names you gave them) and put a command there that only prints these files (macOS `tua-status`, Windows `tua-status.cmd` and `tua-status.ps1`). No keys or account identities, no network port; turning it off deletes these files.
 
 ### Deleting data
 
