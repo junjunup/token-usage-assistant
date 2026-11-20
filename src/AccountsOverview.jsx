@@ -29,9 +29,15 @@ export function resetText(focus, now) {
     return t('账期至 ') + new Date(focus.resetAt).toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' });
   return focus.kind === 'balance' ? t('无重置窗口') : '—';
 }
-// A failed refresh keeps the last successful values; say so, with their time (AGENTS §2).
+// A failed refresh keeps the last successful values; say so, with their time (AGENTS §2). T17.2 (D24 ①): a rejected
+// key and a lost connection are named, so a last value is not read as the current state (e.g. "$0.00" as used up).
 function staleNote(row) {
   if (!row.stale) return null;
+  const since = row.synced ? t('，显示 ') + stamp(row.updatedAt) + t(' 的值') : '';
+  if (row.status === 'auth-error')
+    return { text: t('需要重新连接'), title: t('Key 已失效或被撤销') + since, kind: 'auth' };
+  if (row.status === 'offline')
+    return { text: row.synced ? t('连接中断 · 上次的值') : t('连接中断'), title: t('连接中断') + since };
   return row.synced
     ? { text: t('上次的值'), title: t('刷新未成功，显示 ') + stamp(row.updatedAt) + t(' 的值') }
     : { text: t('尚未同步') };
@@ -54,14 +60,16 @@ function Tile({ row, disabled, onSelect }) {
           {row.label}
         </span>
         {note && (
-          <span className="aa-stale" title={note.title}>
+          <span className={'aa-stale' + (note.kind === 'auth' ? ' auth' : '')} title={note.title}>
             {t(note.text)}
           </span>
         )}
       </span>
       <span className="aa-tile-value">
         <span className="aa-label">{t(f?.label || '—')}</span>
-        <strong className={'mono ' + textTone(row.tone)}>{t(f?.text || '—')}</strong>
+        <strong className={'mono ' + (note?.kind === 'auth' ? 'aa-dim' : textTone(row.tone))}>
+          {t(f?.text || '—')}
+        </strong>
       </span>
       {f?.kind === 'window' ? (
         <Bar value={f.percent} label={t(f.label) + t(' 剩余')} tone={barTone[f.tone]} small />
