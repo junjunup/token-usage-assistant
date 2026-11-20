@@ -1,0 +1,132 @@
+/* T17.3 (D24): the settings' account list. */
+.account-list {
+  padding: 24px 28px 10px;
+  margin-bottom: 22px;
+}
+.al-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.al-head p {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.al-table {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.al-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.8fr) 156px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+.al-table > .al-row:last-child {
+  border-bottom: 0;
+}
+.al-row.open {
+  background: var(--soft);
+  box-shadow: inset 2px 0 0 var(--fg);
+  border-bottom-color: transparent;
+}
+/* The form opens right under the row it edits (or under the header when adding). */
+.al-form {
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+.al-form > .connection-panel {
+  border: 0;
+  background: var(--soft);
+  box-shadow: inset 2px 0 0 var(--fg);
+}
+.al-form.adding {
+  margin-top: 18px;
+  border-bottom: 0;
+}
+.al-row-head {
+  padding: 9px 10px;
+  font-family: 'Geist Mono', 'Microsoft YaHei UI', monospace;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.al-row small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.al-name strong {
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.al-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.al-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+  flex: none;
+}
+.al-status.green i {
+  background: var(--green);
+}
+.al-status.amber {
+  color: var(--amber);
+}
+.al-status.amber i {
+  background: var(--amber);
+}
+.al-status.red {
+  color: var(--red);
+  font-weight: 500;
+}
+.al-status.red i {
+  background: var(--red);
+}
+.al-when {
+  font-size: 11px;
+  color: var(--muted);
+}
+.al-actions {
+  display: inline-flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+.al-actions .text-button {
+  white-space: nowrap;
+  padding: 6px;
+}
+.al-actions .al-fix {
+  color: var(--red);
+}
+@media (max-width: 720px) {
+  .account-list {
+    padding: 20px 16px 8px;
+  }
+  .al-head {
+    flex-direction: column;
+  }
+  .al-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .al-row > span:nth-child(2),
+  .al-row > span:nth-child(4),
+  .al-row-head {
+    display: none;
+  }
+}

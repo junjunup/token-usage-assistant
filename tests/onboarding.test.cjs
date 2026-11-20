@@ -132,11 +132,8 @@ test('T16.2: the overview lists accounts from the first one, has no switcher row
   const app = read('src/DesktopApp.jsx'),
     tools = read('src/LocalToolsOverview.jsx');
   assert.match(app, /overviewCards = \(overview\?\.rows\?\.length \|\| 0\) >= 1;/);
-  // The switcher row is only on analytics and on the settings' accounts tab.
-  assert.match(
-    app,
-    /\{!setup && \(view === 'analytics' \|\| \(view === 'settings' && settingsTab === 'accounts'\)\) && \(/,
-  );
+  // The switcher row is only on analytics (T17.3: on settings the account list replaces it).
+  assert.match(app, /\{!setup && view === 'analytics' && \(/);
   // Local tools: today and 7 days, every enabled source, never added to account figures.
   // One 7-day query that carries today: tool queries run one at a time, so two would cancel each other.
   assert.equal((app.match(/source: 'tools', range:/g) || []).length, 1);
@@ -184,4 +181,27 @@ test('T17.2: account cards name a rejected key and a lost connection instead of 
   // The last value stays (AGENTS §2), greyed so it is not read as the current balance or window.
   assert.match(cards, /note\?\.kind === 'auth' \? 'aa-dim' : textTone\(row\.tone\)/);
   assert.match(cards, /t\('上次的值'\)/);
+});
+
+test('T17.3: the accounts tab is a list with edit and remove; the form opens for one account at a time', () => {
+  const app = read('src/DesktopApp.jsx'),
+    list = read('src/AccountList.jsx'),
+    form = read('src/ProviderViews.jsx');
+  assert.match(app, /<AccountList\s/);
+  // Edit and remove act on the current account, so the row's account is selected first.
+  assert.match(
+    app,
+    /if \(id !== state\.activeAccountId\) await action\(\(\) => bridge\.selectAccount\(id\)\);\s*setAccountEdit/,
+  );
+  assert.match(
+    app,
+    /if \(id !== state\.activeAccountId\) await action\(\(\) => bridge\.selectAccount\(id\)\);\s*setDialog\('disconnect'\)/,
+  );
+  // The form is told add or edit by the list: no mode dropdown, no second remove button there.
+  assert.match(form, /\{active && !fixedMode && \(\s*<label>\s*\{t\('连接操作'\)\}/);
+  assert.match(form, /\{active && !fixedMode && \(\s*<button className="text-button disconnect"/);
+  // Status per row; a rejected key reads "reconnect"; never-synced rows show no time (not 0).
+  assert.match(list, /'auth-error': \{ tone: 'red', text: '需要重新连接' \}/);
+  assert.match(list, /row\?\.synced \? when\(row\.updatedAt\) : '—'/);
+  assert.match(list, /accounts\.length >= 20/);
 });

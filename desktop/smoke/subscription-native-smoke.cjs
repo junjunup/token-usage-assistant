@@ -258,7 +258,10 @@ async function runSubscriptionSmoke({
     );
     await until(mainWindow, "document.querySelectorAll('.tool-source-row').length===4");
     // T16.1: the connection form is on the accounts tab.
-    await mainWindow.webContents.executeJavaScript('document.querySelector(\'[data-tab="accounts"]\').click()');
+    // T17.3: the connection form opens from the account list's "add account".
+    await mainWindow.webContents.executeJavaScript(
+      "(async()=>{document.querySelector('[data-tab=\"accounts\"]').click();for(let i=0;i<100&&!document.querySelector('.al-head .button.primary');i++)await new Promise(r=>setTimeout(r,20));document.querySelector('.al-head .button.primary').click()})()",
+    );
     await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="选择平台"]\').click()');
     await until(
       mainWindow,

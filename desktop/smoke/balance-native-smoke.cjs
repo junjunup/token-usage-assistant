@@ -59,7 +59,7 @@ async function runBalanceSmoke({ accounts, analytics, store, mainWindow, widgetW
   });
   try {
     await mainWindow.webContents.executeJavaScript(
-      '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="accounts"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="accounts"]\').click()})()',
+      "(async()=>{document.querySelector('button[aria-label=\"账户与设置\"]').click();for(let i=0;i<100&&!document.querySelector('[data-tab=\"accounts\"]');i++)await new Promise(r=>setTimeout(r,20));document.querySelector('[data-tab=\"accounts\"]').click();for(let i=0;i<100&&!document.querySelector('.al-head .button.primary');i++)await new Promise(r=>setTimeout(r,20));document.querySelector('.al-head .button.primary').click()})()",
     );
     await until(mainWindow, "!!document.querySelector('.connection-panel')");
     await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="选择平台"]\').click()');
