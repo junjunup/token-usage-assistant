@@ -146,3 +146,62 @@
   margin-bottom: 14px;
   padding-top: 4px;
 }
+/* T17.1 (D24): tools found at their default location but not added yet. */
+.lt-found {
+  margin-top: 18px;
+  padding: 12px 14px 4px;
+  border: 1px dashed var(--line);
+  background: var(--soft);
+}
+.lt-found-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.lt-found-head small {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.lt-found-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  font-size: 12px;
+}
+.lt-found-row + .lt-found-row {
+  border-top: 1px solid var(--line);
+}
+.lt-found-row small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.lt-found-row code {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+}
+.lt-found-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.lt-foot-left {
+  display: inline-flex;
+}
+@media (max-width: 720px) {
+  .lt-found-head small {
+    display: none;
+  }
+  .lt-found-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

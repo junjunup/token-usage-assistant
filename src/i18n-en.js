@@ -51,6 +51,14 @@ export const EN = {
   '{v0} 条记录': '{v0} records',
   管理本机工具: 'Manage local tools',
   查看明细: 'View details',
+  // T17.1 (D24): found tools on the overview
+  '本机发现、尚未添加': 'Found on this computer, not added yet',
+  '点「添加」后在系统选择框里确认位置': 'After you click Add, confirm the location in the system picker',
+  '桌面版和命令行的会话都记在这里，不需要启动脚本':
+    'Sessions from the desktop app and the command line are both recorded here; no launch script needed',
+  不再提示: "Don't remind me",
+  '显示已忽略的 {v0} 个发现': 'Show {v0} ignored finds',
+  'Claude Code（启动脚本）': 'Claude Code (launch script)',
   '/ 账户详情': '',
   '· 点上面的卡片切换': '· pick another card above to switch',
   切换浅色模式: 'Switch to light mode',

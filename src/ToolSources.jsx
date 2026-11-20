@@ -12,7 +12,8 @@ export const kindName = (kind) =>
     harness: 'DeepSeek Harness',
     zcode: 'Zcode',
     codex: 'Codex',
-    'claude-code': 'Claude Code',
+    // T17.1 (D24 ①): named after how it collects, so it is not mistaken for the session logs.
+    'claude-code': t('Claude Code（启动脚本）'),
     'claude-code-logs': t('Claude Code 会话日志'),
     'gemini-cli': 'Gemini CLI',
     'kimi-code-cli': 'Kimi Code CLI',
@@ -255,14 +256,14 @@ export function ToolSources({ sources = [], onAdd, onUpdate, onChoose, onRemove,
                 description: hint('codex') + t('选择本机 Codex 配置目录（包含 sessions）'),
               },
               {
-                value: 'claude-code',
-                label: 'Claude Code',
-                description: hint('claude-code') + t('选择本地组件导出的 usage.jsonl'),
-              },
-              {
                 value: 'claude-code-logs',
                 label: t('Claude Code 会话日志'),
                 description: hint('claude-code-logs') + t('选择 Claude Code 目录 · 只读每次回复的用量，不需要启动脚本'),
+              },
+              {
+                value: 'claude-code',
+                label: t('Claude Code（启动脚本）'),
+                description: hint('claude-code') + t('选择本地组件导出的 usage.jsonl'),
               },
               { value: 'zcode', label: 'Zcode', description: hint('zcode') + t('只读 SQLite 用量元数据') },
               {

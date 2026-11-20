@@ -939,7 +939,7 @@ function installIpc() {
           throw inputError('Claude 本机采集器启动失败，请检查端口占用或本机目录权限。');
         }
         value = { ...value, home };
-        source = { kind: 'claude-code', file: path.join(home, 'usage.jsonl'), label: 'Claude Code' };
+        source = { kind: 'claude-code', file: path.join(home, 'usage.jsonl'), label: 'Claude Code（启动脚本）' };
       }
       await accounts.connect(value);
       if (value.provider === 'claude')

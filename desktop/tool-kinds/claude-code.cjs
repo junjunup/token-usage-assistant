@@ -1,7 +1,8 @@
 // Claude Code (tool kind, T5.3b): the local collector's usage.jsonl export.
 module.exports = {
   kind: 'claude-code',
-  defaultLabel: 'Claude Code',
+  // T17.1 (D24 ①): named after how it collects, so it is not mistaken for the session logs (claude-code-logs).
+  defaultLabel: 'Claude Code（启动脚本）',
   picker: {
     type: 'file',
     title: '选择统计组件导出的 usage.jsonl',

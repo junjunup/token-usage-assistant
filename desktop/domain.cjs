@@ -13,7 +13,7 @@
  * @property {boolean} unlimited
  * @property {boolean} exceeded
  */
-/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean, providerStatus: boolean, language: string }} Settings */
+/** @typedef {{ theme: string, refreshSeconds: number, threshold: number, balanceThresholdCNY: string, balanceThresholdUSD: string, notifications: boolean, floating: boolean, pinned: boolean, launchAtLogin: boolean, widgetExpanded: boolean, updateCheck: boolean, menubarForm: string, menubarUsage: boolean, menubarAlertColor: boolean, panelProtect: boolean, trayPinHint: boolean, setupWizard: boolean, claudeStatusQuota: boolean, statusExport: boolean, providerStatus: boolean, language: string, ignoredFound: string[] }} Settings */
 const { belowAmount } = require('./balance-domain.cjs');
 const ENDPOINTS = Object.freeze({
   identity: '/alpha/whoami',
@@ -54,6 +54,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   providerStatus: false,
   // T14.4 (D21 ④): interface language; 'system' follows the system's preferred language (Chinese or English).
   language: 'system',
+  // T17.1 (D24 ①): tool kinds found on this computer that the user chose not to be reminded about on the overview.
+  ignoredFound: [],
 });
 /** @type {(v: any) => MaybeNumber} */
 const finite = (v) =>
@@ -384,6 +386,13 @@ function patchSettings(current, patch) {
     )
       result[key] = value;
     else if (key === 'language' && ['system', 'zh', 'en'].includes(value)) result[key] = value;
+    else if (
+      key === 'ignoredFound' &&
+      Array.isArray(value) &&
+      value.length <= 20 &&
+      value.every((k) => typeof k === 'string' && /^[a-z][a-z-]{0,39}$/.test(k))
+    )
+      result[key] = [...new Set(value)];
     else if (key === 'menubarForm' && ['ring', 'value', 'two'].includes(value)) result[key] = value;
     else if (
       typeof (/** @type {Record<string, any>} */ (DEFAULT_SETTINGS)[key]) === 'boolean' &&
