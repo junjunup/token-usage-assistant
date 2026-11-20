@@ -286,8 +286,15 @@ function attach(ctx) {
       // The widget was empty until now: wait for the Command Code widget before measuring it.
       for (let end = Date.now() + 10000; Date.now() < end; await new Promise((r) => setTimeout(r, 100)))
         if (Math.abs(ctx.widgetWindow.getBounds().height - 366) <= 8) break;
+      // T16.2: leave the overview first (it runs its own local tools query, and tool queries run one at a time).
+      await ctx.mainWindow.webContents.executeJavaScript(
+        '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\')?.click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\')?.click()})()',
+      );
       const analyticsResult = await ctx.analytics.get({ source: 'local', range: '7d' });
       const accountResult = await ctx.analytics.get({ source: 'account', range: 'today' });
+      await ctx.mainWindow.webContents.executeJavaScript(
+        'document.querySelector(\'button[aria-label="用量总览"]\')?.click()',
+      );
       const compactHeight = ctx.widgetWindow.getBounds().height,
         compactContentHeight = ctx.widgetWindow.getContentBounds().height;
       ctx.applySettings({ ...ctx.settings, widgetExpanded: true });

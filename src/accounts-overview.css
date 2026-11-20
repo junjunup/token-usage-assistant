@@ -162,3 +162,16 @@
   text-align: right;
   white-space: nowrap;
 }
+/* T16.2: account management link next to the summary. */
+.aa-summary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.aa-manage {
+  display: inline-flex;
+  padding: 0 0 0 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

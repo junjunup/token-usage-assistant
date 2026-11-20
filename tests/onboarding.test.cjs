@@ -127,3 +127,25 @@ test('T16.1: three navigation items, coverage inside analytics, settings in tabs
   assert.match(app, /onManageSources=\{\(\) => openSettings\('tools'\)\}/);
   assert.match(app, /onSettings=\{\(\) => openSettings\('advanced', 'account-links'\)\}/);
 });
+
+test('T16.2: the overview lists accounts from the first one, has no switcher row, and keeps local tools apart', () => {
+  const app = read('src/DesktopApp.jsx'),
+    tools = read('src/LocalToolsOverview.jsx');
+  assert.match(app, /overviewCards = \(overview\?\.rows\?\.length \|\| 0\) >= 1;/);
+  // The switcher row is only on analytics and on the settings' accounts tab.
+  assert.match(
+    app,
+    /\{!setup && \(view === 'analytics' \|\| \(view === 'settings' && settingsTab === 'accounts'\)\) && \(/,
+  );
+  // Local tools: today and 7 days, every enabled source, never added to account figures.
+  // One 7-day query that carries today: tool queries run one at a time, so two would cancel each other.
+  assert.equal((app.match(/source: 'tools', range:/g) || []).length, 1);
+  assert.match(app, /useAnalytics\(bridge, \{ source: 'tools', range: '7d' \}, state, toolsShown\)/);
+  assert.match(tools, /part\?\.bySource/);
+  assert.match(tools, /byId\(usable\?\.today\)/);
+  assert.match(tools, /t\('本机工具统计，不与上面的账户相加'\)/);
+  // Missing stays "—" (never 0); a partial total says it is the known part.
+  assert.match(tools, /return \{ text: '—', partial: false \};\n\}/);
+  assert.match(tools, /value\.partial \? t\(' · 已知部分'\) : ''/);
+  assert.doesNotMatch(tools, /\|\| 0\b/);
+});

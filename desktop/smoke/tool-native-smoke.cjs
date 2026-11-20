@@ -13,6 +13,11 @@ async function until(win, expression) {
   throw new Error('tool renderer did not settle');
 }
 async function runToolSmoke({ toolSources, analytics, store, accounts, mainWindow, settings, applySettings }) {
+  // T16.2: the overview runs its own local tools query; tool queries run one at a time, so leave the overview
+  // before querying directly here (its run would cancel these, or these would cancel it).
+  await mainWindow.webContents.executeJavaScript(
+    '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\').click()})()',
+  );
   const root = path.join(store.root, 'harness-smoke'),
     file = createHarness(root, [harnessWire()]);
   toolSources.add({ kind: 'harness', file, label: 'Harness native fixture' });
@@ -54,7 +59,9 @@ async function runToolSmoke({ toolSources, analytics, store, accounts, mainWindo
     "[...document.querySelectorAll('.range-control button')].find(b=>b.textContent==='本账期').disabled && !document.querySelector('.prediction-panel')",
   );
   assert.ok(isolated);
-  await mainWindow.webContents.executeJavaScript('document.querySelector(\'button[aria-label="账户与设置"]\').click()');
+  await mainWindow.webContents.executeJavaScript(
+    '(async()=>{document.querySelector(\'button[aria-label="账户与设置"]\').click();for(let i=0;i<100&&!document.querySelector(\'[data-tab="tools"]\');i++)await new Promise(r=>setTimeout(r,20));document.querySelector(\'[data-tab="tools"]\').click()})()',
+  );
   await until(mainWindow, "document.querySelectorAll('.tool-source-row').length===2");
   const sourcesVisible = await mainWindow.webContents.executeJavaScript(
     "[...document.querySelectorAll('.tool-source-label input')].some(input=>input.value==='Harness native fixture')",

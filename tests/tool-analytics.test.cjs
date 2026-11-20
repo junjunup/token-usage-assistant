@@ -377,3 +377,57 @@ test('empty source selection means all enabled inputs rather than no data', () =
   assert.equal(r.summary.requests, 2);
   assert.equal(r.sourceReports.length, 2);
 });
+
+test('T16.2: per-source totals follow the same dedup and token basis, and add up to the known total', () => {
+  const rows = [
+    z(),
+    z({ id: 'z2', input_tokens: 200, computed_total_tokens: 220, output_tokens: 20 }),
+    h(),
+    // A newer revision of the same attempt replaces the first one instead of adding to it.
+    h({ revision: 9, updatedAt: now - 500, usage: { ...wire().usage, outputTokens: 30 } }),
+    // Outside the range: not counted for any source.
+    z({ id: 'old', started_at: now - 3 * 86400000 }),
+  ];
+  const r = aggregateTools(rows, range, {}, prices, [report('z-source'), report('h-source')]);
+  const by = Object.fromEntries(r.bySource.map((row) => [row.id, row]));
+  assert.deepEqual(Object.keys(by).sort(), ['h-source', 'z-source']);
+  assert.equal(by['z-source'].requests, 2);
+  assert.equal(by['z-source'].knownTokens, 340);
+  assert.equal(by['h-source'].requests, 1);
+  assert.equal(by['h-source'].knownTokens, 130);
+  assert.equal(
+    r.bySource.reduce((n, row) => n + row.knownTokens, 0),
+    r.summary.knownTokens,
+  );
+  // Largest first, as with models.
+  assert.equal(r.bySource[0].id, 'z-source');
+  // A source filter narrows the grouping as well.
+  const one = aggregateTools(rows, range, { sourceIds: ['h-source'] }, prices, [report('h-source')]);
+  assert.deepEqual(
+    one.bySource.map((row) => row.id),
+    ['h-source'],
+  );
+});
+
+test('T16.2: a 7-day query carries today with the same dedup, per source, and nothing for other ranges', () => {
+  const week = rangeFor('7d', now),
+    rows = [
+      z(),
+      z({ id: 'z-earlier', started_at: now - 2 * 86400000, input_tokens: 300, computed_total_tokens: 320 }),
+      h(),
+      h({ revision: 9, updatedAt: now - 500, usage: { ...wire().usage, outputTokens: 30 } }),
+    ];
+  const r = aggregateTools(rows, week, {}, prices, [report('z-source'), report('h-source')]),
+    alone = aggregateTools(rows, range, {}, prices, [report('z-source'), report('h-source')]);
+  assert.equal(r.today.start, range.start);
+  // Today inside the 7-day answer equals a separate "today" query.
+  assert.equal(r.today.summary.knownTokens, alone.summary.knownTokens);
+  assert.equal(r.today.summary.requests, alone.summary.requests);
+  assert.deepEqual(
+    r.today.bySource.map((row) => [row.id, row.knownTokens]),
+    alone.bySource.map((row) => [row.id, row.knownTokens]),
+  );
+  // The earlier day counts for the week only.
+  assert.equal(r.summary.knownTokens, alone.summary.knownTokens + 320);
+  assert.equal(alone.today, null);
+});

@@ -76,7 +76,8 @@ function Tile({ row, disabled, onSelect }) {
   );
 }
 
-export function AllAccountsGrid({ overview, disabled, onSelect }) {
+// T16.2 (D23 ④): also the overview's account picker (the switcher row is gone there), so it links to account management.
+export function AllAccountsGrid({ overview, disabled, onSelect, onManage }) {
   const rows = overview.rows;
   return (
     <section className="aa-section" aria-label={t('全部账户')}>
@@ -86,6 +87,11 @@ export function AllAccountsGrid({ overview, disabled, onSelect }) {
         </div>
         <span className="aa-summary">
           {rows.length} {t('个账户 ·')} {attentionText(overview.attention)} {t('· 按剩余最少排序，点选查看详情')}
+          {onManage && (
+            <button className="text-button aa-manage" onClick={onManage}>
+              {t('管理账户')}
+            </button>
+          )}
         </span>
       </div>
       <div className="aa-grid">

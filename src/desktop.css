@@ -632,3 +632,10 @@ body:has(.native-app) {
   color: var(--amber);
   background: var(--amber-pale);
 }
+/* T16.1: each settings tab starts right under the tabs; the account links panel keeps its distance. */
+.native-settings > .settings-panel:first-child {
+  margin-top: 0;
+}
+#account-links {
+  margin-top: 22px;
+}
