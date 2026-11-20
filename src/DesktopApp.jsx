@@ -419,6 +419,12 @@ export function DesktopApp() {
   // (tool queries run one at a time, so a second one would cancel the first).
   const toolsShown = !widget && view === 'overview' && (state?.toolSources || []).some((s) => s.enabled),
     toolsWeek = useAnalytics(bridge, { source: 'tools', range: '7d' }, state, toolsShown);
+  // Analytics data source: local tools or the current account (T17.4: chosen from the page tabs).
+  const chooseSource = (value) => {
+    setAnalysisSource(value);
+    if (value !== 'account' && range === 'billing' && !toolBillingAvailable) setRange('today');
+    setFilters({ model: '', project: '', session: '' });
+  };
   const openAnalytics = () => {
     if (analysisSource !== 'account' && range === 'billing' && !toolBillingAvailable) setRange('today');
     setView('analytics');
@@ -958,12 +964,20 @@ export function DesktopApp() {
               </div>
             )}
             {!setup && (view === 'analytics' || view === 'reconciliation') && (
+              // T17.4 (D24 ②): the data source is the page's first choice, so it is a page tab, next to coverage.
               <PageTabs
                 label={t('用量分析')}
-                value={view}
-                onChange={(v) => (v === 'analytics' ? openAnalytics() : setView(v))}
+                value={
+                  view === 'reconciliation' ? 'reconciliation' : analysisSource === 'account' ? 'account' : 'tools'
+                }
+                onChange={(v) => {
+                  if (v === 'reconciliation') return setView(v);
+                  chooseSource(v);
+                  setView('analytics');
+                }}
                 tabs={[
-                  { value: 'analytics', label: t('用量明细') },
+                  { value: 'tools', label: t('本机工具') },
+                  { value: 'account', label: t('账户统计') },
                   { value: 'reconciliation', label: t('数据覆盖') },
                 ]}
               />
@@ -1031,7 +1045,7 @@ export function DesktopApp() {
                 }}
               />
             )}
-            {!setup && view === 'analytics' && (
+            {!setup && view === 'analytics' && analysisSource === 'account' && (
               <AccountSwitcher
                 state={state}
                 onSelect={(id) => action(() => bridge.selectAccount(id))}
@@ -1451,11 +1465,8 @@ export function DesktopApp() {
                 loading={analysis.loading}
                 error={analysis.error}
                 source={analysisSource}
-                onSource={(value) => {
-                  setAnalysisSource(value);
-                  if (value !== 'account' && range === 'billing' && !toolBillingAvailable) setRange('today');
-                  setFilters({ model: '', project: '', session: '' });
-                }}
+                onSource={chooseSource}
+                sourceTabs={false}
                 range={range}
                 onRange={setRange}
                 filters={filters}

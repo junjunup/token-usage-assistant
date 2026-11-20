@@ -657,6 +657,7 @@ export function AnalyticsPage({
   billingGroupId = '',
   onBillingGroupId,
   onExport = null,
+  sourceTabs = true,
 }) {
   const [tab, setTab] = useState('trend'),
     [sort, setSort] = useState('tokens'),
@@ -748,22 +749,24 @@ export function AnalyticsPage({
   return (
     <div className="analytics-page">
       <div className="analytics-toolbar">
-        <div className="source-switch" role="group" aria-label={t('分析数据来源')}>
-          <button
-            className={!local ? 'selected' : ''}
-            aria-pressed={!local}
-            onClick={() => {
-              onSource('account');
-              clearFilters();
-            }}
-          >
-            {t('账户统计')}
-          </button>
-          <button className={local ? 'selected' : ''} aria-pressed={local} onClick={selectLocal}>
-            <Database size={14} />
-            {t('工具分析')}
-          </button>
-        </div>
+        {sourceTabs && (
+          <div className="source-switch" role="group" aria-label={t('分析数据来源')}>
+            <button
+              className={!local ? 'selected' : ''}
+              aria-pressed={!local}
+              onClick={() => {
+                onSource('account');
+                clearFilters();
+              }}
+            >
+              {t('账户统计')}
+            </button>
+            <button className={local ? 'selected' : ''} aria-pressed={local} onClick={selectLocal}>
+              <Database size={14} />
+              {t('工具分析')}
+            </button>
+          </div>
+        )}
         <RangeControl
           value={range}
           onChange={onRange}
