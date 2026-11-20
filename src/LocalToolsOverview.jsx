@@ -1,4 +1,5 @@
-import { ArrowUpRight, Lightning, Plus } from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
+import { ArrowUpRight, Lightning, MagnifyingGlass, Plus } from '@phosphor-icons/react';
 import { Disclosure } from './Disclosure.jsx';
 import { kindName } from './ToolSources.jsx';
 import { t } from './i18n.js';
@@ -42,8 +43,76 @@ function statusOf(row) {
   return { tone: row.status === 'error' ? 'red' : 'muted', text: t(row.message) || t('等待可用数据') };
 }
 
+// T17.1 (D24 ①): tools found at their default location (T12.6 only checks that it exists) but not added yet. Adding
+// still opens the system picker at that location, so the user confirms it (AGENTS §4).
+const FOUND_NOTE = {
+  'claude-code-logs': '桌面版和命令行的会话都记在这里，不需要启动脚本',
+};
+function Found({ found, pending, onAdd, onIgnore }) {
+  if (!found.length) return null;
+  return (
+    <div className="lt-found" aria-label={t('本机发现、尚未添加')}>
+      <div className="lt-found-head">
+        <MagnifyingGlass size={14} />
+        <span>{t('本机发现、尚未添加')}</span>
+        <small>{t('点「添加」后在系统选择框里确认位置')}</small>
+      </div>
+      {found.map((item) => (
+        <div className="lt-found-row" key={item.kind + item.path}>
+          <span className="lt-name">
+            <strong>{kindName(item.kind)}</strong>
+            <small>
+              <code>{item.path}</code>
+              {FOUND_NOTE[item.kind] ? ' · ' + t(FOUND_NOTE[item.kind]) : ''}
+            </small>
+          </span>
+          <span className="lt-found-actions">
+            <button className="text-button" disabled={!!pending} onClick={() => onIgnore(item.kind)}>
+              {t('不再提示')}
+            </button>
+            <button className="button" disabled={!!pending} onClick={() => onAdd(item.kind)}>
+              <Plus size={14} />
+              {pending === item.kind ? t('正在添加') : t('添加')}
+            </button>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // `report` is the 7-day tools report; its `today` part (same dedup and filters) gives the today column.
-export function LocalToolsOverview({ sources = [], report, loading, onDetails, onManage }) {
+export function LocalToolsOverview({
+  sources = [],
+  report,
+  loading,
+  onDetails,
+  onManage,
+  onDiscover,
+  onAdd,
+  ignored = [],
+  onIgnore,
+}) {
+  const [found, setFound] = useState([]),
+    [pending, setPending] = useState(null);
+  // Looked up again whenever a source is added or removed, like the settings' tool list.
+  useEffect(() => {
+    let live = true;
+    onDiscover?.().then((r) => live && r?.ok && setFound(r.value.filter((f) => !f.added)));
+    return () => {
+      live = false;
+    };
+  }, [onDiscover, sources.length]);
+  const add = async (kind) => {
+    setPending(kind);
+    try {
+      await onAdd?.(kind);
+    } finally {
+      setPending(null);
+    }
+  };
+  const shown = found.filter((f) => !ignored.includes(f.kind)),
+    hidden = found.length - shown.length;
   const enabled = sources.filter((s) => s.enabled),
     usable = report?.summary ? report : null;
   const byId = (part) => new Map((part?.bySource || []).map((row) => [row.id, row])),
@@ -76,7 +145,9 @@ export function LocalToolsOverview({ sources = [], report, loading, onDetails, o
             {t('添加本机工具')}
           </button>
         </div>
-      ) : (
+      ) : null}
+      <Found found={shown} pending={pending} onAdd={add} onIgnore={(kind) => onIgnore?.([...ignored, kind])} />
+      {!enabled.length ? null : (
         <>
           <div className="lt-totals">
             <Total label={t('今天')} report={usable?.today} loading={loading} />
@@ -116,9 +187,16 @@ export function LocalToolsOverview({ sources = [], report, loading, onDetails, o
             })}
           </div>
           <div className="lt-foot">
-            <button className="text-button" onClick={onManage}>
-              {t('管理本机工具')}
-            </button>
+            <span className="lt-foot-left">
+              <button className="text-button" onClick={onManage}>
+                {t('管理本机工具')}
+              </button>
+              {hidden > 0 && (
+                <button className="text-button" onClick={() => onIgnore?.([])}>
+                  {t('显示已忽略的 {v0} 个发现', { v0: hidden })}
+                </button>
+              )}
+            </span>
             <button className="text-button" onClick={onDetails}>
               {t('查看明细')}
               <ArrowUpRight size={13} />

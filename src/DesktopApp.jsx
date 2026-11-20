@@ -44,7 +44,7 @@ import { AccountSwitcher, ProviderDashboard, ProviderWidget, ConnectionForm } fr
 import { monthlyQuota, quotaStatus, resetDescription } from './generated/domain.js';
 import { useAnalytics } from './useAnalytics.js';
 import { AnalyticsPage, RangeControl, HealthStrip } from './AnalyticsPage.jsx';
-import { ToolSources } from './ToolSources.jsx';
+import { ToolSources, kindName } from './ToolSources.jsx';
 import { AccountLinks, ReconciliationPage } from './AccountLinks.jsx';
 import { AllAccountsGrid, GlanceWidget, attentionText } from './AccountsOverview.jsx';
 import { PaceLine } from './Panel.jsx';
@@ -1012,6 +1012,11 @@ export function DesktopApp() {
                 report={toolsWeek.report}
                 loading={toolsWeek.loading}
                 onManage={() => openSettings('tools')}
+                onDiscover={discoverTools}
+                // T17.1: the system picker opens at the found location; the user confirms it there.
+                onAdd={(kind) => action(() => bridge.addToolSource({ kind, label: kindName(kind) }))}
+                ignored={settings.ignoredFound || []}
+                onIgnore={(list) => pref({ ignoredFound: list })}
                 onDetails={() => {
                   setAnalysisSource('tools');
                   openAnalytics();

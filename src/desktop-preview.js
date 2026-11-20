@@ -623,6 +623,7 @@ export const previewBridge = {
   // T12.6: sample discovery for the preview (nothing on this machine is looked at).
   discoverTools: async () =>
     ok([
+      { kind: 'claude-code-logs', path: '~/.claude', added: false },
       { kind: 'codex', path: '~/.codex', added: false },
       { kind: 'gemini-cli', path: '~/.gemini', added: false },
     ]),

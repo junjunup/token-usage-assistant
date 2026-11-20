@@ -149,3 +149,30 @@ test('T16.2: the overview lists accounts from the first one, has no switcher row
   assert.match(tools, /value\.partial \? t\(' · 已知部分'\) : ''/);
   assert.doesNotMatch(tools, /\|\| 0\b/);
 });
+
+test('T17.1: the overview lists tools found but not added; adding still goes through the system picker', () => {
+  const app = read('src/DesktopApp.jsx'),
+    tools = read('src/LocalToolsOverview.jsx');
+  // Found tools come from discovery (existence only) and skip the ones already added or ignored.
+  assert.match(
+    tools,
+    /onDiscover\?\.\(\)\.then\(\(r\) => live && r\?\.ok && setFound\(r\.value\.filter\(\(f\) => !f\.added\)\)\)/,
+  );
+  assert.match(tools, /found\.filter\(\(f\) => !ignored\.includes\(f\.kind\)\)/);
+  // "Add" sends only the kind: the main process opens the picker at the default location for the user to confirm.
+  assert.match(
+    app,
+    /onAdd=\{\(kind\) => action\(\(\) => bridge\.addToolSource\(\{ kind, label: kindName\(kind\) \}\)\)\}/,
+  );
+  assert.doesNotMatch(tools, /file:|\.path\b.*addToolSource/);
+  // The ignore list is a validated setting of tool kinds only.
+  assert.deepEqual(DEFAULT_SETTINGS.ignoredFound, []);
+  assert.deepEqual(patchSettings(DEFAULT_SETTINGS, { ignoredFound: ['codex', 'codex', 'gemini-cli'] }).ignoredFound, [
+    'codex',
+    'gemini-cli',
+  ]);
+  for (const bad of ['codex', [1], ['../x'], ['A'], Array.from({ length: 21 }, (_, i) => 'k' + 'a'.repeat(i))])
+    assert.throws(() => patchSettings(DEFAULT_SETTINGS, { ignoredFound: bad }));
+  // The launch-script source is named after how it collects, apart from the session logs.
+  assert.match(read('src/ToolSources.jsx'), /'claude-code': t\('Claude Code（启动脚本）'\)/);
+});

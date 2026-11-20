@@ -850,7 +850,7 @@ export function AnalyticsPage({
                     harness: 'Harness',
                     zcode: 'Zcode',
                     codex: 'Codex',
-                    'claude-code': 'Claude Code',
+                    'claude-code': t('Claude Code（启动脚本）'),
                     'claude-code-logs': t('Claude Code 会话日志'),
                     'gemini-cli': 'Gemini CLI',
                     'kimi-code-cli': 'Kimi Code',
