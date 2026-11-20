@@ -703,6 +703,7 @@
 | 2026-11-20 | T17.3 | `task/T17.3-account-list`（合并 `d96749a`，用户确认草图后）：`src/AccountList.jsx` 账户列表（名称、平台与站点、状态、上次成功时间、编辑 / 移除，Key 失效为「重新连接」），连接表单 `fixedMode` 打开在所编辑的行下或列表上方，按钮再点收起；编辑与移除先选中该账户；移除对话框写出账户名。冻结 smoke 的两步改为经「添加账户」打开表单。 | 本机 493 / 0 / 6（共 499）；分支 CI `44738209792` 通过 | ①；开发版隔离原生 smoke ok（两次） | 账户列表（新页面布局，截图 6 张） | — |
 | 2026-11-20 | T17.4–T17.6 | `task/T17.4-analytics-tabs`、`task/T17.5-quiet-details`、`task/T17.6-slim-chrome`（随 T17.7 合并）：用量分析页面标签「本机工具 / 账户统计 / 数据覆盖」（`chooseSource`，页内切换隐藏，账户选择器只在账户统计；标签值 `local` 避免与设置的 `tools` 同名——smoke 因此点错过一次）；账户详情状态说明进 ⓘ（错误照旧显示），主窗口节奏不可用写「暂无预测」+ ⓘ；标题栏中文页名、去 DESKTOP、去宣传语与「返回总览」，「打开官方平台」挪到账户详情标题旁，「显示悬浮窗」改普通按钮。加 1 项测试。 | 本机 494 / 0 / 6（共 500） | ①；开发版隔离原生 smoke ok（两次）；浏览器预览里趋势图正常绘出、控制台无错误 | 截图 6 张（`docs/design/T17.4-T17.6/`） | — |
 | 2026-11-20 | T17.7 | `task/T17.7-wrapup`：AGENTS §4 / §8 / §9、PRIVACY（发现本机工具也在总览）、CHANGELOG「未发布」、PROJECT_HANDOFF；之后出 Mac 测试包给用户在真实数据下看。 | 不改代码 | — | 文档 | 测试包见下一行 |
+| 2026-11-20 | T17.7（测试包） | 在 `07c871d`（与合并后的 main 同一棵树）上出 Mac 测试包 `TokenUsageAssistant-Mac-arm64-1.9.0-beta.7-dev.07c871d.dmg / .zip`，存档于 `~/Documents/TokenUsageAssistant-releases/release-v1.9.0-beta.7-dev.07c871d/`（`.app` 在 `apps.noindex/`），并装进用户的「应用程序」（替换 dev.d460266；用户启动脚本打开的 Claude Code 会话未受影响）。分支 CI `44739552965`：macOS 500 / 0 / 0，Windows 498 / 0 / 2 平台跳过。T17.4–T17.7 合并后推送。 | 同左 | 签名严格校验、entitlements、fuses、许可证、默认数据目录通过；打包后原生 smoke `ok`；`infoPlist` 与 smoke 版本核对因 `-dev` 后缀与 package.json 不同而报失败（预期）；`spctl` rejected（预期） | 测试包 | 新布局在真实数据下由用户查看（主窗口在菜单栏里打开） |
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
 ---
