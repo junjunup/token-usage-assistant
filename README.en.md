@@ -6,18 +6,18 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/readme/overview-dark.png">
-  <img src="docs/readme/overview-light.png" alt="Usage overview: all accounts sorted by least remaining, with quota windows, reset times and balances (sample data)" width="900">
+  <img src="docs/readme/overview-light.png" alt="Usage overview: every account on top (quota windows sorted by least remaining, reset times and balances), local tool tokens for today and the last 7 days below (sample data)" width="900">
 </picture>
 
 <sub>Screenshots use the app's built-in sample data, not a real account, and show the Chinese interface.</sub>
 
 **[Download](https://github.com/junjunup/TokenUsageAssistant/releases)**: Windows Setup / Portable, macOS DMG / ZIP, with SHA256 checksums. Installing and first launch: see [Install and upgrade](docs/INSTALL.md#english).
 
-Current version: **1.9.0-beta.7** (beta, not signed or notarized). History: [CHANGELOG.md](CHANGELOG.md) (Chinese).
+Current version: **1.9.0-beta.8** (beta, not signed or notarized). History: [CHANGELOG.md](CHANGELOG.md) (Chinese).
 
 ## What it does
 
-- **Every account on one screen**: the overview starts with one card per account, sorted by least remaining: what is left in each 5-hour / weekly / monthly window and when it resets, plus the balance of pay-as-you-go platforms (with optional reminder amounts, set separately for CNY and USD). Up to 20 accounts, each refreshed and alerted on its own; optionally the official service status of Anthropic, OpenAI, Moonshot and MiniMax.
+- **Every account on one screen**: the overview starts with one card per account, sorted by least remaining: what is left in each 5-hour / weekly / monthly window and when it resets, plus the balance of pay-as-you-go platforms (with optional reminder amounts, set separately for CNY and USD). Up to 20 accounts, each refreshed and alerted on its own; optionally the official service status of Anthropic, OpenAI, Moonshot and MiniMax. Right below: how many tokens your local tools used today and over the last 7 days, kept apart from account data and never added to it; tools found at their default location but not added yet are listed too.
 - **A glance without opening a window**: the Windows tray ring shows what the tightest account has left, turning amber when low and red when used up; hover to list each account's tightest value, left-click for the panel. macOS has a menu bar icon with the same panel; both have an always-on-top floating window and light and dark themes.
 - **Local tool usage**: tokens, requests, models and projects for Codex, Claude Code, Gemini CLI, Kimi Code CLI, Qwen Code, Cline, Kilo Code, Goose, Crush, Zcode, OpenCode and DeepSeek Harness; optional cost estimates from prices you enter (USD and CNY kept apart); records can be exported as CSV, and an optional `tua-status` command prints every account's quota as JSON or text.
 - **Interface language**: Chinese and English (every page, system notifications, the tray and menus, and dialogs; a few raw messages from platforms or tools may still be Chinese). It follows your system language; you can switch it in Settings.

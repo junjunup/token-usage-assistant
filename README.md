@@ -6,18 +6,18 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/readme/overview-dark.png">
-  <img src="docs/readme/overview-light.png" alt="用量总览：全部账户按剩余最少排序，显示额度窗口、重置时间和按量余额（示例数据）" width="900">
+  <img src="docs/readme/overview-light.png" alt="用量总览：上面是全部账户（按剩余最少排序的额度窗口、重置时间与按量余额），下面是本机工具今天和近 7 天的 Token（示例数据）" width="900">
 </picture>
 
 <sub>截图使用应用内置的示例数据，不是真实账户。</sub>
 
 **[下载安装包](https://github.com/junjunup/TokenUsageAssistant/releases)**：Windows 安装版 / 便携版、macOS DMG / ZIP，附 SHA256 校验。安装与首次打开见 [安装与升级](docs/INSTALL.md)。
 
-当前版本：**1.9.0-beta.7**（开发测试版，未签名、未公证）。更新历史见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：**1.9.0-beta.8**（开发测试版，未签名、未公证）。更新历史见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 能做什么
 
-- **一屏看全部账户**：总览顶部每个账户一格，按剩余最少排序；5 小时 / 每周 / 月度窗口剩余多少、什么时候重置，按量平台的余额（可按人民币 / 美元分别设置提醒金额），都放在一起。最多 20 个账户，各自刷新、各自提醒；可选显示 Anthropic、OpenAI、Moonshot、MiniMax 的官方服务状态。
+- **一屏看全部账户**：总览顶部每个账户一格，按剩余最少排序；5 小时 / 每周 / 月度窗口剩余多少、什么时候重置，按量平台的余额（可按人民币 / 美元分别设置提醒金额），都放在一起。最多 20 个账户，各自刷新、各自提醒；可选显示 Anthropic、OpenAI、Moonshot、MiniMax 的官方服务状态。下面紧接着是本机工具今天和近 7 天用了多少 Token，与账户数据分开、不相加；在默认位置找到但还没添加的工具也会列出来。
 - **不打开窗口也能瞄一眼**：Windows 托盘的刻度环显示最紧账户的剩余，快用完变黄、用尽变红；鼠标停上去列出各账户的最紧值，左键弹出面板。Mac 有菜单栏图标和同样的面板，两边都有置顶悬浮窗和深浅色主题。
 - **本机工具用量**：Codex、Claude Code、Gemini CLI、Kimi Code CLI、Qwen Code、Cline、Kilo Code、Goose、Crush、Zcode、OpenCode、DeepSeek Harness 的 Token、请求、模型与项目分布；可按自己填的单价估算费用（USD / CNY 分开），明细可导出为 CSV；也可以开启命令行读取额度（`tua-status`，输出 JSON 或文字）。
 - **界面语言**：中文与英文（所有页面、系统通知、托盘与菜单、对话框都有英文；平台或工具返回的个别原始说明可能仍是中文），默认跟随系统，可在设置里切换。

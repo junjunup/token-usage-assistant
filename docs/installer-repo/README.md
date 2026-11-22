@@ -6,7 +6,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/docs/readme/overview-dark.png">
-  <img src="https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/docs/readme/overview-light.png" alt="用量总览：全部账户按剩余最少排序，显示额度窗口、重置时间和按量余额（示例数据）" width="900">
+  <img src="https://raw.githubusercontent.com/junjunup/token-usage-assistant/main/docs/readme/overview-light.png" alt="用量总览：上面是全部账户（按剩余最少排序的额度窗口、重置时间与按量余额），下面是本机工具今天和近 7 天的 Token（示例数据）" width="900">
 </picture>
 
 <sub>截图使用应用内置的示例数据，不是真实账户。</sub>
