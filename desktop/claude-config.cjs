@@ -4,16 +4,65 @@
 // - Only `statusLine` changes; every other field is kept as it was. A file that is not a JSON object, or whose
 //   statusLine is not an object, is never written.
 // - The original file is backed up first (assistant data folder) and "restore" puts the previous statusLine back.
-// - An existing statusLine command keeps running: its command is saved in statusline-chain.json next to the helper,
-//   which runs it with the same input and prints its output (macOS). On Windows the shell Claude Code uses for that
-//   command is not known for sure, so an existing statusLine is left alone and connecting is refused there.
-// - Our helper is recognised by its path (stable in the assistant's data folder), so a moved app is updated in place.
+// - macOS (T18.3): an existing statusLine command keeps running, and it is written into our own command, which runs
+//   the helper when it is there and otherwise that previous command alone (nothing at all without one). So removing
+//   the assistant together with its data folder leaves the user's own status line working, and restore still finds
+//   the previous command when our saved state is gone. On Windows the shell Claude Code uses for that command is not
+//   known for sure, so an existing statusLine is left alone and connecting is refused there.
+// - Our helper is recognised by its path (stable in the assistant's data folder), so a moved app is updated in place;
+//   the macOS helper from before T18.3 (StatusLine.cjs, run by the app's binary as Node) is recognised too and is
+//   replaced by the sh helper on the next start.
 // - Per-request token usage still needs the launcher (telemetry settings are not written here: only statusLine).
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
+const { shellQuote } = require('./platform.cjs');
+
 const CHAIN_FILE = 'statusline-chain.json';
+// The macOS helper before T18.3; its entries are ours and get replaced (see refresh).
+const LEGACY_HELPERS = ['StatusLine.cjs'];
+
+/**
+ * A word in POSIX single quotes as shellQuote writes it ('…' pieces joined by \'), read from `s` at `i`.
+ * @returns {{ value: string, end: number }}
+ */
+function readQuoted(s, i) {
+  let value = '';
+  for (;;) {
+    if (s[i] === "'") {
+      const close = s.indexOf("'", i + 1);
+      if (close < 0) return { value, end: -1 };
+      value += s.slice(i + 1, close);
+      i = close + 1;
+    } else if (s.startsWith("\\'", i)) {
+      value += "'";
+      i += 2;
+    } else return { value, end: i };
+  }
+}
+
+/** The macOS statusLine command (T18.3): the helper when it is there, else the previous command, else nothing. */
+function macCommand(helper, previous) {
+  const script =
+    'h=' +
+    shellQuote(helper) +
+    '; p=' +
+    shellQuote(previous || '') +
+    '; if [ -f "$h" ]; then exec /bin/sh "$h" --installed "$p"; fi; if [ -n "$p" ]; then exec /bin/sh -c "$p"; fi';
+  return '/bin/sh -c ' + shellQuote(script);
+}
+
+/** The previous command written into a macOS command by macCommand, or null. */
+function embeddedPrevious(command) {
+  if (typeof command !== 'string' || !command.startsWith('/bin/sh -c ')) return null;
+  const outer = readQuoted(command, '/bin/sh -c '.length);
+  if (outer.end !== command.length) return null;
+  const at = outer.value.indexOf('; p=');
+  if (at < 0) return null;
+  const word = readQuoted(outer.value, at + 4);
+  return word.end > 0 && word.value ? word.value : null;
+}
 
 /** Claude Code's user settings file. */
 function settingsFile(env, home) {
@@ -79,7 +128,20 @@ class ClaudeConfig {
     return path.join(this.helperDir, CHAIN_FILE);
   }
   ours(statusLine) {
-    return typeof statusLine?.command === 'string' && statusLine.command.includes(this.helper);
+    const command = statusLine?.command;
+    if (typeof command !== 'string') return false;
+    const legacy = this.platform === 'win32' ? [] : LEGACY_HELPERS.map((f) => path.join(this.helperDir, f));
+    return [this.helper, ...legacy].some((helper) => command.includes(helper));
+  }
+  /** The command for our entry: macOS carries the previous command along (T18.3); Windows has none (refused). */
+  commandFor(previous) {
+    return this.platform === 'win32' ? this.command : macCommand(this.helper, previous);
+  }
+  /** The previous statusLine command of our entry: from our saved state, else from the entry itself. */
+  previousFor(statusLine) {
+    const saved = readJsonFile(this.stateFile);
+    if (saved) return typeof saved.previous?.command === 'string' ? saved.previous.command : null;
+    return embeddedPrevious(statusLine?.command);
   }
   /** @returns {{ status: 'none'|'installed'|'changed'|'unreadable'|'blocked', file: string, chained: boolean }} */
   status() {
@@ -109,20 +171,22 @@ class ClaudeConfig {
     // The chain file goes first: once settings point at the helper, it must already know the previous command.
     writeJson(this.chainFile, { schemaVersion: 1, installed: true, command: previous?.command ?? null });
     writeJson(this.stateFile, { schemaVersion: 1, file: this.file, backup, previous, installedAt: this.now() });
-    const statusLine = { ...(previous || {}), type: 'command', command: this.command };
+    const statusLine = {
+      ...(previous || {}),
+      type: 'command',
+      command: this.commandFor(typeof previous?.command === 'string' ? previous.command : null),
+    };
     writeSettings(this.file, { ...read.value, statusLine }, read.mode);
     return this.status();
   }
-  // The app moved (its path is in the command): point our entry at the current one. Never touches anything else.
+  // The app moved (its path is in the command) or its helper changed (T18.3): point our entry at the current one,
+  // keeping the previous command it carries. Never touches anything else.
   refresh() {
     const read = readSettings(this.file);
-    if (!read.ok || !this.ours(read.value.statusLine) || read.value.statusLine.command === this.command)
-      return this.status();
-    writeSettings(
-      this.file,
-      { ...read.value, statusLine: { ...read.value.statusLine, command: this.command } },
-      read.mode,
-    );
+    if (!read.ok || !this.ours(read.value.statusLine)) return this.status();
+    const command = this.commandFor(this.previousFor(read.value.statusLine));
+    if (read.value.statusLine.command === command) return this.status();
+    writeSettings(this.file, { ...read.value, statusLine: { ...read.value.statusLine, command } }, read.mode);
     return this.status();
   }
   // Put the previous statusLine back (or remove ours) when ours is still there; forget our state either way.
@@ -130,8 +194,11 @@ class ClaudeConfig {
     const saved = readJsonFile(this.stateFile),
       read = readSettings(this.file);
     if (read.ok && this.ours(read.value.statusLine)) {
-      const next = { ...read.value };
+      const next = { ...read.value },
+        // T18.3: without our saved state (e.g. a new data folder) the previous command still comes back.
+        embedded = saved ? null : embeddedPrevious(read.value.statusLine.command);
       if (saved?.previous) next.statusLine = saved.previous;
+      else if (embedded) next.statusLine = { type: 'command', command: embedded };
       else delete next.statusLine;
       writeSettings(this.file, next, read.mode);
     } else if (!read.ok && saved) throw Object.assign(new Error('unreadable'), { code: 'unreadable' });
@@ -153,4 +220,4 @@ function writeJson(file, value) {
   writeSettings(file, value, 0o600);
 }
 
-module.exports = { ClaudeConfig, settingsFile, readSettings, CHAIN_FILE };
+module.exports = { ClaudeConfig, settingsFile, readSettings, CHAIN_FILE, macCommand, embeddedPrevious };

@@ -230,16 +230,11 @@ test('T12.7: the Claude status line shows the tighter Claude window and the tigh
   assert.equal(claudeStatusLine(accountOverview([claudeAccount], settings), {}), '');
 });
 
-test('T12.7: the status-line script prints only a short single line from the collector reply', () => {
-  const { statusText } = require('../desktop/claude-statusline.cjs');
-  assert.equal(statusText(JSON.stringify({ line: 'Claude 5h 60% · 最紧 GLM 62%' })), 'Claude 5h 60% · 最紧 GLM 62%');
-  for (const reply of [
-    '{}',
-    '',
-    'not json',
-    JSON.stringify({ line: 'a\nb' }),
-    JSON.stringify({ line: 'x'.repeat(201) }),
-    JSON.stringify({ line: 3 }),
-  ])
-    assert.equal(statusText(reply), '');
+test('T12.7 / T18.3: the collector hands the helpers only a short single line', () => {
+  const { safeLine } = require('../desktop/claude-statusline.cjs');
+  assert.equal(safeLine('Claude 5h 60% · 最紧 GLM 62%'), 'Claude 5h 60% · 最紧 GLM 62%');
+  // At most 200 characters (as before: the collector cut the line, the helper printed it).
+  assert.equal(safeLine('x'.repeat(201)), 'x'.repeat(200));
+  for (const value of ['', 'a\nb', 'tab\there', 'bell\u0007', 'del\u007f', 3, null, undefined])
+    assert.equal(safeLine(value), '');
 });

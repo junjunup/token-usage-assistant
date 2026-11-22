@@ -14,6 +14,16 @@ const {
   nativeImage,
   dialog,
 } = require('electron');
+// T18.3: Claude Code status lines and launchers written before RunAsNode was switched off start this binary with their
+// script's path (ELECTRON_RUN_AS_NODE no longer applies). Such a start exits at once: it must not open the app or
+// bring it to the front on every status-line refresh. The next normal start rewrites both (claude-config.cjs refresh,
+// ClaudeCollector.generateLauncher).
+const legacyHelper = require('./platform.cjs').legacyHelperArg(process.argv);
+if (legacyHelper) {
+  if (legacyHelper.endsWith('Launch-Claude.cjs'))
+    process.stderr.write('Token 用量助手已更新：请先打开一次助手，再重新运行 Start-Claude.command。\n');
+  process.exit(0);
+}
 const path = require('node:path');
 const fs = require('node:fs');
 const { LocalStore } = require('./store.cjs');

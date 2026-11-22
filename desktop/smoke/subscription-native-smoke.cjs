@@ -156,16 +156,13 @@ async function runSubscriptionSmoke({
       prompt: 'PRIVATE_NOT_EXPORTED',
     };
     await new Promise((resolve, reject) => {
+      // T18.3: macOS runs the plain sh helper (system curl); the app's binary never runs as Node.
       const child = spawn(
-        process.platform === 'darwin' ? process.execPath : 'powershell.exe',
+        process.platform === 'darwin' ? '/bin/sh' : 'powershell.exe',
         process.platform === 'darwin'
-          ? [path.join(collector.home, 'StatusLine.cjs')]
+          ? [path.join(collector.home, 'StatusLine.sh')]
           : ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(collector.home, 'StatusLine.ps1')],
-        {
-          env: { ...process.env, ...(process.platform === 'darwin' ? { ELECTRON_RUN_AS_NODE: '1' } : {}) },
-          windowsHide: true,
-          stdio: ['pipe', 'pipe', 'pipe'],
-        },
+        { env: process.env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] },
       );
       const timeout = setTimeout(() => {
         child.kill();

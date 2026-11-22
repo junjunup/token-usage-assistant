@@ -15,7 +15,8 @@ npmRebuild: false
 # T9.2 (M7): Electron fuses, flipped just before signing. scripts/fuses.cjs holds the same expectations and both
 # package checks read them back from the built binary.
 electronFuses:
-  runAsNode: true # must stay on: the Claude statusLine helper and launcher run the app with ELECTRON_RUN_AS_NODE
+  runAsNode: false # T18.3: off. The Claude status-line helper and launcher are plain sh (+ curl) on macOS and
+  # PowerShell on Windows; nothing runs the app's binary as Node, so no other process can either.
   enableNodeOptionsEnvironmentVariable: false
   enableNodeCliInspectArguments: false
   onlyLoadAppFromAsar: true

@@ -19,8 +19,8 @@ test('scripts/fuses.cjs expects exactly the electronFuses written in electron-bu
   assert.deepEqual(configured, { ...EXPECTED });
 });
 
-test('RunAsNode stays on (Claude statusLine helper) while NODE_OPTIONS and --inspect are off', () => {
-  assert.equal(EXPECTED.RunAsNode, true);
+test('T18.3: RunAsNode, NODE_OPTIONS and --inspect are all off; the app loads only from its asar', () => {
+  assert.equal(EXPECTED.RunAsNode, false);
   assert.equal(EXPECTED.EnableNodeOptionsEnvironmentVariable, false);
   assert.equal(EXPECTED.EnableNodeCliInspectArguments, false);
   assert.equal(EXPECTED.OnlyLoadAppFromAsar, true);

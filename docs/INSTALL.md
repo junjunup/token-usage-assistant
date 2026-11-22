@@ -42,6 +42,7 @@ Windows 可用：`certutil -hashfile TokenUsageAssistant-Setup-<版本>.exe SHA2
 - macOS：退出应用，把「应用程序」里的「Token 用量助手」移到废纸篓，再删除 `~/Library/Application Support/TokenUsageAssistant/`。钥匙串里名为 `TokenUsageAssistant Safe Storage` 的条目也可以在「钥匙串访问」里删除。
 - Windows：安装版在「设置 → 应用」里卸载，免安装版直接删除 exe；再删除 `%APPDATA%` 下本应用的文件夹；用过「下载并安装」的，还可以删除 `%LOCALAPPDATA%\commandcode-companion-updater`（下载的安装包）。
 - 用过 DeepSeek Harness 插件的，另删 `~/.token-usage-assistant/`，并在 Harness 中卸载插件。
+- 用过 Claude 账户「接入所有会话」的，卸载前先在「账户连接」里点「还原」，Claude Code 的状态栏就回到原样。忘了也没关系：macOS 上状态栏会照常运行你原来的命令（没有原命令时什么也不显示）；Windows 上打开 `~/.claude/settings.json`，删除 `statusLine` 一项即可。
 
 **我用的编程工具升级了，还能读到吗？** 能。应用按数据结构读取，不按版本号：新版本只要用量的核心字段没变就照常统计。工具不再提供某些可选数据（例如缓存或推理 Token）时，这几项显示「—」并提示「部分字段缺失」；核心字段改名或消失时，会明确提示格式不兼容，不会猜。
 
@@ -77,7 +78,7 @@ Each release includes `SHA256SUMS.txt`. Compute the file's SHA256 and compare it
 
 **Does it update itself?** Not on its own. It checks for new versions at start and every 24 hours and tells you (the check can be turned off in settings). On the Windows installed build (from the version that adds it), click "下载并安装" under 账户与设置 → 检查更新, then "重启并安装" once it is downloaded and checked; the portable and Mac builds are updated by downloading them yourself.
 
-**How do I remove it completely?** macOS: quit, move the app to the Trash, delete `~/Library/Application Support/TokenUsageAssistant/`, and optionally the `TokenUsageAssistant Safe Storage` item in Keychain Access. Windows: uninstall Setup in Settings → Apps (or delete the Portable exe) and delete the app's folder under `%APPDATA%` (and, if you used the in-app update, `%LOCALAPPDATA%\commandcode-companion-updater`, the downloaded installers). If you used the DeepSeek Harness plugin, also delete `~/.token-usage-assistant/` and remove the plugin in Harness.
+**How do I remove it completely?** macOS: quit, move the app to the Trash, delete `~/Library/Application Support/TokenUsageAssistant/`, and optionally the `TokenUsageAssistant Safe Storage` item in Keychain Access. Windows: uninstall Setup in Settings → Apps (or delete the Portable exe) and delete the app's folder under `%APPDATA%` (and, if you used the in-app update, `%LOCALAPPDATA%\commandcode-companion-updater`, the downloaded installers). If you used the DeepSeek Harness plugin, also delete `~/.token-usage-assistant/` and remove the plugin in Harness. If you connected every Claude Code session ("接入所有会话"), click "还原" (restore) in the Claude account's connection section first. If you forgot: on macOS the status line keeps running your own previous command (or shows nothing if there was none); on Windows, delete the `statusLine` entry from `~/.claude/settings.json`.
 
 **My coding tool updated — will it still work?** Yes. The app reads by data structure, not by version: a new version is counted as usual while its core usage fields are unchanged. Optional values the tool stops reporting (e.g. cache or reasoning tokens) show "—" with a "partial fields" note; if core fields are renamed or removed, the app says the format is incompatible instead of guessing.
 

@@ -73,7 +73,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - **Codex 订阅**：只读 app-server 方法白名单：`initialize`、`initialized`、`account/read`、`account/rateLimits/read`。选定程序前只做初始化预检；保留用户所选配置；可直接选择 `Codex.app` 的 `Resources/codex`。区分进程、协议、登录、阶段超时四类失败，不暴露 stderr；不声称支持旧版 CLI 协议。
 - **Codex 连接发现**：已保存的位置、`CODEX_HOME`、默认 `~/.codex`。只有一个时直接连接，多个时在应用内选择，手动选择作为回退；更新一个已丢失的保存位置时，不得静默改绑到另一个账户。见 [CONNECTION-UX-1.5.1](docs/CONNECTION-UX-1.5.1.md)、[MAC-TRIAL-1.8.0-beta.2](docs/MAC-TRIAL-1.8.0-beta.2.md)。
 - **Codex rollout**：元数据快照不是请求数，请求状态未知。按结构契约读取（T9.13，D15）：任何版本只要核心计数（`input_tokens`、`output_tokens`、`total_tokens`）齐全且都是非负整数就读取，版本号只作记录；缓存与推理计数是可选字段，缺失显示「—」并标「部分字段缺失」；核心字段改名、缺失或类型不对一律拒绝（格式不兼容）。
-- **Claude**：额度来自 statusLine，`context_window` 不是总消耗；按结构契约读取（T9.13，D15）：任何版本只要至少一个已知窗口（5 小时 / 每周）字段齐全就读取，有窗口但都不认识视为格式不兼容、保留原额度；没有任何窗口表示当前没有套餐额度、清空窗口。OTLP 请求事件的输入、输出是核心字段，缓存计数可选。OTLP 本地组件只监听回环地址，只采集启用之后的数据，覆盖缺口要明示。状态栏显示额度（T12.7，D19 ④，方案 C，默认关闭）：组件在 `/quota` 的回复里带回主进程算好的一行（本会话 5h / 7d 中更紧的一个 + 按菜单栏规则最紧的其他账户），脚本只打印不含控制字符、不超过 200 字的单行，否则照旧显示采集状态。组件就绪和首次额度同步是两个独立状态。一步接入（T13.1，D20 ②）：用户确认后把同一个组件写进 Claude Code 用户设置的 `statusLine`（`desktop/claude-config.cjs`），按组件路径识别自己的条目；原有命令记在 `statusline-chain.json` 里由组件串联运行（Mac；Windows 已有自定义状态栏时拒绝接入）；只写 statusLine、不写遥测设置，逐请求明细仍靠启动脚本；接入后助手离线时组件不输出任何东西。见 [SUBSCRIPTIONS-1.5.0](docs/SUBSCRIPTIONS-1.5.0.md)。
+- **Claude**：额度来自 statusLine，`context_window` 不是总消耗；按结构契约读取（T9.13，D15）：任何版本只要至少一个已知窗口（5 小时 / 每周）字段齐全就读取，有窗口但都不认识视为格式不兼容、保留原额度；没有任何窗口表示当前没有套餐额度、清空窗口。OTLP 请求事件的输入、输出是核心字段，缓存计数可选。OTLP 本地组件只监听回环地址，只采集启用之后的数据，覆盖缺口要明示。状态栏显示额度（T12.7，D19 ④，方案 C，默认关闭）：组件在 `/quota` 的回复里带回主进程算好的一行（本会话 5h / 7d 中更紧的一个 + 按菜单栏规则最紧的其他账户），脚本只打印不含控制字符、不超过 200 字的单行，否则照旧显示采集状态。组件就绪和首次额度同步是两个独立状态。一步接入（T13.1，D20 ②）：用户确认后把同一个组件写进 Claude Code 用户设置的 `statusLine`（`desktop/claude-config.cjs`），按组件路径识别自己的条目；原有命令写进我们的 statusLine 命令里由组件串联运行，助手连同数据目录被删除后照常单独运行（Mac，T18.3；Windows 已有自定义状态栏时拒绝接入）；Mac 的状态栏组件与启动脚本是系统自带的 sh + curl（T18.3）：状态栏输入原样经回环地址交给助手、由助手按白名单投影，令牌从文件读、不出现在进程列表，应用的二进制不再以 Node 身份运行；只写 statusLine、不写遥测设置，逐请求明细仍靠启动脚本；接入后助手离线时组件不输出任何东西。见 [SUBSCRIPTIONS-1.5.0](docs/SUBSCRIPTIONS-1.5.0.md)。
 - 额度查询成功时，不因缺少工具日志或来源添加失败而显示失败；不重新启用用户已禁用的来源。
 - **Zcode**：只读白名单 SQLite 投影；多个副本身份重叠时只做保守的暂停合并，不猜测哪份最新。见 [TOOL-SOURCES-1.4.0](docs/TOOL-SOURCES-1.4.0.md)。
 - **OpenCode 数据库**：优先使用 step 记录，排除旧版镜像和会话创建之前的历史。
@@ -99,7 +99,7 @@ Token 用量助手：中文本机桌面助手（Windows x64 + Apple Silicon macO
 - **出包核对**：包内版本和代码必须与源码一致；只改了源码，不得称为已交付。Windows 包由 CI 产出，没在真机上装过的不写成「已验证」。
 - **Mac 包**：本机 electron-builder 构建 `.app` + DMG/ZIP（arm64、hardened runtime、entitlements、不公证）。
   - 签名一律 ad-hoc。2026-10-25 试过用户的自签名证书：钥匙串的分区表对没有 Apple 团队 ID 的程序仍按每次构建的哈希记录，换证书后每个新包照样弹授权，已撤回。装新版本时正式条目弹一次授权，属于 D4 的已知限制。
-  - 必须通过：`codesign --verify --deep --strict`；Electron fuses 与 `electron-builder.yml` 一致（T9.2，`scripts/fuses.cjs`；`RunAsNode` 不能关）；打包后的原生 smoke 结果 `ok`。
+  - 必须通过：`codesign --verify --deep --strict`；Electron fuses 与 `electron-builder.yml` 一致（T9.2，`scripts/fuses.cjs`；T18.3 起 `RunAsNode` 也关闭，任何进程都不能借应用的二进制运行脚本）；打包后的原生 smoke 结果 `ok`。
   - `spctl` 预期为 rejected，如实记录，不算通过。
 - **D4（暂不购买 Apple Developer 账号）带来的限制**：
   - 首次打开要到「系统设置 → 隐私与安全性」点「仍要打开」。2026-10-25 在 macOS 15.7.9 实测：弹窗里没有「打开」按钮，「右键 → 打开」不能放行（H3）。
