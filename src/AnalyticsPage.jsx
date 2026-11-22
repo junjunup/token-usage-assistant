@@ -93,7 +93,7 @@ function Heading({ icon: Icon = ChartLineUp, title, caption, children }) {
     </div>
   );
 }
-function Empty({ text, action, label = t('查看工具分析') }) {
+function Empty({ text, action, label = t('查看本机工具') }) {
   return (
     <div className="analysis-empty">
       <Database size={27} />
@@ -973,7 +973,7 @@ export function AnalyticsPage({
         <Empty
           text={report?.message || t('当前没有可用统计')}
           action={local ? manageSources : selectLocal}
-          label={local ? t('管理工具数据源') : t('查看工具分析')}
+          label={local ? t('管理工具数据源') : t('查看本机工具')}
         />
       ) : (
         <>

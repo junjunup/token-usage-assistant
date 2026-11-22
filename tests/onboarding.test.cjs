@@ -241,3 +241,12 @@ test('T17.8: an unreadable account list is reported where the cards would be, ne
   // The message says what usually happened and that the file is untouched.
   assert.match(accounts, /已有加密文件未被覆盖。常见原因是钥匙串还没有允许这个版本读取/);
 });
+
+test('T17.9: the local tools block keeps its last complete figures while a scan restarts', () => {
+  const tools = read('src/LocalToolsOverview.jsx');
+  assert.match(tools, /if \(report\?\.summary && report !== last\) setLast\(report\);/);
+  assert.match(tools, /usable = report\?\.summary \? report : last;/);
+  assert.match(tools, /loading \? t\('读取中'\) : t\('等待可用数据'\)/);
+  // The analytics button names the tab it opens.
+  assert.doesNotMatch(read('src/AnalyticsPage.jsx') + read('src/BalanceViews.jsx'), /查看工具分析/);
+});
