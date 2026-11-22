@@ -210,3 +210,10 @@
   align-items: center;
   gap: 4px;
 }
+/* T17.8: saved accounts that cannot be read, where the account cards would be. */
+.accounts-unreadable {
+  margin-bottom: 30px;
+}
+.accounts-unreadable strong {
+  margin-right: 4px;
+}

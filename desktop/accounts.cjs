@@ -199,7 +199,11 @@ class AccountManager extends EventEmitter {
       log.info('accounts', 'loaded', { count: entries.length, durationMs: Date.now() - started });
     } catch {
       log.warn('accounts', 'load-failed', { durationMs: Date.now() - started });
-      this.issue = '本机账户列表暂不可用，已有加密文件未被覆盖。请恢复备份后重启助手。';
+      // T17.8: say what usually happened and what to do; the encrypted file is never touched (AGENTS §5).
+      this.issue =
+        process.platform === 'darwin'
+          ? '本机账户列表暂时读不出来，已有加密文件未被覆盖。常见原因是钥匙串还没有允许这个版本读取：点「重新读取」，在系统弹窗里选「始终允许」。'
+          : '本机账户列表暂时读不出来，已有加密文件未被覆盖。点「重新读取」再试一次；仍然失败时请导出诊断信息反馈。';
     }
     this.emitState();
   }

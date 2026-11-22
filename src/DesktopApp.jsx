@@ -119,6 +119,22 @@ function PageTabs({ label, value, tabs, onChange }) {
     </div>
   );
 }
+// T17.8 (D24): the saved account list could not be read (e.g. the Keychain did not let this build in yet). The file is
+// untouched and adding accounts is blocked until it reads again, so the overview says that instead of "connect one".
+function AccountsUnreadable({ issue, onRetry }) {
+  return (
+    <div className="inline-warning accounts-unreadable" role="alert">
+      <WarningCircle size={17} />
+      <span>
+        <strong>{t('已保存的账户暂时读不出来')}</strong> {t(issue)}
+      </span>
+      <button onClick={onRetry}>
+        {t('重新读取')}
+        <ArrowsClockwise size={14} />
+      </button>
+    </div>
+  );
+}
 function Toggle({ label, checked, onChange, disabled = false }) {
   return (
     <button
@@ -1007,6 +1023,10 @@ export function DesktopApp() {
                 finish={finishSetup}
               />
             )}
+            {/* T17.8: saved accounts that cannot be read are not "no accounts": say so where the cards would be. */}
+            {view === 'overview' && !setup && state.credentialIssue && (
+              <AccountsUnreadable issue={state.credentialIssue} onRetry={retryCredentials} />
+            )}
             {view === 'overview' && !setup && overviewCards && (
               <AllAccountsGrid
                 overview={overview}
@@ -1074,7 +1094,7 @@ export function DesktopApp() {
                 />
               ) : (
                 <>
-                  {!state.hasCredential && (
+                  {!state.hasCredential && !state.credentialIssue && (
                     <div className="connection-banner">
                       <Key size={20} />
                       <div>
@@ -1140,24 +1160,18 @@ export function DesktopApp() {
                       </button>
                     </div>
                   )}
-                  {(data.errors.length > 0 || state.credentialIssue) && (
+                  {/* An unreadable account list is reported once, at the top of the overview (T17.8). */}
+                  {data.errors.length > 0 && !state.credentialIssue && (
                     <div className="inline-warning" role="status">
                       <WarningCircle size={17} />
                       <span>
-                        {state.credentialIssue || data.errors[0].message}
+                        {data.errors[0].message}
                         {c ? t(' 已保留上次成功数据。') : ''}
                       </span>
-                      {state.credentialIssue ? (
-                        <button onClick={retryCredentials}>
-                          {t('重新读取')}
-                          <ArrowsClockwise size={14} />
-                        </button>
-                      ) : (
-                        <button onClick={() => (data.status === 'auth-error' ? openAccount('update') : refresh())}>
-                          {data.status === 'auth-error' ? t('重新连接') : t('重试')}
-                          <ArrowUpRight size={14} />
-                        </button>
-                      )}
+                      <button onClick={() => (data.status === 'auth-error' ? openAccount('update') : refresh())}>
+                        {data.status === 'auth-error' ? t('重新连接') : t('重试')}
+                        <ArrowUpRight size={14} />
+                      </button>
                     </div>
                   )}
                   <div className="overview-grid">
@@ -1497,6 +1511,7 @@ export function DesktopApp() {
                   <>
                     <AccountList
                       state={state}
+                      onRetry={retryCredentials}
                       editing={accountEdit}
                       disabled={state.connecting}
                       // Each button also closes the form it opened.
@@ -1513,7 +1528,7 @@ export function DesktopApp() {
                         setDialog('disconnect');
                       }}
                       form={
-                        (accountEdit || !(state.accounts || []).length) &&
+                        (accountEdit || (!(state.accounts || []).length && !state.credentialIssue)) &&
                         (accountEdit?.mode !== 'update' || accountEdit.id === state.activeAccountId) ? (
                           <ConnectionForm
                             key={(accountEdit?.mode || 'add') + '|' + state.activeAccountId}
