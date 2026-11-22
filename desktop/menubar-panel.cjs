@@ -7,7 +7,7 @@
 // - Switching accounts inside the panel is local to the panel; it opens on the account the menu-bar icon shows.
 // T11.3 (D17): cells the platform does not provide are folded; the window the chip stands for is always listed; chip
 // amounts are compact (two decimals, D17 ④); Command Code gets a one-line pace summary of the existing forecast.
-const { menubarStatus, slotsOf, focusOf, amountsOf } = require('./menubar-status.cjs');
+const { menubarStatus, rankAccounts, slotsOf, focusOf, amountsOf } = require('./menubar-status.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 
 /**
@@ -211,7 +211,9 @@ function panelState(accounts, settings) {
   return {
     defaultAccountId: menubarStatus(list, { ...settings, threshold })?.accountId ?? null,
     threshold,
-    accounts: list.map((a) => panelAccount(a, threshold, amounts)),
+    // T18.1: most urgent first, the all-accounts view's order (rankAccounts, without preferring the current account),
+    // so the chips shown before "+N" are the tightest accounts; choosing an account never reorders this list.
+    accounts: rankAccounts(list, threshold, { amounts }).map(({ a }) => panelAccount(a, threshold, amounts)),
   };
 }
 

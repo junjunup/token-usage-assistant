@@ -177,3 +177,39 @@ test('T7.11: the account chip says what the menu-bar icon says (quota windows fi
     assert.deepEqual(chip, { text: icon?.text, tone: icon?.tone });
   }
 });
+
+test('T18.1: accounts are listed most urgent first, the overview order, so the chips before "+N" are the tightest', () => {
+  const { accountOverview } = require('../desktop/account-overview.cjs');
+  const quota = (id, left) => glm([q(id + ':w', '每周窗口', left)], { id, label: id });
+  const bal = (id, total, currency = 'CNY') => ({
+    id,
+    label: id,
+    provider: 'deepseek',
+    active: false,
+    capabilities: { quota: false, balance: true },
+    status: 'connected',
+    parts: { balance: { isAvailable: true, balances: [{ currency, total }] } },
+    updatedAt: { balance: 1000 },
+  });
+  // Added in this order: healthy balances first, the tightest quota last.
+  const list = [
+    bal('b1', '110'),
+    bal('b2', '49.59'),
+    quota('q60', 60),
+    quota('q42', 42),
+    quota('q35', 35),
+    quota('q80', 80),
+    quota('alert', 10),
+    bal('b3', '482.74', 'USD'),
+  ];
+  const ids = (accounts) => accounts.map((a) => a.id);
+  const panel = panelState(list, settings);
+  // The alert first, then the least left; accounts without a window keep their list order at the end.
+  assert.deepEqual(ids(panel.accounts), ['alert', 'q35', 'q42', 'q60', 'q80', 'b1', 'b2', 'b3']);
+  assert.deepEqual(ids(panel.accounts), ids(accountOverview(list, settings).rows));
+  // The six chips before "+N" are the six tightest, never a healthy balance ahead of a quota window.
+  assert.deepEqual(ids(panel.accounts.slice(0, 6)), ['alert', 'q35', 'q42', 'q60', 'q80', 'b1']);
+  // Which account is current changes where the panel opens, never the order.
+  const switched = list.map((a) => ({ ...a, active: a.id === 'b3' }));
+  assert.deepEqual(ids(panelState(switched, settings).accounts), ids(panel.accounts));
+});
