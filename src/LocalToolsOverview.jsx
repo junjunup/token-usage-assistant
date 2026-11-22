@@ -36,8 +36,8 @@ function Total({ label, report, loading }) {
   );
 }
 
-function statusOf(row) {
-  if (!row) return { tone: 'muted', text: t('等待可用数据') };
+function statusOf(row, loading) {
+  if (!row) return { tone: 'muted', text: loading ? t('读取中') : t('等待可用数据') };
   if (row.status === 'ready') return { tone: 'green', text: t('同步成功') };
   if (row.status === 'partial') return { tone: 'amber', text: t('部分数据') };
   return { tone: row.status === 'error' ? 'red' : 'muted', text: t(row.message) || t('等待可用数据') };
@@ -113,12 +113,16 @@ export function LocalToolsOverview({
   };
   const shown = found.filter((f) => !ignored.includes(f.kind)),
     hidden = found.length - shown.length;
+  // T17.9 (D24): a scan that is restarted (another page asked, an account refreshed) answers "cancelled" without
+  // figures; keep showing the last complete answer meanwhile instead of blanking the block.
+  const [last, setLast] = useState(null);
+  if (report?.summary && report !== last) setLast(report);
   const enabled = sources.filter((s) => s.enabled),
-    usable = report?.summary ? report : null;
+    usable = report?.summary ? report : last;
   const byId = (part) => new Map((part?.bySource || []).map((row) => [row.id, row])),
     todayRows = byId(usable?.today),
     weekRows = byId(usable),
-    reports = new Map((report?.sourceReports || []).map((row) => [row.id, row]));
+    reports = new Map((usable?.sourceReports || []).map((row) => [row.id, row]));
   return (
     <section className="panel lt-section" aria-label={t('本机工具用量')}>
       <div className="lt-head">
@@ -163,7 +167,7 @@ export function LocalToolsOverview({
             {enabled.map((source) => {
               const d = tokens(todayRows.get(source.id)),
                 w = tokens(weekRows.get(source.id)),
-                status = statusOf(reports.get(source.id));
+                status = statusOf(reports.get(source.id), loading);
               return (
                 <div className="lt-row" role="row" key={source.id}>
                   <span role="cell" className="lt-name">

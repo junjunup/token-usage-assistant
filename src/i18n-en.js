@@ -75,6 +75,8 @@ export const EN = {
     'Usually the Keychain has not let this version in yet: choose Read again, then Always Allow in the system prompt.',
   '点「重新读取」再试一次；仍然失败时请导出诊断信息反馈。':
     'Choose Read again to retry; if it still fails, export diagnostics and report it.',
+  // T17.9
+  查看本机工具: 'View local tools',
   // T17.5
   暂无预测: 'No forecast yet',
   已保存的账户: 'Saved accounts',

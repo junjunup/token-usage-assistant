@@ -170,7 +170,7 @@ export function BalanceDashboard({ state, onSettings, onTools }) {
           </p>
         </div>
         <button className="button" onClick={onTools}>
-          {t('查看工具分析')}
+          {t('查看本机工具')}
           <ArrowUpRight size={14} />
         </button>
       </section>
