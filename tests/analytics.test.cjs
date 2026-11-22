@@ -421,3 +421,51 @@ test('inconsistent cache counts stay unavailable instead of being silently clamp
   assert.equal(s.cache.hitRate, null);
   assert.equal(s.cost, null);
 });
+// T18.2: a short sample is not stretched over a long window, and a point or two of a percent window is not a rate.
+test('T18.2: a burst is projected at most 12 times its span; further out the window stays insufficient', () => {
+  // Command Code (amounts): 20 minutes of samples, so claims reach 240 minutes ahead at most.
+  const slow = samples({ increment: 0.01 });
+  const f = forecast(slow, now);
+  // Five-hour window, reset in 60 minutes: within the horizon, so "not before the reset" still holds.
+  assert.equal(f.windows[0].status, 'after-reset');
+  // Weekly window, reset in 7 days: neither "reaches the limit" nor "not before the reset" can be said from 20 minutes.
+  assert.deepEqual(f.windows[1], { key: 'week', status: 'insufficient', why: 'horizon' });
+  // At 1 a minute the weekly cap (70 left) comes in 70 minutes: a near claim, still made.
+  assert.equal(forecast(samples(), now).windows[1].status, 'before-reset');
+  // At 0.2 a minute it would come in 350 minutes, past the 240-minute horizon though long before the reset.
+  assert.deepEqual(forecast(samples({ increment: 0.2 }), now).windows[1], {
+    key: 'week',
+    status: 'insufficient',
+    why: 'horizon',
+  });
+});
+test('T18.2: a percent window needs a change of 3 points before its pace is projected', () => {
+  const reset = now + 4 * 3600000;
+  const sample = (i, used) => ({
+    t: now - (20 - i) * 60000,
+    summary: null,
+    credits: null,
+    creditAt: now - (20 - i) * 60000,
+    windows: { 'glm:five': { used, cap: 100, resetAt: reset, label: '5 小时窗口', group: '套餐共享额度' } },
+  });
+  // 20 minutes, from 58 to 60 used: two points could be rounding, so no rate (it used to read about 6 hours to cap).
+  const two = Array.from({ length: 21 }, (_, i) => sample(i, i < 10 ? 58 : i < 18 ? 59 : 60));
+  assert.deepEqual(forecast(two, now).windows[0], {
+    key: 'glm:five',
+    status: 'insufficient',
+    why: 'small-change',
+    label: '5 小时窗口',
+    group: '套餐共享额度',
+  });
+  // Three points: a rate (0.15 a minute, 40 left: about 267 minutes, past the 240-minute reset): "not before the reset".
+  const three = Array.from({ length: 21 }, (_, i) => sample(i, i < 7 ? 57 : i < 14 ? 58 : i < 20 ? 59 : 60));
+  assert.equal(forecast(three, now).windows[0].status, 'after-reset');
+  // No change at all is still an observation, not a projection.
+  assert.equal(
+    forecast(
+      Array.from({ length: 21 }, (_, i) => sample(i, 60)),
+      now,
+    ).windows[0].status,
+    'idle',
+  );
+});

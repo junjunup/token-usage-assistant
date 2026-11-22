@@ -339,6 +339,13 @@ function continuousTail(records, now, intervalMs = 60000) {
     return [];
   return tail;
 }
+// T18.2: a short sample only says something about the near future. A claim — "reaches the limit in X" or "not
+// before the reset" — must fall within this many times the sampled span (30 minutes of samples: 6 hours at most);
+// further out the window stays "insufficient" (why 'horizon') instead of stretching a burst over days.
+const HORIZON_FACTOR = 12;
+// T18.2: percent windows report coarse (often whole) percentages, so a change of one or two points over a few minutes
+// is mostly rounding; their rate is only taken from a change of at least this many points (why 'small-change').
+const MIN_PERCENT_CHANGE = 3;
 /**
  * @param {any[]} records account history samples
  * @param {number} [now]
@@ -361,8 +368,9 @@ function forecast(records, now = Date.now(), interval = 60) {
    * @param {string} key
    * @param {any[]} eligible
    * @param {(r: any) => any} get
+   * @param {boolean} percent the window is a percentage of the window (T12.1), not an amount (Command Code)
    */
-  const outlook = (key, eligible, get) => {
+  const outlook = (key, eligible, get, percent) => {
     const end = eligible.at(-1),
       last = end && get(end);
     if (
@@ -385,21 +393,23 @@ function forecast(records, now = Date.now(), interval = 60) {
     const perMinute = delta / minutes,
       remaining = Math.max(0, last.cap - last.used),
       minutesToCap = perMinute > 0 ? remaining / perMinute : null;
+    // Observed states first: at the limit, or no change at all over the span.
+    if (remaining === 0) return { key, perMinute, remaining, minutesToCap, resetAt: last.resetAt, status: 'at-limit' };
+    if (perMinute === 0) return { key, perMinute, remaining, minutesToCap, resetAt: last.resetAt, status: 'idle' };
+    if (percent && delta < MIN_PERCENT_CHANGE) return { key, status: 'insufficient', why: 'small-change' };
+    // Reached only when perMinute > 0, so minutesToCap is a number here.
+    const toCap = /** @type {number} */ (minutesToCap),
+      toReset = (last.resetAt - now) / 60000,
+      horizon = HORIZON_FACTOR * minutes,
+      before = toCap < toReset;
+    if (before ? toCap > horizon : toReset > horizon) return { key, status: 'insufficient', why: 'horizon' };
     return {
       key,
       perMinute,
       remaining,
       minutesToCap,
       resetAt: last.resetAt,
-      status:
-        remaining === 0
-          ? 'at-limit'
-          : perMinute === 0
-            ? 'idle'
-            : // Reached only when perMinute > 0, so minutesToCap is a number here.
-              now + /** @type {number} */ (minutesToCap) * 60000 < last.resetAt
-              ? 'before-reset'
-              : 'after-reset',
+      status: before ? 'before-reset' : 'after-reset',
     };
   };
   // Command Code's five-hour and weekly windows (money); T12.1: every other platform's windows by id (percent of
@@ -410,6 +420,7 @@ function forecast(records, now = Date.now(), interval = 60) {
           key,
           tail.filter((r) => r.credits && r.creditAt === r.t),
           (r) => r.credits[key],
+          false,
         ),
       )
     : [];
@@ -420,7 +431,7 @@ function forecast(records, now = Date.now(), interval = 60) {
       const eligible = tail.filter((r) => r.windows?.[id] && r.creditAt === r.t),
         named = eligible.at(-1)?.windows[id];
       return {
-        ...outlook(id, eligible, (r) => r.windows?.[id]),
+        ...outlook(id, eligible, (r) => r.windows?.[id], true),
         label: named?.label ?? null,
         group: named?.group ?? null,
       };

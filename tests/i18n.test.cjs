@@ -63,6 +63,12 @@ test('T14.4: t() keeps Chinese unless English is on; untranslated text stays as 
     t('按最近 25 分钟的速度，每周窗口约 3 小时 6 分钟后触顶（早于重置）'),
     'At the pace of the last 25 min, Weekly window reaches its limit in about 3 h 6 min (before reset)',
   );
+  // T18.2: a claim that names the windows it covers.
+  assert.equal(
+    t('按最近 25 分钟的速度，5 小时窗口、每周窗口重置前不会触顶'),
+    "At the pace of the last 25 min, 5-hour window, Weekly window won't reach the limit before reset",
+  );
+  assert.equal(t('离重置还远，暂不推算'), 'The reset is too far off to project from the recent pace');
   assert.equal(t('额度充足'), 'Quota OK');
   setLanguage('zh');
 });
