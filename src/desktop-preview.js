@@ -515,7 +515,8 @@ if (credentialIssuePreview)
   state = {
     ...state,
     hasCredential: false,
-    credentialIssue: '本机账户列表暂不可用，已有加密文件未被覆盖。请恢复备份后重启助手。',
+    credentialIssue:
+      '本机账户列表暂时读不出来，已有加密文件未被覆盖。常见原因是钥匙串还没有允许这个版本读取：点「重新读取」，在系统弹窗里选「始终允许」。',
     accounts: [],
     activeAccountId: '',
     data: { ...state.data, parts: {}, updatedAt: {}, errors: [], status: 'unconfigured', nextRefreshAt: null },

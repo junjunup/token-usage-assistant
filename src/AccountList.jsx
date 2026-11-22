@@ -32,7 +32,7 @@ const when = (v) => {
 };
 
 // `form` is the connection form for the account being edited (shown right under its row) or for a new one.
-export function AccountList({ state, editing, disabled, onAdd, onEdit, onRemove, form = null }) {
+export function AccountList({ state, editing, disabled, onAdd, onEdit, onRemove, onRetry, form = null }) {
   const accounts = state.accounts || [],
     rows = new Map((state.overview?.rows || []).map((r) => [r.id, r]));
   return (
@@ -44,19 +44,28 @@ export function AccountList({ state, editing, disabled, onAdd, onEdit, onRemove,
             ACCOUNTS <span className="label-cn">{t('/ 账户')}</span>
           </div>
           <p id="account-list-title">
-            {accounts.length
-              ? t('已保存 {v0} 个账户，最多 20 个；每个账户独立刷新、独立提醒。', { v0: accounts.length })
-              : t('还没有账户。添加一个官方套餐或按量账户开始监测。')}
+            {state.credentialIssue
+              ? t(state.credentialIssue)
+              : accounts.length
+                ? t('已保存 {v0} 个账户，最多 20 个；每个账户独立刷新、独立提醒。', { v0: accounts.length })
+                : t('还没有账户。添加一个官方套餐或按量账户开始监测。')}
           </p>
         </div>
-        <button
-          className={'button primary' + (editing?.mode === 'add' ? ' selected' : '')}
-          disabled={disabled || accounts.length >= 20}
-          onClick={onAdd}
-        >
-          {editing?.mode === 'add' ? <X size={15} /> : <Plus size={15} />}
-          {editing?.mode === 'add' ? t('取消添加') : t('添加账户')}
-        </button>
+        {/* T17.8: while the saved list cannot be read, adding is blocked (it would fail), re-reading is offered. */}
+        {state.credentialIssue ? (
+          <button className="button primary" onClick={onRetry}>
+            {t('重新读取')}
+          </button>
+        ) : (
+          <button
+            className={'button primary' + (editing?.mode === 'add' ? ' selected' : '')}
+            disabled={disabled || accounts.length >= 20}
+            onClick={onAdd}
+          >
+            {editing?.mode === 'add' ? <X size={15} /> : <Plus size={15} />}
+            {editing?.mode === 'add' ? t('取消添加') : t('添加账户')}
+          </button>
+        )}
       </div>
       {form && editing?.mode !== 'update' && <div className="al-form adding">{form}</div>}
       {accounts.length > 0 && (

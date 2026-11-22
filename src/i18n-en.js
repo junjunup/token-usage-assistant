@@ -67,6 +67,14 @@ export const EN = {
   '还没有账户。添加一个官方套餐或按量账户开始监测。': 'No accounts yet. Add a plan or pay-as-you-go account to start.',
   添加账户: 'Add account',
   取消添加: 'Cancel',
+  // T17.8 (D24): saved accounts that cannot be read
+  已保存的账户暂时读不出来: 'Saved accounts cannot be read right now.',
+  '本机账户列表暂时读不出来，已有加密文件未被覆盖。':
+    'The saved account list could not be read; the encrypted file was left untouched.',
+  '常见原因是钥匙串还没有允许这个版本读取：点「重新读取」，在系统弹窗里选「始终允许」。':
+    'Usually the Keychain has not let this version in yet: choose Read again, then Always Allow in the system prompt.',
+  '点「重新读取」再试一次；仍然失败时请导出诊断信息反馈。':
+    'Choose Read again to retry; if it still fails, export diagnostics and report it.',
   // T17.5
   暂无预测: 'No forecast yet',
   已保存的账户: 'Saved accounts',

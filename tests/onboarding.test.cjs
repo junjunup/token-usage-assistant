@@ -225,3 +225,19 @@ test('T17.4–T17.6: analytics source tabs, folded status notes, a lighter page 
   assert.equal((app.match(/bridge\.openOfficial\('usage'\)/g) || []).length, 1);
   assert.match(app, /ao-detail-meta[\s\S]{0,400}bridge\.openOfficial\('usage'\)/);
 });
+
+test('T17.8: an unreadable account list is reported where the cards would be, never as "no accounts"', () => {
+  const app = read('src/DesktopApp.jsx'),
+    list = read('src/AccountList.jsx'),
+    accounts = read('desktop/accounts.cjs');
+  assert.match(
+    app,
+    /state\.credentialIssue && \(\s*<AccountsUnreadable issue=\{state\.credentialIssue\} onRetry=\{retryCredentials\} \/>/,
+  );
+  assert.match(app, /\{!state\.hasCredential && !state\.credentialIssue && \(\s*<div className="connection-banner">/);
+  // Adding stays blocked (the main process refuses it too); re-reading is offered instead.
+  assert.match(list, /state\.credentialIssue \? \(\s*<button className="button primary" onClick=\{onRetry\}>/);
+  assert.match(app, /!state\.credentialIssue\)\) &&/);
+  // The message says what usually happened and that the file is untouched.
+  assert.match(accounts, /已有加密文件未被覆盖。常见原因是钥匙串还没有允许这个版本读取/);
+});
