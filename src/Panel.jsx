@@ -113,7 +113,7 @@ export function Panel() {
   const selected = pick && pick.session === view.openedAt ? pick.id : view.defaultAccountId;
   const account = accounts.find((a) => a.id === selected) || accounts[0] || null;
   const showAll = expanded === view.openedAt || accounts.length <= CHIPS;
-  // The account being viewed comes first, then the others in their usual order.
+  // The account being viewed comes first, then the others most urgent first (T18.1: the overview's order).
   const ordered = account ? [account, ...accounts.filter((a) => a !== account)] : accounts;
   const chips = showAll ? ordered : ordered.slice(0, CHIPS);
   const open = async (fn) => {

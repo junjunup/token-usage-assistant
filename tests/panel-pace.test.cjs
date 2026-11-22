@@ -2,6 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { panelState, paceLine } = require('../desktop/menubar-panel.cjs');
 const { menubarStatus } = require('../desktop/menubar-status.cjs');
+// T18.1: the panel lists accounts most urgent first, so tests look accounts up by id, not by position.
+const byId = (state) => Object.fromEntries(state.accounts.map((a) => [a.id, a]));
 
 // T11.3 (D17): folded cells, the window behind the chip always listed, compact chip amounts, the pace line.
 const settings = { threshold: 20 };
@@ -63,14 +65,16 @@ const commandcode = (prediction) => ({
 });
 
 test('T11.3: cells the platform does not provide are folded; none at all leaves no cells', () => {
-  const [cc, glm, kimi] = panelState(
-    [
-      commandcode(null),
-      quota('glm', 'glm', [win('a', '5 小时窗口', 50)]),
-      balance('kimi', [{ currency: 'CNY', total: '49.58894' }]),
-    ],
-    settings,
-  ).accounts;
+  const { cc, glm, kimi } = byId(
+    panelState(
+      [
+        commandcode(null),
+        quota('glm', 'glm', [win('a', '5 小时窗口', 50)]),
+        balance('kimi', [{ currency: 'CNY', total: '49.58894' }]),
+      ],
+      settings,
+    ),
+  );
   assert.deepEqual(cc.shownCells, ['tokens', 'cost', 'balance']);
   assert.deepEqual(glm.shownCells, []);
   assert.deepEqual(kimi.shownCells, ['balance']);
@@ -185,14 +189,16 @@ test('T12.1: every platform with quota windows has a pace line, named by its own
       { key: 'glm:b', label: '周窗口', group: '套餐共享额度', status: 'after-reset', minutesToCap: 900 },
     ],
   };
-  const [cc, glm, kimi] = panelState(
-    [
-      commandcode(prediction),
-      quota('glm', 'glm', [win('glm:a', '5 小时窗口', 30)], { prediction: glmForecast }),
-      { ...balance('kimi', [{ currency: 'CNY', total: '10' }]), prediction: glmForecast },
-    ],
-    settings,
-  ).accounts;
+  const { cc, glm, kimi } = byId(
+    panelState(
+      [
+        commandcode(prediction),
+        quota('glm', 'glm', [win('glm:a', '5 小时窗口', 30)], { prediction: glmForecast }),
+        { ...balance('kimi', [{ currency: 'CNY', total: '10' }]), prediction: glmForecast },
+      ],
+      settings,
+    ),
+  );
   assert.equal(cc.pace?.text, '按最近 30 分钟的速度，重置前不会触顶');
   assert.equal(glm.pace?.tone, 'amber');
   assert.equal(glm.pace?.text, '按最近 24 分钟的速度，5 小时窗口约 1 小时 30 分钟后触顶（早于重置）');
