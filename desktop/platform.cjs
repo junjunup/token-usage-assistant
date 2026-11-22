@@ -98,6 +98,10 @@ function windowChrome(kind, platform = process.platform) {
 const launcherName = (platform = process.platform) =>
   platform === 'darwin' ? 'Start-Claude.command' : 'Start-Claude.ps1';
 const shellQuote = (value) => "'" + String(value).replaceAll("'", "'\\''") + "'";
+// T18.3: the script path an old Claude helper passes when it starts the app's binary (written before RunAsNode was
+// switched off), or null. main.cjs exits at once for such a start instead of opening the app.
+const legacyHelperArg = (argv) =>
+  argv.slice(1).find((a) => typeof a === 'string' && /[\\/](?:StatusLine|Launch-Claude)\.cjs$/.test(a)) || null;
 // Mac app name and userData folder. The packaged app keeps the stable TokenUsageAssistant name/path;
 // a development run (`pnpm run desktop`, not packaged) uses its own name, so it never touches the real
 // account data and does not share the packaged app's Keychain Safe Storage item.
@@ -119,4 +123,5 @@ module.exports = {
   windowChrome,
   launcherName,
   shellQuote,
+  legacyHelperArg,
 };

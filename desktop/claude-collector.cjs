@@ -7,6 +7,7 @@ const { log } = require('./logger.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const { normalizeClaude } = require('./subscriptions.cjs');
 const { launcherName, shellQuote } = require('./platform.cjs');
+const { quotaMetadata, safeLine } = require('./claude-statusline.cjs');
 const {
   claudeUsageViolation,
   missingOptional,
@@ -176,7 +177,7 @@ class ClaudeCollector {
       )
         return fail(403);
       if (
-        !['/v1/logs', '/quota'].includes(req.url) ||
+        !['/v1/logs', '/quota', '/statusline'].includes(req.url) ||
         !/^application\/json(?:;|$)/i.test(req.headers['content-type'] || '')
       )
         return fail(415);
@@ -193,17 +194,36 @@ class ClaudeCollector {
       req.on('error', () => {});
       req.on('end', () => {
         try {
-          const input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          const text = Buffer.concat(chunks).toString('utf8');
           chunks = [];
+          // T12.7: the status-line text main computes when the setting is on ('' otherwise); fail-open.
+          const lineFor = (windows) => {
+            try {
+              return safeLine(String(this.statusLine?.(windows) || ''));
+            } catch {
+              return '';
+            }
+          };
+          // T18.3: the macOS helper (sh + curl) passes Claude Code's status-line input on unchanged; only the
+          // whitelisted metadata is decoded here (claude-statusline.cjs), and the reply is the line as plain text.
+          if (req.url === '/statusline') {
+            if (bytes > 1_000_000) return fail(413);
+            let meta;
+            try {
+              meta = quotaMetadata(text);
+            } catch {
+              // Input that cannot be read at all was dropped by the helper itself before T18.3: not an event gap.
+              return fail(400);
+            }
+            const line = lineFor(this.receiveQuota(meta));
+            res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end(line);
+            return;
+          }
+          const input = JSON.parse(text);
           let line = '';
           if (req.url === '/quota') {
-            const windows = this.receiveQuota(input);
-            // T12.7: the status-line text main computes when the setting is on ('' otherwise); fail-open.
-            try {
-              line = String(this.statusLine?.(windows) || '').slice(0, 200);
-            } catch {
-              line = '';
-            }
+            line = lineFor(this.receiveQuota(input));
           } else {
             this.portChange = null;
             const parsed = parseOtel(input, cfg.sourceId, this.sessions);
@@ -338,27 +358,36 @@ class ClaudeCollector {
     this.server = null;
     this.health('stopped');
   }
-  generateLauncher(platform = process.platform, runtime = process.execPath) {
+  generateLauncher(platform = process.platform) {
     const cfg = this.config || this.prepare(),
-      helper = path.join(this.home, platform === 'darwin' ? 'StatusLine.cjs' : 'StatusLine.ps1');
+      helper = path.join(this.home, platform === 'darwin' ? 'StatusLine.sh' : 'StatusLine.ps1');
     let command;
     if (platform === 'darwin') {
-      for (const [from, to] of [
-        ['claude-statusline.cjs', 'StatusLine.cjs'],
-        ['claude-launcher.cjs', 'Launch-Claude.cjs'],
-        ['metadata-json.cjs', 'metadata-json.cjs'],
-      ]) {
-        const target = path.join(this.home, to);
-        fs.copyFileSync(path.join(__dirname, from), target);
-        fs.chmodSync(target, 0o600);
-      }
-      command = '/usr/bin/env ELECTRON_RUN_AS_NODE=1 ' + shellQuote(runtime) + ' ' + shellQuote(helper);
-      const launch =
-        '#!/bin/sh\n# Run this file from your project directory in Terminal.\nexec /usr/bin/env ELECTRON_RUN_AS_NODE=1 ' +
-        shellQuote(runtime) +
-        ' ' +
-        shellQuote(path.join(this.home, 'Launch-Claude.cjs')) +
-        ' "$@"\n';
+      // T18.3: plain sh with the system curl, so the app never has to run as Node (RunAsNode is off). The helpers
+      // from before ran the app's binary with ELECTRON_RUN_AS_NODE and no longer work; they are removed.
+      for (const old of ['StatusLine.cjs', 'Launch-Claude.cjs', 'metadata-json.cjs'])
+        fs.rmSync(path.join(this.home, old), { force: true });
+      fs.copyFileSync(path.join(__dirname, 'claude-statusline.sh'), helper);
+      fs.chmodSync(helper, 0o600);
+      // curl reads the token from this file (-H @file), so it never appears in the process list.
+      const header = path.join(this.home, 'collector.header');
+      fs.writeFileSync(header, 'x-tua-token: ' + cfg.token + '\n', { mode: 0o600 });
+      fs.chmodSync(header, 0o600);
+      command = '/bin/sh ' + shellQuote(helper);
+      // Same check as before: Claude Code 2.1.x from 2.1.251, then this session runs with the assistant's settings.
+      const launch = [
+        '#!/bin/sh',
+        "# Run this file from your project directory in Terminal. Claude Code starts with the assistant's settings for",
+        '# this session only (status line and local usage export); your own Claude settings stay as they are.',
+        'settings=' + shellQuote(path.join(this.home, 'claude-settings.json')),
+        "patch=$(claude --version 2>/dev/null | sed -nE 's/^(.*[^0-9.])?2[.]1[.]([0-9]+)([^0-9].*)?$/\\2/p' | head -n 1)",
+        'if [ -z "$patch" ] || [ "$patch" -lt 251 ]; then',
+        "  echo '需要 Claude Code 2.1.251 或更高的 2.1.x 版本。请在官方客户端检查安装与登录。' >&2",
+        '  exit 1',
+        'fi',
+        'exec claude --settings "$settings" "$@"',
+        '',
+      ].join('\n');
       const file = path.join(this.home, launcherName(platform));
       fs.writeFileSync(file, launch, { mode: 0o700 });
       fs.chmodSync(file, 0o700);

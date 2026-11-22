@@ -30,13 +30,11 @@ function setup(t) {
   });
   return dir;
 }
+// T18.3: the macOS status-line helper is a plain sh script (system curl); nothing runs the app as Node.
+const unix = { skip: process.platform === 'win32' && 'the macOS helper is a POSIX sh script' };
 function component(file, input) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [file], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    });
+    const child = spawn('/bin/sh', [file], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
     let out = '',
       err = '';
     const timer = setTimeout(() => {
@@ -130,23 +128,80 @@ test('Mac main gets native traffic lights while widget and Windows retain framel
   assert.equal(windowChrome('main', 'win32').frame, false);
   assert.equal(windowChrome('widget', 'darwin').frame, false);
 });
-test('Mac Claude launchers quote paths, use bundled runtime and preserve external settings', (t) => {
+test('Mac Claude launchers quote paths, need no app runtime and preserve external settings', (t) => {
   const dir = setup(t),
     c = new ClaudeCollector(path.join(dir, "space and ' apostrophe")),
     outside = path.join(dir, 'settings.json');
   fs.writeFileSync(outside, 'ORIGINAL');
-  c.generateLauncher('darwin', '/Applications/Token usage.app/Contents/MacOS/TokenUsageAssistant');
+  // Helpers from before T18.3 (run by the app's binary as Node) are removed when the launcher is written again.
+  fs.mkdirSync(c.home, { recursive: true });
+  for (const old of ['StatusLine.cjs', 'Launch-Claude.cjs', 'metadata-json.cjs'])
+    fs.writeFileSync(path.join(c.home, old), '');
+  c.generateLauncher('darwin');
   const settings = JSON.parse(fs.readFileSync(path.join(c.home, 'claude-settings.json'))),
     launch = fs.readFileSync(path.join(c.home, launcherName('darwin')), 'utf8');
-  assert.match(settings.statusLine.command, /ELECTRON_RUN_AS_NODE=1/);
-  assert.doesNotMatch(settings.statusLine.command, /powershell|\.exe/);
-  assert.match(launch, /"\$@"/);
+  assert.equal(settings.statusLine.command, '/bin/sh ' + shellQuote(path.join(c.home, 'StatusLine.sh')));
+  assert.equal(c.helper, path.join(c.home, 'StatusLine.sh'));
+  for (const text of [settings.statusLine.command, launch]) {
+    assert.doesNotMatch(text, /ELECTRON_RUN_AS_NODE|powershell|\.exe/);
+    assert.doesNotMatch(text, /[a-f0-9]{64}/, 'the token stays out of commands and the process list');
+  }
+  assert.match(launch, /^#!\/bin\/sh\n/);
+  assert.match(launch, /exec claude --settings "\$settings" "\$@"/);
   assert.equal(settings.env.OTEL_LOG_USER_PROMPTS, '0');
   assert.equal(settings.env.OTEL_TRACES_EXPORTER, 'none');
   assert.equal(fs.readFileSync(outside, 'utf8'), 'ORIGINAL');
-  assert.ok(fs.existsSync(path.join(c.home, 'metadata-json.cjs')));
-  assert.doesNotMatch(launch, /[a-f0-9]{64}/);
+  for (const old of ['StatusLine.cjs', 'Launch-Claude.cjs', 'metadata-json.cjs'])
+    assert.equal(fs.existsSync(path.join(c.home, old)), false, old);
+  // curl reads the token from this file, readable by the user only.
+  const header = path.join(c.home, 'collector.header');
+  assert.equal(fs.readFileSync(header, 'utf8'), 'x-tua-token: ' + c.config.token + '\n');
+  if (process.platform !== 'win32') assert.equal(fs.statSync(header).mode & 0o777, 0o600);
   assert.equal(shellQuote("a'b"), "'a'\\''b'");
+});
+test('T18.3: the Mac launcher keeps the version check and passes the arguments on', unix, async (t) => {
+  const dir = setup(t),
+    c = new ClaudeCollector(path.join(dir, 'home dir')),
+    bin = path.join(dir, 'bin');
+  c.generateLauncher('darwin');
+  fs.mkdirSync(bin);
+  // A stand-in claude: prints its version, or each argument on its own line.
+  fs.writeFileSync(
+    path.join(bin, 'claude'),
+    '#!/bin/sh\nif [ "$1" = --version ]; then echo "$FAKE_VERSION (Claude Code)"; exit 0; fi\nfor a; do echo "[$a]"; done\n',
+    { mode: 0o755 },
+  );
+  const run = (version) =>
+    new Promise((resolve) => {
+      const child = spawn('/bin/sh', [path.join(c.home, launcherName('darwin')), '--resume', 'a b'], {
+        env: { ...process.env, FAKE_VERSION: version, PATH: bin + path.delimiter + process.env.PATH },
+      });
+      let out = '',
+        err = '';
+      child.stdout.on('data', (d) => (out += d));
+      child.stderr.on('data', (d) => (err += d));
+      child.on('close', (code) => resolve({ out, err, code }));
+    });
+  const ok = await run('2.1.310');
+  assert.equal(ok.code, 0);
+  assert.equal(ok.out, `[--settings]\n[${path.join(c.home, 'claude-settings.json')}]\n[--resume]\n[a b]\n`);
+  for (const version of ['2.1.250', '2.2.0', '12.1.300', 'unknown']) {
+    const refused = await run(version);
+    assert.equal(refused.code, 1, version);
+    assert.equal(refused.out, '');
+    assert.match(refused.err, /2\.1\.251/);
+  }
+});
+test('T18.3: an old helper command starting the app is recognised, so main exits instead of opening the app', () => {
+  const { legacyHelperArg } = require('../desktop/platform.cjs');
+  const home = '/Users/u/Library/Application Support/TokenUsageAssistant/claude-collector';
+  assert.equal(legacyHelperArg(['/A/Token', home + '/StatusLine.cjs']), home + '/StatusLine.cjs');
+  assert.equal(legacyHelperArg(['/A/Token', home + '/Launch-Claude.cjs', '--resume']), home + '/Launch-Claude.cjs');
+  assert.equal(legacyHelperArg(['C:\\A\\Token.exe', 'C:\\x\\StatusLine.cjs']), 'C:\\x\\StatusLine.cjs');
+  for (const argv of [['/A/Token'], ['/A/Token', '--hidden'], ['electron', '.', '--smoke-test'], ['/x/StatusLine.cjs']])
+    assert.equal(legacyHelperArg(argv), null);
+  const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.cjs'), 'utf8');
+  assert.ok(main.indexOf('legacyHelperArg(process.argv)') < main.indexOf('requestSingleInstanceLock'));
 });
 test('Mac status-line projection exports only whitelisted metadata', () => {
   const data = quotaMetadata(
@@ -167,41 +222,49 @@ test('Mac status-line projection exports only whitelisted metadata', () => {
     windows: { five_hour: { used_percentage: 10, resets_at: 123 } },
   });
 });
-test('actual portable status-line component sends authenticated metadata to loopback without content', async (t) => {
-  const dir = setup(t),
-    c = new ClaudeCollector(dir);
-  await c.start();
-  t.after(() => c.close());
-  c.generateLauncher('darwin', process.execPath);
-  const input = {
-    version: '2.1.251',
-    session_id: 's',
-    workspace: { current_dir: '/tmp/project' },
-    rate_limits: { five_hour: { used_percentage: 10, resets_at: Date.now() / 1000 + 600 } },
-    prompt: 'PRIVATE_BODY',
-    transcript_path: '/PRIVATE_DO_NOT_READ',
-    apiKey: 'PRIVATE_KEY',
-  };
-  const r = await component(path.join(dir, 'StatusLine.cjs'), JSON.stringify(input));
-  assert.equal(r.code, 0);
-  assert.match(r.out, /local collector/);
-  assert.equal(r.err, '');
-  const quota = fs.readFileSync(path.join(dir, 'quota.json'), 'utf8');
-  assert.equal(JSON.parse(quota).windows.five_hour.used_percentage, 10);
-  assert.doesNotMatch(quota, /PRIVATE|apiKey|prompt|transcript/);
-});
-test('portable status-line remains fail-open for malformed input, offline collector and oversized stdin', async (t) => {
-  const dir = setup(t),
-    c = new ClaudeCollector(dir);
-  c.generateLauncher('darwin', process.execPath);
-  for (const text of ['{bad', JSON.stringify({ version: '2.1.251', session_id: 's' }), 'x'.repeat(1000001)]) {
-    const r = await component(path.join(dir, 'StatusLine.cjs'), text);
+test(
+  'actual portable status-line component sends authenticated metadata to loopback without content',
+  unix,
+  async (t) => {
+    const dir = setup(t),
+      c = new ClaudeCollector(dir);
+    await c.start();
+    t.after(() => c.close());
+    c.generateLauncher('darwin');
+    const input = {
+      version: '2.1.251',
+      session_id: 's',
+      workspace: { current_dir: '/tmp/project' },
+      rate_limits: { five_hour: { used_percentage: 10, resets_at: Date.now() / 1000 + 600 } },
+      prompt: 'PRIVATE_BODY',
+      transcript_path: '/PRIVATE_DO_NOT_READ',
+      apiKey: 'PRIVATE_KEY',
+    };
+    const r = await component(path.join(dir, 'StatusLine.sh'), JSON.stringify(input));
     assert.equal(r.code, 0);
-    assert.match(r.out, /offline/);
+    assert.match(r.out, /local collector/);
     assert.equal(r.err, '');
-  }
-  assert.equal(fs.existsSync(path.join(dir, 'quota.json')), false);
-});
+    const quota = fs.readFileSync(path.join(dir, 'quota.json'), 'utf8');
+    assert.equal(JSON.parse(quota).windows.five_hour.used_percentage, 10);
+    assert.doesNotMatch(quota, /PRIVATE|apiKey|prompt|transcript/);
+  },
+);
+test(
+  'portable status-line remains fail-open for malformed input, offline collector and oversized stdin',
+  unix,
+  async (t) => {
+    const dir = setup(t),
+      c = new ClaudeCollector(dir);
+    c.generateLauncher('darwin');
+    for (const text of ['{bad', JSON.stringify({ version: '2.1.251', session_id: 's' }), 'x'.repeat(1000001)]) {
+      const r = await component(path.join(dir, 'StatusLine.sh'), text);
+      assert.equal(r.code, 0);
+      assert.match(r.out, /offline/);
+      assert.equal(r.err, '');
+    }
+    assert.equal(fs.existsSync(path.join(dir, 'quota.json')), false);
+  },
+);
 
 test('Mac packaged app keeps TokenUsageAssistant; development runs use a separate name and folder', () => {
   assert.equal(macDataName(true), 'TokenUsageAssistant');

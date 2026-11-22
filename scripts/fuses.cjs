@@ -6,7 +6,7 @@ const { createRequire } = require('node:module');
 
 /** Expected state per fuse; fuses not listed keep Electron's default and are reported but not enforced. */
 const EXPECTED = Object.freeze({
-  RunAsNode: true,
+  RunAsNode: false, // T18.3: no helper runs the app as Node any more
   EnableNodeOptionsEnvironmentVariable: false,
   EnableNodeCliInspectArguments: false,
   OnlyLoadAppFromAsar: true,

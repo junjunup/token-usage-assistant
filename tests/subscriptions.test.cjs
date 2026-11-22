@@ -360,6 +360,60 @@ test('Claude retries have separate request identities, OTLP replay and stream fi
   assert.equal(result.summary.total, 76);
   assert.equal(result.summary.requests, 2);
 });
+test('T18.3: /statusline takes the raw status-line input, keeps only the whitelisted fields, replies plain text', async (t) => {
+  const home = setup(t),
+    c = new ClaudeCollector(home);
+  c.prepare();
+  await c.start();
+  t.after(() => c.close());
+  const url = 'http://127.0.0.1:' + c.config.port + '/statusline',
+    headers = { 'Content-Type': 'application/json', 'x-tua-token': c.config.token },
+    post = (body, extra = {}) => fetch(url, { method: 'POST', headers: { ...headers, ...extra }, body });
+  const input = JSON.stringify({
+    version: '2.1.300',
+    session_id: 'claude-raw',
+    transcript_path: '/PRIVATE/transcript.jsonl',
+    cwd: '/PRIVATE/cwd',
+    model: { id: 'claude-x', display_name: 'PRIVATE_MODEL' },
+    cost: { total_cost_usd: 1.23 },
+    workspace: { current_dir: '/tmp/project', project_dir: '/PRIVATE/root' },
+    rate_limits: { five_hour: { used_percentage: 40, resets_at: 2e9, extra: 'PRIVATE' } },
+    prompt: 'PRIVATE_PROMPT',
+  });
+  // Same gate as the other endpoints: token, no browser origin.
+  assert.equal(
+    (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: input })).status,
+    403,
+  );
+  assert.equal((await post(input, { Origin: 'https://evil.test' })).status, 403);
+  // The setting off: an empty plain-text reply (the helper shows its marker).
+  let r = await post(input);
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type'), /^text\/plain/);
+  assert.equal(await r.text(), '');
+  const quota = fs.readFileSync(path.join(home, 'quota.json'), 'utf8');
+  assert.deepEqual(JSON.parse(quota).windows, { five_hour: { used_percentage: 40, resets_at: 2e9 } });
+  for (const file of ['quota.json', 'sessions.json'])
+    assert.doesNotMatch(fs.readFileSync(path.join(home, file), 'utf8'), /PRIVATE|transcript|cost/, file);
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(home, 'sessions.json'), 'utf8'))['claude-raw'].project,
+    '/tmp/project',
+  );
+  // The setting on: the line, one line only.
+  c.statusLine = () => 'Claude 5h 60% · 最紧 GLM 62%';
+  assert.equal(await (await post(input)).text(), 'Claude 5h 60% · 最紧 GLM 62%');
+  c.statusLine = () => 'two\nlines';
+  assert.equal(await (await post(input)).text(), '');
+  // Unreadable input is refused without counting as an event gap (the helper dropped it itself before T18.3).
+  assert.equal((await post('{bad')).status, 400);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(home, 'status.json'), 'utf8')).gaps, []);
+  // A known structure without a session is refused as before (/quota does the same).
+  assert.equal((await post(JSON.stringify({ version: '2.1.300' }))).status, 400);
+  // More than 1 MB is refused.
+  r = await post(JSON.stringify({ version: '2.1.300', session_id: 's', pad: 'x'.repeat(1_000_001) }));
+  assert.equal(r.status, 413);
+});
+
 test('Claude loopback authenticates, rejects browser origin, records only metadata, and closes cleanly', async (t) => {
   const home = setup(t),
     c = new ClaudeCollector(home);
