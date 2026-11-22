@@ -384,6 +384,9 @@ function Prediction({ value: p }) {
         v0: m >= 60 ? t('{v0} 小时 {v1} 分钟', { v0: Math.floor(m / 60), v1: m % 60 }) : t('{v0} 分钟', { v0: m }),
       });
     }
+    // T18.2: a burst is not stretched over a long window, and a change of a point or two is not a rate.
+    if (w.why === 'horizon') return t('离重置还远，暂不推算');
+    if (w.why === 'small-change') return t('用量变化太小，暂不推算');
     return t('该窗口的连续样本不足');
   };
   return (
@@ -422,7 +425,7 @@ function Prediction({ value: p }) {
                 t(' 分钟的速度推算') +
                 (p.purchasedAvailable ? t('；购买额度仍有余额，窗口触顶后可能转用购买额度') : '')
               }
-              detail={t('基于账户采样，假设消耗速度保持不变；不随上方时间筛选改变。')}
+              detail={t('基于账户采样，假设消耗速度保持不变，最多推算到样本时长的 12 倍；不随上方时间筛选改变。')}
             />
           </p>
         </>

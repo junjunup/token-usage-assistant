@@ -492,20 +492,23 @@ function snapshot() {
   };
 }
 // T12.1: a sample forecast for a platform account: the tightest window runs out before its reset when under 40 %.
+// T18.2: 18 minutes of samples speak for 216 minutes at most; a window resetting later says nothing ('horizon').
 function previewPrediction(a) {
   const windows = (a.parts?.credits?.windows || []).filter((w) => w.resetAt > 0 && Number.isFinite(w.remainingPercent));
   if (!windows.length) return { available: false, reason: '需要至少 10 分钟连续且新鲜的账户采样', windows: [] };
   const tight = [...windows].sort((x, y) => x.remainingPercent - y.remainingPercent)[0];
+  const minutes = 18,
+    horizon = 12 * minutes;
   return {
     available: true,
-    minutes: 18,
-    windows: windows.map((w) => ({
-      key: w.id,
-      label: w.label,
-      group: w.group,
-      status: w === tight && w.remainingPercent < 40 ? 'before-reset' : 'after-reset',
-      minutesToCap: w === tight && w.remainingPercent < 40 ? 95 : null,
-    })),
+    minutes,
+    windows: windows.map((w) => {
+      const base = { key: w.id, label: w.label, group: w.group };
+      if (w === tight && w.remainingPercent < 40) return { ...base, status: 'before-reset', minutesToCap: 95 };
+      return (w.resetAt - Date.now()) / 60000 <= horizon
+        ? { ...base, status: 'after-reset', minutesToCap: null }
+        : { ...base, status: 'insufficient', why: 'horizon' };
+    }),
   };
 }
 const associationPreview = async () => ({ ok: false, error: '请在 Windows 应用中管理真实账户关联。' });

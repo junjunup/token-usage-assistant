@@ -179,6 +179,39 @@ test('T11.3: the pace line condenses the existing forecast; unknown stays a dash
   );
 });
 
+test("T18.2: a claim names the windows it covers; nothing to say gives the windows' own reason", () => {
+  const p = (windows) => ({ available: true, minutes: 20, windows });
+  assert.deepEqual(
+    paceLine(
+      p([
+        { key: 'five', status: 'after-reset' },
+        { key: 'week', status: 'insufficient', why: 'horizon' },
+      ]),
+    ),
+    { tone: 'normal', text: '按最近 20 分钟的速度，5 小时窗口重置前不会触顶', reason: null },
+  );
+  // Every window covered: the claim stays general, as before.
+  assert.equal(
+    paceLine(
+      p([
+        { key: 'five', status: 'after-reset' },
+        { key: 'week', status: 'after-reset' },
+      ]),
+    )?.text,
+    '按最近 20 分钟的速度，重置前不会触顶',
+  );
+  const reason = (windows) => paceLine(p(windows))?.reason;
+  assert.equal(reason([{ key: 'week', status: 'insufficient', why: 'horizon' }]), '离重置还远，暂不推算');
+  assert.equal(
+    reason([
+      { key: 'five', status: 'insufficient', why: 'small-change' },
+      { key: 'week', status: 'insufficient', why: 'horizon' },
+    ]),
+    '用量变化太小，暂不推算',
+  );
+  assert.equal(reason([{ key: 'five', status: 'insufficient' }]), '窗口的连续样本不足');
+});
+
 test('T12.1: every platform with quota windows has a pace line, named by its own windows; balances have none', () => {
   const prediction = { available: true, minutes: 30, windows: [{ key: 'five', status: 'after-reset' }] };
   const glmForecast = {

@@ -50,7 +50,8 @@ const WINDOW_NAME = /** @type {Record<string, string>} */ ({ five: '5 小时窗�
 function paceLine(p) {
   if (!p) return null;
   if (!p.available) return { tone: 'normal', text: '—', reason: String(p.reason || '账户采样不足') };
-  /** @type {{ key: string, status: string, minutesToCap?: number|null, label?: string|null, group?: string|null }[]} */
+  /** @type {{ key: string, status: string, minutesToCap?: number|null, label?: string|null, group?: string|null,
+   *   why?: string }[]} */
   const windows = Array.isArray(p.windows) ? p.windows : [];
   // T12.1: other platforms' windows carry their own label; the group is added when two windows share a label.
   const name = (/** @type {typeof windows[number]} */ w) =>
@@ -71,9 +72,22 @@ function paceLine(p) {
       reason: null,
     };
   const known = windows.filter((w) => w.status === 'after-reset' || w.status === 'idle');
-  if (!known.length) return { tone: 'normal', text: '—', reason: '窗口的连续样本不足' };
+  if (!known.length) return { tone: 'normal', text: '—', reason: unknownReason(windows) };
   if (known.every((w) => w.status === 'idle')) return { tone: 'normal', text: '近期未新增消耗', reason: null };
-  return { tone: 'normal', text: span + '重置前不会触顶', reason: null };
+  // T18.2: when the recent pace cannot speak for every window, the claim names the windows it does cover.
+  const partial = windows.some((w) => w.status === 'insufficient');
+  const covered = known.filter((w) => w.status === 'after-reset').map(name);
+  return { tone: 'normal', text: span + (partial ? covered.join('、') : '') + '重置前不会触顶', reason: null };
+}
+
+/**
+ * T18.2: why the forecast says nothing for any window, from the windows' own reasons (analytics-core.cjs outlook).
+ * @param {{ why?: string }[]} windows
+ */
+function unknownReason(windows) {
+  if (windows.some((w) => w.why === 'small-change')) return '用量变化太小，暂不推算';
+  if (windows.some((w) => w.why === 'horizon')) return '离重置还远，暂不推算';
+  return '窗口的连续样本不足';
 }
 
 /** @param {number} v */

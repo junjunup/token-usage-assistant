@@ -979,6 +979,9 @@ export const EN = {
   '约 {v0}后触顶': 'Reaches the limit in about {v0}',
   '{v0} 小时 {v1} 分钟': '{v0} h {v1} min',
   该窗口的连续样本不足: 'Not enough continuous samples for this window',
+  // T18.2: why a window gets no forecast (analytics-core.cjs outlook).
+  '离重置还远，暂不推算': 'The reset is too far off to project from the recent pace',
+  '用量变化太小，暂不推算': 'Too little change to project yet',
   账户消耗速度与预测: 'Account pace and forecast',
   'Token / 分钟': 'Tokens / min',
   '费用 / 小时': 'Cost / hour',
@@ -989,8 +992,8 @@ export const EN = {
   分钟的速度推算: 'minutes',
   '；购买额度仍有余额，窗口触顶后可能转用购买额度':
     '; purchased credits remain and may be used once a window is at its limit',
-  '基于账户采样，假设消耗速度保持不变；不随上方时间筛选改变。':
-    'Based on account samples, assuming the pace stays the same; not affected by the period above.',
+  '基于账户采样，假设消耗速度保持不变，最多推算到样本时长的 12 倍；不随上方时间筛选改变。':
+    'Based on account samples, assuming the pace stays the same and projecting at most 12 times the sampled span; not affected by the period above.',
   '连接账户后开始积累采样，至少 10 分钟后提供预测。':
     'Samples start once an account is connected; a forecast needs at least 10 minutes.',
   额度从哪里扣: 'Where usage is charged',
@@ -1662,6 +1665,15 @@ export const EN_PATTERNS = [
   [
     /^按最近 (\d+) 分钟的速度，重置前不会触顶$/,
     (m) => `At the pace of the last ${m} min, no limit is reached before reset`,
+  ],
+  // T18.2: the claim names the windows it covers when the recent pace cannot speak for every window.
+  [
+    /^按最近 (\d+) 分钟的速度，(.+)重置前不会触顶$/,
+    (m, names) =>
+      `At the pace of the last ${m} min, ${names
+        .split('、')
+        .map(windowName)
+        .join(', ')} won't reach the limit before reset`,
   ],
   [/^(.+)已达上限$/, (name) => `${windowName(name)} reached its limit`],
 ];
