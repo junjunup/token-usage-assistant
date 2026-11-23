@@ -11,7 +11,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { projectJSON } = require('./metadata-json.cjs');
+const { projectJSON, KEYS } = require('./metadata-json.cjs');
 const { lines } = require('./codex-reader.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const {
@@ -41,8 +41,9 @@ function readSession(file, sourceId) {
   const take = (record, line) => {
     if (record.type !== 'gemini' || record.tokens === undefined || record.tokens === null) return;
     // T9.14: the names of the counters this version reports (as tokens.<name>); values are never kept.
+    // T18.4: only that object's key names (and number values) are decoded, never the rest of the line.
     try {
-      const raw = line ? JSON.parse(line)?.tokens : null;
+      const raw = line ? projectJSON(line, { tokens: KEYS })?.tokens : null;
       if (raw && typeof raw === 'object' && !Array.isArray(raw))
         for (const name of Object.keys(raw)) fieldSet.add('tokens.' + name);
     } catch {

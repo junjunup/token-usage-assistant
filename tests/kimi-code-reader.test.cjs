@@ -8,6 +8,26 @@ const { readWire, scanKimiCode, sessionOf } = require('../desktop/kimi-code-read
 const { toolKind } = require('../desktop/tool-kinds/index.cjs');
 
 // T12.4: Kimi Code wire.jsonl files, shaped like MoonshotAI/kimi-code agent-core-v2 (synthetic data).
+// T18.4: a read never hands a line holding content to JSON.parse; only whitelisted leaves (and the key names of
+// the usage object) are decoded.
+const noContentParsed = (read) => {
+  const parse = JSON.parse,
+    seen = [];
+  JSON.parse = (text, ...rest) => {
+    seen.push(String(text));
+    return parse(text, ...rest);
+  };
+  try {
+    return read();
+  } finally {
+    JSON.parse = parse;
+    assert.deepEqual(
+      seen.filter((s) => s.includes('PRIVATE')),
+      [],
+      'content reached JSON.parse',
+    );
+  }
+};
 const NOW = Date.UTC(2026, 10, 3, 9);
 const range = { start: NOW - 86400000, end: NOW + 60000 };
 const home = (t) => {
@@ -62,7 +82,7 @@ const chat = [
 test('T12.4: one row per usage record (undone calls included), input known only with cache reads, nothing private', (t) => {
   const dir = home(t);
   const file = write(dir, 'sessions/proj/s1/agents/main/wire.jsonl', chat);
-  const { rows, skipped, fields } = readWire(file, 'src', 'proj/s1');
+  const { rows, skipped, fields } = noContentParsed(() => readWire(file, 'src', 'proj/s1'));
   assert.equal(skipped, 0);
   assert.equal(rows.length, 2);
   const [a, b] = rows;

@@ -1,5 +1,8 @@
 // A selective JSON decoder: excluded strings/objects are skipped, never decoded or retained.
 // This prevents conversation text, instructions and tool results entering the usage object.
+// KEYS (T18.4): an object's key names, with number values decoded and every other value skipped (null), so a reader
+// can see which counters a record reports without decoding anything else in it.
+const KEYS = Symbol('keys');
 function projectJSON(source, selection) {
   let i = 0;
   const ws = () => {
@@ -21,6 +24,35 @@ function projectJSON(source, selection) {
     if (depth > 100) throw new Error('depth');
     ws();
     const c = source[i];
+    if (sel === KEYS) {
+      if (c !== '{') {
+        value(false, depth);
+        return undefined;
+      }
+      i++;
+      const out = Object.create(null);
+      ws();
+      if (source[i] === '}') {
+        i++;
+        return out;
+      }
+      while (i < source.length) {
+        ws();
+        if (source[i] !== '"') throw new Error('json');
+        const key = str(true);
+        ws();
+        if (source[i++] !== ':') throw new Error('json');
+        ws();
+        const numeric = /[-0-9]/.test(source[i] || '');
+        const v = value(numeric, depth + 1);
+        out[key] = numeric ? v : null;
+        ws();
+        const sep = source[i++];
+        if (sep === '}') return out;
+        if (sep !== ',') throw new Error('json');
+      }
+      throw new Error('json');
+    }
     if (c === '"') return str(sel === true);
     if (c === '{' || c === '[') {
       const obj = c === '{',
@@ -74,4 +106,4 @@ function projectJSON(source, selection) {
   if (i !== source.length) throw new Error('json');
   return result;
 }
-module.exports = { projectJSON };
+module.exports = { projectJSON, KEYS };

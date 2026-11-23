@@ -8,6 +8,26 @@ const { readChat, scanQwen } = require('../desktop/qwen-reader.cjs');
 const { toolKind } = require('../desktop/tool-kinds/index.cjs');
 
 // T12.5: Qwen Code chat records, shaped like QwenLM/qwen-code core/src/services/chatRecordingService.ts (synthetic).
+// T18.4: a read never hands a line holding content to JSON.parse; only whitelisted leaves (and the key names of
+// the usage object) are decoded.
+const noContentParsed = (read) => {
+  const parse = JSON.parse,
+    seen = [];
+  JSON.parse = (text, ...rest) => {
+    seen.push(String(text));
+    return parse(text, ...rest);
+  };
+  try {
+    return read();
+  } finally {
+    JSON.parse = parse;
+    assert.deepEqual(
+      seen.filter((s) => s.includes('PRIVATE')),
+      [],
+      'content reached JSON.parse',
+    );
+  }
+};
 const NOW = Date.UTC(2026, 10, 3, 9);
 const iso = (ms) => new Date(ms).toISOString();
 const range = { start: NOW - 86400000, end: NOW + 60000 };
@@ -69,7 +89,9 @@ const session = (sessionId) => [
 
 test('T12.5: one row per assistant reply with usage; thoughts are reasoning inside output; nothing private', (t) => {
   const dir = home(t);
-  const { rows, fields } = readChat(write(dir, 'projects/p/chats/s1.jsonl', session('s1')), 'src');
+  const { rows, fields } = noContentParsed(() =>
+    readChat(write(dir, 'projects/p/chats/s1.jsonl', session('s1')), 'src'),
+  );
   assert.equal(rows.length, 2);
   const [a, b] = rows;
   assert.deepEqual([a.input, a.output, a.read, a.write, a.reasoning, a.total], [1000, 70, 600, null, 20, 1070]);

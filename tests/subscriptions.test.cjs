@@ -5,7 +5,7 @@ const test = require('node:test'),
 const { DatabaseSync } = require('node:sqlite');
 const { normalizeCodex, normalizeClaude, SubscriptionClient } = require('../desktop/subscriptions.cjs');
 const { ClaudeCollector, parseOtel, scanClaude } = require('../desktop/claude-collector.cjs');
-const { projectJSON } = require('../desktop/metadata-json.cjs');
+const { projectJSON, KEYS } = require('../desktop/metadata-json.cjs');
 const { readFile, scanCodex } = require('../desktop/codex-reader.cjs');
 const { aggregateTools } = require('../desktop/tool-analytics.cjs');
 const { ToolSources } = require('../desktop/tool-sources.cjs');
@@ -207,6 +207,29 @@ test('Claude repaint retains original observation time and removal of a window r
   assert.equal(JSON.parse(fs.readFileSync(file)).observedAt, old.observedAt);
   c.receiveQuota({ ...data, windows: {} });
   assert.deepEqual(JSON.parse(fs.readFileSync(file)).windows, {});
+});
+test("T18.4: KEYS gives an object's key names with only its numbers decoded", () => {
+  const line = JSON.stringify({
+    message: {
+      content: [{ text: 'PRIVATE' }],
+      usage: { input_tokens: 3, tier: 'PRIVATE', nested: { x: 'PRIVATE' }, n: -1.5e2, b: true },
+    },
+  });
+  const parse = JSON.parse,
+    seen = [];
+  JSON.parse = (text, ...rest) => (seen.push(String(text)), parse(text, ...rest));
+  let usage;
+  try {
+    usage = projectJSON(line, { message: { usage: KEYS } }).message.usage;
+  } finally {
+    JSON.parse = parse;
+  }
+  assert.deepEqual({ ...usage }, { input_tokens: 3, tier: null, nested: null, n: -150, b: null });
+  assert.equal(seen.filter((s) => s.includes('PRIVATE')).length, 0);
+  // Not an object: nothing decoded; broken JSON still throws.
+  assert.equal(projectJSON('{"usage":"PRIVATE"}', { usage: KEYS }).usage, undefined);
+  assert.deepEqual({ ...projectJSON('{"usage":{}}', { usage: KEYS }).usage }, {});
+  assert.throws(() => projectJSON('{"usage":{"a":1', { usage: KEYS }));
 });
 test('selective JSON decoder excludes nested bodies, escapes, credentials and prototype fields', () => {
   const input = JSON.stringify({
