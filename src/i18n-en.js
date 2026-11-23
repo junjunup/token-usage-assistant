@@ -533,8 +533,8 @@ export const EN = {
     'Reads the signed-in subscription through the official client. Choose a profile if there are several, or pick a folder. Plan quota and tool details have their own status.',
   连接后用生成的: 'After connecting, use the generated',
   '启动 Claude Code': 'to start Claude Code',
-  '在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。':
-    'in your project folder. Connecting creates a local launch configuration and data source; collection runs while the assistant runs, and your Claude configuration is kept. Requires Claude Code 2.1.251+ (2.1.x).',
+  '在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251 或更高版本。':
+    'in your project folder. Connecting creates a local launch configuration and data source; collection runs while the assistant runs, and your Claude configuration is kept. Requires Claude Code 2.1.251 or later.',
   '在本机粘贴官方 API Key': 'Paste the official API key on this computer',
   在本机粘贴套餐密钥: 'Paste the plan key on this computer',
   '组织 ID': 'Organization ID',

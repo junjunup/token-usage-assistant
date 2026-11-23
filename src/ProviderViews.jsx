@@ -618,7 +618,7 @@ export function ConnectionForm({
                   t(' 启动 Claude Code')
                 }
                 detail={t(
-                  '在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251+（2.1.x）。',
+                  '在项目目录运行。连接时生成本地启动配置和数据源；助手运行时采集，原 Claude 配置文件保留。需要 Claude Code 2.1.251 或更高版本。',
                 )}
               />
             )}
