@@ -8,6 +8,26 @@ const { readSession, scanGemini } = require('../desktop/gemini-reader.cjs');
 const { toolKind } = require('../desktop/tool-kinds/index.cjs');
 
 // T12.3: Gemini CLI session files, shaped like packages/core/src/services/chatRecordingTypes.ts (synthetic data).
+// T18.4: a read never hands a line holding content to JSON.parse; only whitelisted leaves (and the key names of
+// the usage object) are decoded.
+const noContentParsed = (read) => {
+  const parse = JSON.parse,
+    seen = [];
+  JSON.parse = (text, ...rest) => {
+    seen.push(String(text));
+    return parse(text, ...rest);
+  };
+  try {
+    return read();
+  } finally {
+    JSON.parse = parse;
+    assert.deepEqual(
+      seen.filter((s) => s.includes('PRIVATE')),
+      [],
+      'content reached JSON.parse',
+    );
+  }
+};
 const NOW = Date.UTC(2026, 10, 3, 9);
 const iso = (ms) => new Date(ms).toISOString();
 const tokens = (input, output, extra = {}) => ({
@@ -68,7 +88,7 @@ test('T12.3: one row per response, the last revision wins, rewound responses sti
     { id: 'i1', timestamp: iso(NOW), type: 'info', content: 'PRIVATE_INFO' },
     { id: 'g3', timestamp: iso(NOW - 400000), type: 'gemini', content: 'no usage reported', tokens: null },
   ]);
-  const { rows, fields } = readSession(file, 'src');
+  const { rows, fields } = noContentParsed(() => readSession(file, 'src'));
   assert.equal(rows.length, 2);
   const [a, b] = rows;
   assert.deepEqual(

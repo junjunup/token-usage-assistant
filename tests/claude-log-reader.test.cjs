@@ -11,6 +11,26 @@ const { discoverTools } = require('../desktop/tool-discovery.cjs');
 
 // T14.1 (D21): Claude Code session logs, shaped like ~/.claude/projects/<project>/<session>.jsonl (synthetic; only
 // the structure was taken from real files, by key names and value types).
+// T18.4: a read never hands a line holding content to JSON.parse; only whitelisted leaves (and the key names of
+// the usage object) are decoded.
+const noContentParsed = (read) => {
+  const parse = JSON.parse,
+    seen = [];
+  JSON.parse = (text, ...rest) => {
+    seen.push(String(text));
+    return parse(text, ...rest);
+  };
+  try {
+    return read();
+  } finally {
+    JSON.parse = parse;
+    assert.deepEqual(
+      seen.filter((s) => s.includes('PRIVATE')),
+      [],
+      'content reached JSON.parse',
+    );
+  }
+};
 const NOW = Date.UTC(2026, 10, 5, 9);
 const iso = (ms) => new Date(ms).toISOString();
 const range = { start: NOW - 86400000, end: NOW + 60000 };
@@ -81,7 +101,7 @@ const session = (sessionId) => [
 
 test('T14.1: one row per response (multi-line responses once); cache inside input, thinking inside output; nothing private', (t) => {
   const dir = home(t);
-  const { rows, fields } = readLog(write(dir, 'projects/-p/s1.jsonl', session('s1')), 'src');
+  const { rows, fields } = noContentParsed(() => readLog(write(dir, 'projects/-p/s1.jsonl', session('s1')), 'src'));
   assert.equal(rows.length, 2);
   const [a, b] = rows;
   assert.deepEqual([a.input, a.output, a.read, a.write, a.reasoning, a.total], [5203, 40, 5000, 200, 10, 5243]);

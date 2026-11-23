@@ -13,7 +13,7 @@
 // requests both report (D21 ②).
 const fs = require('node:fs');
 const path = require('node:path');
-const { projectJSON } = require('./metadata-json.cjs');
+const { projectJSON, KEYS } = require('./metadata-json.cjs');
 const { lines } = require('./codex-reader.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const {
@@ -57,8 +57,9 @@ function readLog(file, sourceId) {
     if (record.type !== 'assistant' || !m || m.usage === undefined || m.usage === null) continue;
     if (record.isApiErrorMessage === true || m.model === '<synthetic>') continue;
     // T9.14: the names of the counters this version reports; values are never kept.
+    // T18.4: only that object's key names (and number values) are decoded, never the rest of the line.
     try {
-      const raw = JSON.parse(line)?.message?.usage;
+      const raw = projectJSON(line, { message: { usage: KEYS } })?.message?.usage;
       if (raw && typeof raw === 'object' && !Array.isArray(raw))
         for (const [name, value] of Object.entries(raw)) if (typeof value === 'number') fieldSet.add(name);
     } catch {

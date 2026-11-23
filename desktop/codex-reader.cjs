@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { projectJSON } = require('./metadata-json.cjs');
+const { projectJSON, KEYS } = require('./metadata-json.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 // Rollout usage follows the structure contract (T5.1, T9.13 / D15): any version is read when the core counts are
 // present and well-formed; a renamed or missing core field fails closed (no guessing at field meanings).
@@ -106,10 +106,10 @@ function readRollout(file, sourceId) {
       continue;
     }
     if (event.type !== 'event_msg' || p.type !== 'token_count' || !p.info) continue;
-    // T9.14: the names of the usage counters this version reports. token_count lines carry only numbers, so the full
-    // line is parsed here to see names outside the projection; values are never kept.
+    // T9.14: the names of the usage counters this version reports; values are never kept. T18.4: only the key names
+    // (and number values) of last_token_usage are decoded, not the rest of the line.
     try {
-      const raw = JSON.parse(line)?.payload?.info?.last_token_usage;
+      const raw = projectJSON(line, { payload: { info: { last_token_usage: KEYS } } })?.payload?.info?.last_token_usage;
       if (raw && typeof raw === 'object' && !Array.isArray(raw))
         for (const name of Object.keys(raw)) fieldSet.add(name);
     } catch {

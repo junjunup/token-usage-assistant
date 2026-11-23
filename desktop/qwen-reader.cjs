@@ -9,7 +9,7 @@
 //   and reasoning = thoughts (a subset of output), cached = cache reads within input; nothing is counted twice.
 const fs = require('node:fs');
 const path = require('node:path');
-const { projectJSON } = require('./metadata-json.cjs');
+const { projectJSON, KEYS } = require('./metadata-json.cjs');
 const { lines } = require('./codex-reader.cjs');
 const { normalizeSubscriptionRecord } = require('./tool-analytics.cjs');
 const {
@@ -39,8 +39,9 @@ function readChat(file, sourceId) {
     const record = projectJSON(line, selection);
     if (record.type !== 'assistant' || record.usageMetadata === undefined || record.usageMetadata === null) continue;
     // T9.14: the names of the counters this version reports; values are never kept.
+    // T18.4: only that object's key names (and number values) are decoded, never the rest of the line.
     try {
-      const raw = JSON.parse(line)?.usageMetadata;
+      const raw = projectJSON(line, { usageMetadata: KEYS })?.usageMetadata;
       if (raw && typeof raw === 'object' && !Array.isArray(raw))
         for (const name of Object.keys(raw)) fieldSet.add(name);
     } catch {
