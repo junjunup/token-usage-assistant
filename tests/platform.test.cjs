@@ -159,7 +159,7 @@ test('Mac Claude launchers quote paths, need no app runtime and preserve externa
   if (process.platform !== 'win32') assert.equal(fs.statSync(header).mode & 0o777, 0o600);
   assert.equal(shellQuote("a'b"), "'a'\\''b'");
 });
-test('T18.3: the Mac launcher keeps the version check and passes the arguments on', unix, async (t) => {
+test('T18.5: the Mac launcher wants Claude Code 2.1.251 or later and passes the arguments on', unix, async (t) => {
   const dir = setup(t),
     c = new ClaudeCollector(path.join(dir, 'home dir')),
     bin = path.join(dir, 'bin');
@@ -182,10 +182,13 @@ test('T18.3: the Mac launcher keeps the version check and passes the arguments o
       child.stderr.on('data', (d) => (err += d));
       child.on('close', (code) => resolve({ out, err, code }));
     });
-  const ok = await run('2.1.310');
-  assert.equal(ok.code, 0);
-  assert.equal(ok.out, `[--settings]\n[${path.join(c.home, 'claude-settings.json')}]\n[--resume]\n[a b]\n`);
-  for (const version of ['2.1.250', '2.2.0', '12.1.300', 'unknown']) {
+  for (const version of ['2.1.251', '2.1.310', '2.2.0', '3.0.1', '12.1.300']) {
+    const ok = await run(version);
+    assert.equal(ok.code, 0, version);
+    assert.equal(ok.out, `[--settings]\n[${path.join(c.home, 'claude-settings.json')}]\n[--resume]\n[a b]\n`);
+    assert.equal(ok.err, '');
+  }
+  for (const version of ['2.1.250', '2.0.999', '1.9.0', 'unknown']) {
     const refused = await run(version);
     assert.equal(refused.code, 1, version);
     assert.equal(refused.out, '');
@@ -300,3 +303,44 @@ test('Mac smoke runs use the mock keychain, never a real Keychain item (2026-10-
     /app\.setName\(smoke \? macSmokeName : macName\);\s*if \(smoke\) app\.commandLine\.appendSwitch\('use-mock-keychain'\);/,
   );
 });
+test(
+  'T18.5: the Windows launcher wants Claude Code 2.1.251 or later',
+  { skip: process.platform !== 'win32' && 'PowerShell launcher, Windows only' },
+  async (t) => {
+    const dir = setup(t),
+      c = new ClaudeCollector(path.join(dir, 'home')),
+      bin = path.join(dir, 'bin');
+    c.generateLauncher('win32');
+    fs.mkdirSync(bin);
+    // A stand-in claude: its version, or a marker that it was started with the assistant's settings.
+    fs.writeFileSync(
+      path.join(bin, 'claude.cmd'),
+      '@echo off\r\nif "%~1"=="--version" goto version\r\necho started %1\r\nexit /b 0\r\n:version\r\necho %FAKE_VERSION% Claude Code\r\n',
+    );
+    const run = (version) =>
+      new Promise((resolve) => {
+        const child = spawn(
+          'powershell.exe',
+          ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(c.home, launcherName('win32'))],
+          {
+            env: { ...process.env, FAKE_VERSION: version, PATH: bin + path.delimiter + process.env.PATH },
+            windowsHide: true,
+          },
+        );
+        let out = '';
+        child.stdout.on('data', (d) => (out += d));
+        child.stderr.resume();
+        child.on('close', (code) => resolve({ out, code }));
+      });
+    for (const version of ['2.1.251', '2.2.0', '3.0.1']) {
+      const r = await run(version);
+      assert.equal(r.code, 0, version);
+      assert.match(r.out, /started --settings/, version);
+    }
+    for (const version of ['2.1.250', '1.9.0', 'unknown']) {
+      const r = await run(version);
+      assert.notEqual(r.code, 0, version);
+      assert.doesNotMatch(r.out, /started/, version);
+    }
+  },
+);

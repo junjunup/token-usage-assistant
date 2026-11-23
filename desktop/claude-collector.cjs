@@ -374,15 +374,24 @@ class ClaudeCollector {
       fs.writeFileSync(header, 'x-tua-token: ' + cfg.token + '\n', { mode: 0o600 });
       fs.chmodSync(header, 0o600);
       command = '/bin/sh ' + shellQuote(helper);
-      // Same check as before: Claude Code 2.1.x from 2.1.251, then this session runs with the assistant's settings.
+      // Claude Code 2.1.251 or later (T18.5: a later 2.x or 3.x too; it was 2.1.x only), then this session runs with
+      // the assistant's settings.
       const launch = [
         '#!/bin/sh',
         "# Run this file from your project directory in Terminal. Claude Code starts with the assistant's settings for",
         '# this session only (status line and local usage export); your own Claude settings stay as they are.',
         'settings=' + shellQuote(path.join(this.home, 'claude-settings.json')),
-        "patch=$(claude --version 2>/dev/null | sed -nE 's/^(.*[^0-9.])?2[.]1[.]([0-9]+)([^0-9].*)?$/\\2/p' | head -n 1)",
-        'if [ -z "$patch" ] || [ "$patch" -lt 251 ]; then',
-        "  echo '需要 Claude Code 2.1.251 或更高的 2.1.x 版本。请在官方客户端检查安装与登录。' >&2",
+        "version=$(claude --version 2>/dev/null | sed -nE 's/^[^0-9]*([0-9]+)[.]([0-9]+)[.]([0-9]+).*$/\\1 \\2 \\3/p' | head -n 1)",
+        'new_enough() {',
+        '  [ "$1" -gt 2 ] && return 0',
+        '  [ "$1" -lt 2 ] && return 1',
+        '  [ "$2" -gt 1 ] && return 0',
+        '  [ "$2" -lt 1 ] && return 1',
+        '  [ "$3" -ge 251 ]',
+        '}',
+        '# The three numbers go in as three arguments (unquoted on purpose).',
+        'if [ -z "$version" ] || ! new_enough $version 2>/dev/null; then',
+        "  echo '需要 Claude Code 2.1.251 或更高版本。请在官方客户端检查安装与登录。' >&2",
         '  exit 1',
         'fi',
         'exec claude --settings "$settings" "$@"',
@@ -422,7 +431,7 @@ class ClaudeCollector {
       path.join(this.home, '使用说明.txt'),
       '在项目目录打开终端，运行本文件夹中的 ' +
         launcherName(platform) +
-        '。需要 Claude Code 2.1.251+（2.1.x），先用官方 /login 登录。助手必须保持运行。\r\n配置仅用于此启动会话，不修改已有 Claude settings.json；此会话使用助手状态栏。原自定义状态栏仍保留在原配置中。\r\n仅本机采集启用后的 Token、模型、项目、会话和订阅窗口。不补历史、不读取会话正文。关闭助手时可能丢失用量事件，统计不保证完整。\r\n已有自定义遥测的用户请勿同时用此启动配置，避免改变该会话的遥测出口。\r\n',
+        '。需要 Claude Code 2.1.251 或更高版本，先用官方 /login 登录。助手必须保持运行。\r\n配置仅用于此启动会话，不修改已有 Claude settings.json；此会话使用助手状态栏。原自定义状态栏仍保留在原配置中。\r\n仅本机采集启用后的 Token、模型、项目、会话和订阅窗口。不补历史、不读取会话正文。关闭助手时可能丢失用量事件，统计不保证完整。\r\n已有自定义遥测的用户请勿同时用此启动配置，避免改变该会话的遥测出口。\r\n',
     );
     return this.home;
   }
