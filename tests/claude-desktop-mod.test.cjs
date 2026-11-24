@@ -90,7 +90,8 @@ test('T19.1: a measurement with rate limits reaches the collector as the two win
   );
   assert.deepEqual(result, { changed: ['rateLimits'] });
   assert.equal(nexted, 1);
-  assert.deepEqual(reads, [path.join(collectorHome, 'collector.json')]);
+  // The macOS form, written with '/' by the mod whatever the test machine (no APPDATA here, as on a Mac).
+  assert.deepEqual(reads, [`${home}/Library/Application Support/TokenUsageAssistant/claude-collector/collector.json`]);
   assert.equal(fetches.length, 1);
   assert.equal(fetches[0].url, `http://127.0.0.1:${collector.config.port}/quota`);
   assert.equal(fetches[0].init.headers['x-tua-token'], collector.config.token);
