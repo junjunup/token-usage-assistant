@@ -1,0 +1,7 @@
+{
+  "name": "token-usage-quota-sync",
+  "version": "0.1.0",
+  "description": "Token 用量助手 · Claude 额度同步：把 Claude 桌面版会话的 5 小时 / 每周实时额度经本机回环地址交给 Token 用量助手，不传对话内容或凭据。",
+  "author": { "name": "Token 用量助手" },
+  "license": "MIT"
+}

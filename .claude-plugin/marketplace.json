@@ -1,0 +1,13 @@
+{
+  "name": "token-usage-assistant",
+  "description": "Token 用量助手的 Claude 桌面版插件：把官方实时额度交给本机的 Token 用量助手。",
+  "owner": {
+    "name": "Token 用量助手"
+  },
+  "plugins": [
+    {
+      "name": "token-usage-quota-sync",
+      "source": "./integrations/claude-desktop-mod"
+    }
+  ]
+}
