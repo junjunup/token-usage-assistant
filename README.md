@@ -111,7 +111,7 @@
 ```bash
 pnpm install
 pnpm run dev               # 浏览器预览（示例数据）
-pnpm run test:desktop      # 桌面与分析测试（基线：本机 506 通过 / 0 失败 / 7 跳过；CI 装了 Harness 运行时，macOS 512 / 0 / 1）
+pnpm run test:desktop      # 桌面与分析测试（基线：本机 511 通过 / 0 失败 / 7 跳过；CI 装了 Harness 运行时，macOS 517 / 0 / 1）
 pnpm run lint              # ESLint
 pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）
