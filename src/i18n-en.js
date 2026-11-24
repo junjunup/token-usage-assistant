@@ -504,10 +504,18 @@ export const EN = {
   重新接入: 'Connect again',
   '设置文件看不懂 · 未修改': 'Settings file not understood · unchanged',
   '已有自定义状态栏 · 暂不接入': 'Custom status line present · not connected',
-  '经你确认后，把助手的状态栏组件写进 {v0}，之后任何方式打开的会话都会采集套餐额度；修改前先备份，可随时还原。':
-    "After you confirm, the assistant's status-line helper is written into {v0}, so every session collects plan quota however it is started; the file is backed up first and can be restored any time.",
-  '新打开的会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。':
-    'New sessions collect plan quota automatically; per-request token details still need the launcher (or the session-log source).',
+  '经你确认后，把助手的状态栏组件写进 {v0}，之后在终端里打开的会话都会采集套餐额度；修改前先备份，可随时还原。':
+    "After you confirm, the assistant's status-line helper is written into {v0}, so sessions opened in a terminal collect plan quota; the file is backed up first and can be restored any time.",
+  'Claude 桌面版会话': 'Claude desktop sessions',
+  已安装额度同步模组: 'Quota-sync mod installed',
+  未安装额度同步模组: 'Quota-sync mod not installed',
+  无法确认是否已安装额度同步模组: 'Cannot tell whether the quota-sync mod is installed',
+  '新打开的桌面版会话会把官方实时额度交给助手，额度每变 1 个点同步一次。':
+    'Desktop sessions opened from now on hand their official live quota to the assistant, at every whole point it moves.',
+  '桌面版不运行状态栏命令。在终端运行一次下面的命令安装额度同步模组，之后新打开的桌面版会话会把官方实时额度交给助手：':
+    'The desktop app runs no status-line command. Run this once in a terminal to install the quota-sync mod; desktop sessions opened afterwards hand their official live quota to the assistant:',
+  '新打开的终端会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。':
+    'New terminal sessions collect plan quota automatically; per-request token details still need the launcher (or the session-log source).',
   'Claude Code 的状态栏已经不是助手的组件（可能被你或别的工具改过），助手没有再动它。':
     "Claude Code's status line is no longer the assistant's helper (changed by you or another tool); the assistant left it alone.",
   '{v0} 不是有效的 JSON 对象，助手不会修改它。': '{v0} is not a valid JSON object; the assistant will not change it.',
@@ -1408,8 +1416,8 @@ export const EN = {
   '已还原 Claude Code 的状态栏设置。': 'Claude Code status line restored.',
   '你已经设置了自己的 Claude Code 状态栏，Windows 上暂不支持和它并存，没有修改。可以继续用启动脚本打开 Claude Code。':
     'You already have your own Claude Code status line; on Windows the helper cannot run alongside it, so nothing changed. Keep using the launcher.',
-  '已接入：新打开的 Claude Code 会话会自动采集套餐额度。':
-    'Connected: new Claude Code sessions collect plan quota automatically.',
+  '已接入：新打开的终端 Claude Code 会话会自动采集套餐额度。':
+    'Connected: new Claude Code sessions in a terminal collect plan quota automatically.',
   'Claude Code 设置没有改成，原文件保持不变。请检查该文件的读写权限后重试。':
     'Claude Code settings were not changed; the file is untouched. Check its permissions and retry.',
   请在用量面板中操作: 'Use the usage panel for this',
@@ -1650,6 +1658,11 @@ export const EN_PATTERNS = [
   ],
   [/^(\d+) 天 (\d+) 小时后重置$/, (d, h) => `Resets in ${d}d ${h}h`],
   [/^(\d\d:\d\d:\d\d) 后重置$/, (time) => `Resets in ${time}`],
+  [
+    /^Claude 桌面版会话：安装额度同步模组；终端会话：运行生成的 (.+)，或在账户连接里「接入所有会话」。收到套餐额度后才算同步成功。$/,
+    (file) =>
+      `Claude desktop sessions: install the quota-sync mod. Terminal sessions: run the generated ${file}, or use “Connect every session” in the account connection. Synced once plan quota arrives.`,
+  ],
   [/^(\d+) 小时窗口$/, (n) => `${n}-hour window`],
   [/^(\d+) 天窗口$/, (n) => `${n}-day window`],
   [/^(\d+) 分钟窗口$/, (n) => `${n}-minute window`],

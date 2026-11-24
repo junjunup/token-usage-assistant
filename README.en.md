@@ -55,7 +55,7 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Balance | ZenMux | Official management API (USD balance; needs a Management API Key) | Sample-tested |
 | Key limit and spend | OpenRouter | Official key API (this key's limit, budgets, reported spend) | Sample-tested |
 | Subscription quota | ChatGPT · Codex | Read-only methods of the local official Codex program | Live-tested (Windows, read-only query of a Pro account) |
-| Subscription quota | Claude · Claude Code | Status line + local OTLP component | Live-tested (macOS, quota and usage sync; not reconciled with the website) |
+| Subscription quota | Claude · Claude Code | Terminal sessions: status line + local OTLP component; Claude desktop app: [quota-sync mod](integrations/claude-desktop-mod/README.md) (official live quota, one-line install) | Live-tested (macOS, quota and usage sync; not reconciled with the website) |
 | Tool usage | Zcode | Read-only SQLite metadata | Live-tested (real database on Windows) |
 | Tool usage | OpenCode | Read-only SQLite metadata | Sample-tested |
 | Tool usage | Codex, Claude Code | Usage metadata from local rollout files / OTLP events | Sample-tested |

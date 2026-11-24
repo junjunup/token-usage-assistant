@@ -56,8 +56,8 @@ const EN = {
     'Only the statusLine entry of {file} changes; everything else stays. The file is backed up to the assistant’s data folder first and can be restored here any time.',
   '你原来的状态栏命令会继续运行，显示在助手内容的前面。':
     'Your own status-line command keeps running and is shown first.',
-  '之后任何方式打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）；逐请求的 Token 明细仍需用启动脚本打开。':
-    'Every Claude Code session then hands its plan quota to the assistant (on this computer only, no network); per-request token details still need the launcher or the session-log source.',
+  '之后在终端里打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）。Claude 桌面版不运行状态栏命令，桌面版会话请安装额度同步模组。逐请求的 Token 明细仍需用启动脚本打开。':
+    'Claude Code sessions opened in a terminal then hand their plan quota to the assistant (on this computer only, no network). The Claude desktop app runs no status-line command: install the quota-sync mod for desktop sessions. Per-request token details still need the launcher or the session-log source.',
   '选择 Zcode 用量数据库': 'Choose the Zcode usage database',
   'SQLite 数据库': 'SQLite database',
   '选择 Codex 配置目录': 'Choose the Codex folder',

@@ -55,7 +55,7 @@
 | 按量余额 | ZenMux | 官方管理接口（美元余额；需要 Management API Key） | 样例验证 |
 | Key 上限与花费 | OpenRouter | 官方 Key 信息接口（这把 Key 的上限、预算、已报告花费） | 样例验证 |
 | 订阅额度 | ChatGPT · Codex | 本机官方 Codex 程序的只读方法 | 已实测（Windows，Pro 账户只读查询） |
-| 订阅额度 | Claude · Claude Code | 状态栏 + 本机 OTLP 组件 | 已实测（Mac，额度与用量同步；未与官网核账） |
+| 订阅额度 | Claude · Claude Code | 终端会话：状态栏 + 本机 OTLP 组件；Claude 桌面版：[额度同步模组](integrations/claude-desktop-mod/README.md)（官方实时额度，一行命令安装） | 已实测（Mac，额度与用量同步；桌面版模组在开发会话里实测；未与官网核账） |
 | 工具用量 | Zcode | 只读 SQLite 元数据 | 已实测（Windows 真实数据库） |
 | 工具用量 | OpenCode | 只读 SQLite 元数据 | 样例验证 |
 | 工具用量 | Codex、Claude Code | 本机 rollout 文件 / OTLP 事件的用量元数据 | 样例验证 |

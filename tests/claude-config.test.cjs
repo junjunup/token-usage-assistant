@@ -266,3 +266,18 @@ test(
     assert.deepEqual(await run(macCommand(gone, null)), { out: '', err: '', code: 0 });
   },
 );
+
+test("T19.2: whether the desktop quota-sync mod is installed comes from Claude Code's plugin list, names only", (t) => {
+  const { quotaModInstalled } = require('../desktop/claude-config.cjs');
+  const { dir, file } = setup(t),
+    list = path.join(dir, '.claude', 'plugins', 'installed_plugins.json');
+  assert.equal(quotaModInstalled(file), false, 'no plugin list yet');
+  write(list, { version: 2, plugins: { 'other@claude-plugins-official': [{ scope: 'user' }] } });
+  assert.equal(quotaModInstalled(file), false);
+  write(list, { version: 2, plugins: { 'token-usage-quota-sync@token-usage-assistant': [{ scope: 'user' }] } });
+  assert.equal(quotaModInstalled(file), true);
+  for (const text of ['{ not json', '{"plugins": []}']) {
+    write(list, text);
+    assert.equal(quotaModInstalled(file), null, 'unreadable: unknown, never a guess');
+  }
+});
