@@ -114,7 +114,7 @@ export function AccountSwitcher({ state, onSelect, onManage }) {
     </div>
   );
 }
-export function ProviderDashboard({ state, onSettings, pace = null }) {
+export function ProviderDashboard({ state, onSettings, pace = null, onClaudeConfig = null }) {
   const [used, setUsed] = useState(false),
     c = state.data.parts.credits,
     info = providerInfo(state.provider),
@@ -138,7 +138,8 @@ export function ProviderDashboard({ state, onSettings, pace = null }) {
         <ProviderStatusLine status={state.providerStatus} fallback={t(c?.planName || info?.name)} />
       </div>
       {pace}
-      <LocalConnectionStatus state={state} />
+      {/* T18.6: the account details offer the same connect / restore action as the account form. */}
+      <LocalConnectionStatus state={state} onClaudeConfig={onClaudeConfig} />
       {(state.data.errors.length > 0 || state.credentialIssue) && (
         <div className="inline-warning" role="status">
           <WarningCircle size={17} />
