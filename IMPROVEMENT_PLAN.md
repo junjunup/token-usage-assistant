@@ -179,6 +179,7 @@
 | 18 修复 | T18.3 Mac 的 Claude 状态栏组件与启动脚本改为 sh + curl，关闭 RunAsNode；状态栏命令带上原命令 | 是 | — | D25 ① | [x] |
 | 18 修复 | T18.4 字段指纹只解码用量对象的字段名 | 是 | — | D25 ④ | [x] |
 | 18 修复 | T18.5 启动脚本接受 2.1.251 及以后的版本 | 是 | — | D25 ④ | [x] |
+| 18 修复 | T18.6 总览的 Claude 账户详情里也能点「接入所有会话」 | 是（UI） | — | D25（实测发现） | [x] |
 | 17 好用 | T17.8 账户列表读不出来时写明原因与「重新读取」，不显示成「没有账户」（真实数据代测发现） | 是（UI） | — | D24 ① | [x] |
 | 17 好用 | T17.9 重新扫描时本机工具区块保留上次的数字；「查看工具分析」改名「查看本机工具」（真实数据代测发现） | 是（UI） | — | D24 ① | [x] |
 
@@ -618,6 +619,7 @@
 | 2026-11-06 | 阶段 15 计划（推送时） | **Dependabot 告警 #37（中危，仅开发依赖）**：`pnpm-lock.yaml` 里的 `minimatch`（≥ 7.0.0、< 11.0.1）有拒绝服务问题，修复版本 11.0.1。只在开发与构建期使用，不进安装包。 | 升到 11 是大版本，可能牵动打包工具链；放在 T15.5 发版前处理，处理后照例在 main 上试跑 Release。 | 已处理（2026-11-08，见第 6 节 依赖 minimatch 一行，告警已关闭） |
 | 2026-11-23 | 第三方审查 | **字段指纹整行解析**：Claude 会话日志、Gemini CLI、Kimi Code CLI、Qwen Code 四个读取器为了记录用量字段名，对整行 `JSON.parse`（含回复正文与思考），与模块注释和 PRIVACY 里「只解码白名单字段」的说法不一致；只保留字段名、没有外泄，但同一行解析两遍。 | 改用只覆盖用量子树的投影（例如 `projectJSON(line, { message: { usage: true } })`）取字段名，补一项「正文不被解码」的测试。 | 已处理（T18.4，2026-11-23） |
 | 2026-11-23 | T18.3 | **启动脚本只接受 2.1.x**：Mac（sh）与 Windows（PowerShell）的启动脚本都只接受 2.1.251 以上的 2.1.x，Claude Code 升到 2.2 后会拒绝启动，与 D15「按结构不按版本」不一致。T18.3 按原样移植，没有改变这个行为。 | 改为「2.1.251 或更高」并补测试；Windows 版要真机确认。 | 已处理（T18.5，2026-11-23；Windows 版在 CI 的 Windows 上用模拟的 claude 验证，未在真机上用真实 Claude Code 试过） |
+| 2026-11-24 | 测试包实测 | **Claude 桌面版不运行自定义状态栏命令**：「接入所有会话」后，在 Claude 桌面版 Code 标签里新开会话并发消息（`entrypoint: claude-desktop`，Claude Code 2.1.330），状态栏命令一次也没有被调用，助手收不到这个会话。用户 99% 的 Claude Code 用量来自桌面版，所以 Claude 额度窗口在桌面版下无法通过状态栏采集（红线不读 OAuth 令牌，没有别的途径）。界面和确认框里「之后任何方式打开的 Claude Code 会话都会采集套餐额度」的说法不实。 | 改说法：只对终端里打开的 Claude Code 会话有效，桌面版不运行状态栏；PRIVACY、AGENTS 同步。额度在桌面版下怎么办属于方向问题。 | 待用户决定 |
 
 已关闭的问题见归档快照第 5 节。
 
@@ -734,6 +736,8 @@
 | 2026-11-23 | T18.3 | `task/T18.3-statusline-sh`（`b66c1b9`，合并 `d986a39`）：`claude-statusline.sh`、`/statusline` 端点、sh 启动脚本、`collector.header`；RunAsNode 关闭（`electron-builder.yml`、`scripts/fuses.cjs`）；`claude-config.cjs` 的 Mac 命令带上原命令（`macCommand` / `embeddedPrevious`），认出旧条目并在启动时替换；`legacyHelperArg` 让旧命令启动的程序立即退出；删除 `claude-launcher.cjs`；原生 smoke 改跑 sh 组件；AGENTS §6 / §7、PRIVACY、INSTALL、CHANGELOG「未发布」 | 511 项：本机 505 / 0 / 6；分支 CI `45065207656`：macOS 511 / 0 / 0，Windows 504 / 0 / 7（6 项 sh 组件测试只在 macOS 运行） | ①②：开发版隔离原生 smoke ok（`actualMacComponent`）；分支 Release 试跑 `45065208114` windows / mac / release 均 success：Windows 包读回 `RunAsNode:false`，Mac 包 8 项门禁全部通过（含 electronFuses 与打包后原生 smoke）；组件在本机实测每次约 37–45 ms（旧组件冷启动 1.92 s）；未做 ③（新命令没在真实 Claude Code 会话里用过） | Mac 上不再有程序能借应用本身运行脚本；卸载后状态栏回退原命令 | 已发布的 beta.8 及更早版本仍带 RunAsNode，随下次发版修复 |
 | 2026-11-23 | T18.4 | `task/T18.4-field-names`（合并 `a41c911`，main CI 两个平台通过）：`projectJSON` 加 `KEYS`；五个读取器的字段指纹改用它；四个读取器测试加「内容不进入 JSON.parse」的检查（在旧代码上全部失败），新增 `KEYS` 单元测试 1 项 | 512 项：本机 506 / 0 / 6 | ①；开发版隔离原生 smoke ok | 回复内容从头到尾不解码 | — |
 | 2026-11-23 | T18.5 | `task/T18.5-launcher-version`（`edb73b2`，合并 `eaca392`；分支 CI `45142932222`：macOS 512 / 0 / 1，Windows 506 / 0 / 7）：Mac sh 与 Windows PowerShell 启动脚本接受 2.1.251 及以后的版本；应用提示、使用说明、英文同步；Mac 启动脚本测试改为接受 2.2.0 / 3.0.1、拒绝 2.1.250 / 2.0.999 / 1.9.0；新增 Windows 专用测试，在 CI 的 Windows 上用模拟的 claude 跑 PowerShell 启动脚本 | 513 项：本机 506 / 0 / 7 | ①（Windows 部分在 CI 的真实 PowerShell 上）；开发版隔离原生 smoke ok；未做 ③ | 新版 Claude Code 不再被拒绝启动 | — |
+| 2026-11-24 | 测试包与实测 | 在 `4496aba` 上出 Mac 测试包 `1.9.0-beta.8-dev.4496aba`（DMG / ZIP 存档于 `~/Documents/TokenUsageAssistant-releases/release-v1.9.0-beta.8-dev.4496aba/`，`.app` 在 `apps.noindex/`），装进「应用程序」替换 dev.5038918（存档仍在）；用户点了钥匙串授权。`Verify-Mac-Native.command`：签名、entitlements、fuses（RunAsNode 关）、许可证、默认数据目录通过，打包后原生 smoke `ok: true`（含 `actualMacComponent`）；`infoPlist` 与 smoke 版本核对因 `-dev` 后缀报失败（预期），`spctl` rejected（预期）。构建时 electron-builder 要调用全局 `pnpm`，本机没有，用转给 `corepack pnpm@11.19.0` 的临时脚本解决 | 不改代码 | ③（Claude 代测，用户在场）：新版启动后组件目录自动换成 sh 版（旧 `.cjs` 删除、`collector.header` 权限 600），2 个账户正常加载；用户点「接入所有会话」后 `~/.claude/settings.json` 只多了新格式的 `statusLine`、其余 5 项不变、原文件已备份；按 Claude Code 的输入格式（不含额度窗口，不改真实额度）执行这条命令，经真实助手往返 91 ms，只保存版本与项目目录；旧启动脚本打开的会话照常运行。**Claude 桌面版新会话没有调用状态栏命令**（见第 5 节） | 测试包 | 终端里的 Claude Code 会话还没实测；`settings.json` 里的条目保留着，可在 Claude 账户那一行「还原」 |
+| 2026-11-24 | T18.6 | `task/T18.6-claude-connect-button`（合并 `552e4aa`，main CI `45369469141` 两个平台通过）：实测时用户在总览找不到「接入所有会话」——总览的账户详情显示了这一块的说明，却没有传入操作，按钮只在「设置 → 账户 → 编辑」里。总览改为传入同一个操作 | 513 项：本机 506 / 0 / 7（未新增：界面接线，没有组件测试环境） | ①；预览里确认按钮出现（浅色 / 深色截图在 `work/t18/`）；开发版隔离原生 smoke ok | 按钮出现在说明旁边 | 已装的测试包不含这个修复 |
 
 2026-10-23 之前的执行记录见归档快照第 6 节。
 
