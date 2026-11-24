@@ -64,6 +64,28 @@ function embeddedPrevious(command) {
   return word.end > 0 && word.value ? word.value : null;
 }
 
+/**
+ * T19.2: whether the quota-sync mod (integrations/claude-desktop-mod) is installed, from Claude Code's own plugin list
+ * (`plugins/installed_plugins.json` beside the settings file): true / false, null when the list cannot be read. Only
+ * the plugin names are looked at.
+ * @param {string} file Claude Code's user settings file (settingsFile)
+ */
+function quotaModInstalled(file) {
+  let raw;
+  try {
+    raw = fs.readFileSync(path.join(path.dirname(file), 'plugins', 'installed_plugins.json'), 'utf8');
+  } catch (e) {
+    return /** @type {any} */ (e)?.code === 'ENOENT' ? false : null;
+  }
+  try {
+    const plugins = JSON.parse(raw)?.plugins;
+    if (!plainObject(plugins)) return null;
+    return Object.keys(plugins).some((name) => name.startsWith('token-usage-quota-sync@'));
+  } catch {
+    return null;
+  }
+}
+
 /** Claude Code's user settings file. */
 function settingsFile(env, home) {
   const dir = typeof env.CLAUDE_CONFIG_DIR === 'string' && env.CLAUDE_CONFIG_DIR ? env.CLAUDE_CONFIG_DIR : null;
@@ -220,4 +242,12 @@ function writeJson(file, value) {
   writeSettings(file, value, 0o600);
 }
 
-module.exports = { ClaudeConfig, settingsFile, readSettings, CHAIN_FILE, macCommand, embeddedPrevious };
+module.exports = {
+  ClaudeConfig,
+  settingsFile,
+  readSettings,
+  CHAIN_FILE,
+  macCommand,
+  embeddedPrevious,
+  quotaModInstalled,
+};

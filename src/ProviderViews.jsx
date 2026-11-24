@@ -386,14 +386,14 @@ const CLAUDE_CONFIG = {
   none: {
     label: '未接入 · 只采集启动脚本打开的会话',
     message: (f) =>
-      t('经你确认后，把助手的状态栏组件写进 {v0}，之后任何方式打开的会话都会采集套餐额度；修改前先备份，可随时还原。', {
+      t('经你确认后，把助手的状态栏组件写进 {v0}，之后在终端里打开的会话都会采集套餐额度；修改前先备份，可随时还原。', {
         v0: f,
       }),
     action: ['install', '接入所有会话'],
   },
   installed: {
     label: '已接入 Claude Code 设置',
-    message: () => t('新打开的会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。'),
+    message: () => t('新打开的终端会话会自动采集套餐额度；逐请求的 Token 明细仍需用启动脚本打开。'),
     action: ['restore', '还原'],
     tone: 'green',
   },
@@ -413,6 +413,34 @@ const CLAUDE_CONFIG = {
     message: () => t('Windows 上暂不支持和你自己的状态栏并存；可以继续用启动脚本打开 Claude Code。'),
   },
 };
+// T19.2: the Claude desktop app runs no status line; its sessions hand their live quota over through the quota-sync
+// mod (integrations/claude-desktop-mod). Installed or not is read from Claude's own plugin list (null: unknown).
+const MOD_INSTALL = 'claude plugin install token-usage-quota-sync --marketplace junjunup/token-usage-assistant';
+function ClaudeDesktopStatus({ installed }) {
+  return (
+    <div className="claude-config-status">
+      <span className="micro-label">{t('Claude 桌面版会话')}</span>
+      <strong>
+        <span className={'status-dot ' + (installed ? 'green' : 'neutral')} />
+        {t(
+          installed
+            ? '已安装额度同步模组'
+            : installed === false
+              ? '未安装额度同步模组'
+              : '无法确认是否已安装额度同步模组',
+        )}
+      </strong>
+      <p>
+        {installed
+          ? t('新打开的桌面版会话会把官方实时额度交给助手，额度每变 1 个点同步一次。')
+          : t(
+              '桌面版不运行状态栏命令。在终端运行一次下面的命令安装额度同步模组，之后新打开的桌面版会话会把官方实时额度交给助手：',
+            )}
+      </p>
+      {!installed && <code className="mod-install">{MOD_INSTALL}</code>}
+    </div>
+  );
+}
 function ClaudeConfigStatus({ config, onChange }) {
   const view = CLAUDE_CONFIG[config.status];
   if (!view) return null;
@@ -467,6 +495,7 @@ export function LocalConnectionStatus({ state, onClaudeConfig = null }) {
       {state.provider === 'claude' && state.claudeConfig && (
         <ClaudeConfigStatus config={state.claudeConfig} onChange={onClaudeConfig} />
       )}
+      {state.provider === 'claude' && <ClaudeDesktopStatus installed={state.claudeDesktopMod} />}
     </div>
   );
 }

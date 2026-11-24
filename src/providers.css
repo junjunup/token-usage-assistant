@@ -207,6 +207,14 @@
 .claude-config-status {
   grid-column: 1 / -1;
 }
+.claude-config-status .mod-install {
+  display: block;
+  margin-top: 6px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  user-select: text;
+  overflow-wrap: anywhere;
+}
 .claude-config-status .text-button {
   display: inline-flex;
   margin-left: 8px;

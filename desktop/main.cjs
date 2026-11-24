@@ -47,7 +47,7 @@ const { tm, setMainLanguage } = require('./i18n-main.cjs');
 const { AutoInstaller, canInstall } = require('./auto-update.cjs');
 const { formatAmount } = require('./balance-domain.cjs');
 const { connectionStatus } = require('./subscription-status.cjs');
-const { ClaudeConfig, settingsFile, readSettings } = require('./claude-config.cjs');
+const { ClaudeConfig, settingsFile, readSettings, quotaModInstalled } = require('./claude-config.cjs');
 const {
   windowChrome,
   loginOptions,
@@ -182,6 +182,11 @@ function state() {
     providerStatus: activeProviderStatus(),
     // T13.1: whether the status-line helper is in Claude Code's own settings (only once the collector exists).
     claudeConfig: claudeConfigStatus(),
+    // T19.2: whether the Claude desktop quota-sync mod is installed (read only while a Claude account is active).
+    claudeDesktopMod:
+      accounts?.active?.entry.provider === 'claude' && !smoke
+        ? quotaModInstalled(settingsFile(process.env, app.getPath('home')))
+        : null,
     data,
     platform: process.platform,
     loginItem: readLogin(app),
@@ -564,13 +569,13 @@ async function changeClaudeConfig(action) {
           : '') +
         '\n\n' +
         tm(
-          '之后任何方式打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）；逐请求的 Token 明细仍需用启动脚本打开。',
+          '之后在终端里打开的 Claude Code 会话都会把套餐额度交给助手（只在本机，不联网）。Claude 桌面版不运行状态栏命令，桌面版会话请安装额度同步模组。逐请求的 Token 明细仍需用启动脚本打开。',
         ),
     });
     if (choice.response !== 0) return { ...state(), connectionMessage: '' };
     config.install();
     log.info('claude-config', 'installed', {});
-    return { ...state(), connectionMessage: '已接入：新打开的 Claude Code 会话会自动采集套餐额度。' };
+    return { ...state(), connectionMessage: '已接入：新打开的终端 Claude Code 会话会自动采集套餐额度。' };
   } catch (e) {
     if (e?.publicMessage) throw e;
     log.warn('claude-config', 'failed', { errno: e?.code });

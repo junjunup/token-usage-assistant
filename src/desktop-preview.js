@@ -402,6 +402,8 @@ if (new URLSearchParams(location.search).get('status-command')) {
 if (selectedProvider === 'claude') {
   const status = new URLSearchParams(location.search).get('claude-config') || 'none';
   state.claudeConfig = { status, file: '~/.claude/settings.json', chained: status === 'installed' };
+  // T19.2: ?claude-mod=installed shows the desktop quota-sync mod as installed (default: not installed).
+  state.claudeDesktopMod = new URLSearchParams(location.search).get('claude-mod') === 'installed';
   state.connectionStatus ||= {
     quota: { status: 'synced', label: '额度已同步', message: '订阅额度独立展示，不与本机 Token 相加。' },
     details: {
