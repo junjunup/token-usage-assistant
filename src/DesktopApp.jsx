@@ -1091,6 +1091,7 @@ export function DesktopApp() {
                   state={state}
                   onSettings={() => openAccount('update')}
                   pace={state.pace && <PaceLine pace={state.pace} className="overview-pace" fold />}
+                  onClaudeConfig={(change) => action(() => bridge.claudeConfig(change), t('已更新'))}
                 />
               ) : (
                 <>
