@@ -20,6 +20,7 @@
     "desktop/association-rules.cjs",
     "desktop/menubar-status.cjs",
     "desktop/menubar-panel.cjs",
+    "desktop/foreground-app.cjs",
     "desktop/account-overview.cjs",
     "desktop/panel-placement.cjs",
     "desktop/onboarding.cjs",

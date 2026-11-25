@@ -258,14 +258,39 @@ function rankAccounts(accounts, threshold, options = {}) {
 }
 
 /**
+ * @typedef {{ threshold: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string,
+ *   menubarAccount?: string, focusProvider?: string|null }} MenubarSettings focusProvider: the platform of the coding
+ *   app last in front (T20.3, main process only; never saved)
+ */
+/**
+ * T20.2 (D27 ②): the accounts the icon chooses from. A fixed account, or the accounts of the platform in front, when
+ * there are any; otherwise every account (the most urgent one wins, as before).
  * @param {AccountSummary[]} accounts
- * @param {{ threshold: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
+ * @param {MenubarSettings} settings
+ * @returns {AccountSummary[]}
+ */
+function candidates(accounts, settings) {
+  const pick = settings?.menubarAccount ?? 'foreground';
+  const chosen =
+    pick === 'auto'
+      ? []
+      : pick === 'foreground'
+        ? settings?.focusProvider
+          ? accounts.filter((a) => a.provider === settings.focusProvider)
+          : []
+        : accounts.filter((a) => a.id === pick);
+  return chosen.length ? chosen : accounts;
+}
+
+/**
+ * @param {AccountSummary[]} accounts
+ * @param {MenubarSettings} settings
  * @returns {MenubarStatus|null} null when there is nothing to show (no accounts): the icon stays the static logo.
  */
 function menubarStatus(accounts, settings) {
   if (!Array.isArray(accounts) || !accounts.length) return null;
   const threshold = typeof settings?.threshold === 'number' ? settings.threshold : 20;
-  const { a, slots, focus } = rankAccounts(accounts, threshold, {
+  const { a, slots, focus } = rankAccounts(candidates(accounts, settings), threshold, {
     preferActive: true,
     amounts: amountsOf(settings),
   })[0];
@@ -299,4 +324,4 @@ function menubarStatus(accounts, settings) {
   };
 }
 
-module.exports = { menubarStatus, rankAccounts, slotsOf, shortLabel, focusOf, amountsOf };
+module.exports = { menubarStatus, rankAccounts, slotsOf, shortLabel, focusOf, amountsOf, candidates };

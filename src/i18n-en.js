@@ -211,7 +211,9 @@ export const EN = {
   测试通知: 'Test notification',
   菜单栏: 'Menu bar',
   托盘: 'Tray',
-  图标与面板: 'icon and panel',
+  // Whole phrases: the halves used to be joined without spaces ("Menu baricon and panel").
+  菜单栏图标与面板: 'Menu bar icon and panel',
+  托盘图标与面板: 'Tray icon and panel',
   '托盘图标只画刻度环：亮起的部分是剩余最少的账户窗口，悬停可看各账户的数值，左键打开用量面板。Windows 可能把它收在任务栏的「^」里，想一直显示：任务栏设置 → 其他系统托盘图标（Windows 10 为「选择哪些图标显示在任务栏上」），打开「Token 用量助手」。':
     'The tray icon is a gauge ring: the lit part is the account window with the least left; hover for each account, left-click for the usage panel. Windows may hide it behind “^”; to keep it visible: Taskbar settings → Other system tray icons (Windows 10: “Select which icons appear on the taskbar”) → turn on “Token 用量助手”.',
   '菜单栏空间不足，图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。':
@@ -226,11 +228,12 @@ export const EN = {
   '① 只有刻度环': '① Ring only',
   '② 刻度环 + 数值': '② Ring + value',
   '③ 两行小字': '③ Two lines',
-  显示用量: 'shows usage',
-  关闭后: 'When off, the',
-  '只显示静态 Logo，适合屏幕共享或演示；': 'shows only the static logo, for screen sharing or demos; the',
-  图标不受截屏保护: 'icon is not protected from screenshots.',
-  '图标不受截屏保护。': 'icon is not protected from screenshots.',
+  菜单栏显示用量: 'Show usage in the menu bar',
+  托盘显示用量: 'Show usage in the tray',
+  '关闭后菜单栏只显示静态 Logo，适合屏幕共享或演示；菜单栏图标不受截屏保护。':
+    'When off, the menu bar shows only the static logo, for screen sharing or demos; the menu bar icon is not protected from screenshots.',
+  '关闭后托盘只显示静态 Logo，适合屏幕共享或演示；托盘图标不受截屏保护。':
+    'When off, the tray shows only the static logo, for screen sharing or demos; the tray icon is not protected from screenshots.',
   告警时变色: 'Alert colours',
   '剩余低于提醒阈值时显示琥珀色，额度用尽时显示红色；关闭后始终单色。':
     'Amber below the alert threshold, red when exhausted; single-colour when off.',
@@ -1600,6 +1603,35 @@ export const EN = {
   账户接口: 'Account API',
   平台返回: 'Reported',
   月度余额: 'Monthly balance',
+  // T20.2–T20.3 (D27): which account the menu bar shows
+  菜单栏显示哪个账户: 'Account in the menu bar',
+  跟随前台应用: 'Follow the app in front',
+  '自动：剩余最少的账户': 'Automatic: the account with the least left',
+  '固定：': 'Always: ',
+  '显示剩余最少、最需要注意的账户。': 'Shows the account with the least left, the one that needs attention most.',
+  '你正在用哪个编程应用，就显示它对应的账户；切换应用时跟着变。':
+    'Shows the account of the coding app you are using, and changes when you switch apps.',
+  '一直显示这个账户；它被移除后回到「跟随前台应用」。':
+    'Always shows this account; if it is removed, the menu bar follows the app in front again.',
+  现在显示: 'Showing',
+  来自: 'from',
+  '还没有切到对应的编程应用，先显示剩余最少的账户。':
+    'No matching coding app has been in front yet; showing the account with the least left.',
+  'Claude 桌面版': 'Claude desktop app',
+  'Codex 应用': 'Codex app',
+  'Command Code 应用': 'Command Code app',
+  'Claude 订阅账户': 'Claude subscription account',
+  'ChatGPT · Codex 账户': 'ChatGPT · Codex account',
+  'Command Code 账户': 'Command Code account',
+  '终端、VS Code、Cursor 等': 'Terminals, VS Code, Cursor and similar',
+  '里面运行着 claude 或 codex 时切到对应账户（Command Code、Kimi 等用 node 运行的命令行工具认不出）':
+    'Switches when claude or codex runs inside (command-line tools that run on node, such as Command Code or Kimi, cannot be told apart)',
+  '其他应用、分不清时': 'Other apps, or unclear',
+  保持上一个账户: 'Keeps the previous account',
+  '只用前台应用的标识和终端里的进程名，不读窗口内容和命令行，不保存。其他账户的额度提醒照常通知。':
+    "Uses only the front app's identifier and the process names in terminals; never reads window content or command lines, and saves nothing. Quota alerts for other accounts still notify you.",
+  '终端或编辑器里的 claude': 'claude in a terminal or editor',
+  '终端或编辑器里的 codex': 'codex in a terminal or editor',
   // T20.1 (D27 ①): no active plan and nothing left
   未订阅: 'No plan',
   套餐: 'Plan',

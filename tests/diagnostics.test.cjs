@@ -74,6 +74,7 @@ test('diagnostics keep only whitelisted fields: no labels, keys, org ids, paths 
     widgetExpanded: null,
     updateCheck: null,
     menubarForm: null,
+    menubarAccount: null,
     menubarUsage: null,
     menubarAlertColor: null,
     panelProtect: null,
@@ -155,4 +156,17 @@ test('saving diagnostics writes exactly the previewed text, main window only', (
   assert.match(main, /handle\('assistant:diagnostics-preview', \(event\) => \{\n {4}mainOnly\(event\);/);
   assert.match(save, /^handle\('assistant:diagnostics-save', async \(event\) => \{\n {4}mainOnly\(event\);/);
   assert.match(save.slice(0, 1200), /fs\.writeFileSync\(choice\.filePath, text \+ '\\n'/);
+});
+
+test('T20.2: diagnostics say which menu-bar mode is used, never which account is fixed', () => {
+  const mode = (menubarAccount) =>
+    buildDiagnostics({
+      app: { version: '1' },
+      system: { platform: 'darwin', arch: 'arm64' },
+      settings: { menubarAccount },
+      now: () => 0,
+    }).settings.menubarAccount;
+  assert.equal(mode('foreground'), 'foreground');
+  assert.equal(mode('auto'), 'auto');
+  assert.equal(mode('cc471589-0e18-42f7-9a74-fdafe800b166'), 'fixed');
 });

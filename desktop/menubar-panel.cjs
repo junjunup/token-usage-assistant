@@ -218,7 +218,7 @@ function panelAccount(a, threshold, amounts = {}) {
 
 /**
  * @param {AccountSummary[]} accounts
- * @param {{ threshold: number, balanceThresholdCNY?: string, balanceThresholdUSD?: string }} settings
+ * @param {import('./menubar-status.cjs').MenubarSettings} settings T20.2: the panel opens on the account the icon shows
  * @returns {PanelState}
  */
 function panelState(accounts, settings) {

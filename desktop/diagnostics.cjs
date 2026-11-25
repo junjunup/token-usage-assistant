@@ -20,7 +20,10 @@ function settingsSnapshot(settings = {}) {
           ? settings[key]
             ? 'set'
             : 'none'
-          : settings[key];
+          : // T20.2: the mode only; a fixed account is never named.
+            key === 'menubarAccount' && !['foreground', 'auto'].includes(settings[key])
+            ? 'fixed'
+            : settings[key];
   return result;
 }
 

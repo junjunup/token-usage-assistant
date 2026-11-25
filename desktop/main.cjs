@@ -13,6 +13,7 @@ const {
   powerMonitor,
   nativeImage,
   dialog,
+  systemPreferences,
 } = require('electron');
 // T18.3: Claude Code status lines and launchers written before RunAsNode was switched off start this binary with their
 // script's path (ELECTRON_RUN_AS_NODE no longer applies). Such a start exits at once: it must not open the app or
@@ -26,6 +27,7 @@ if (legacyHelper) {
 }
 const path = require('node:path');
 const fs = require('node:fs');
+const { execFile } = require('node:child_process');
 const { LocalStore } = require('./store.cjs');
 const { patchSettings, percentText, unsubscribed } = require('./domain.cjs');
 const { ApiError } = require('./api.cjs');
@@ -63,6 +65,7 @@ const { buildDiagnostics } = require('./diagnostics.cjs');
 const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState, paceLine } = require('./menubar-panel.cjs');
+const { ForegroundFollower, parseActivation, parseLsappinfo } = require('./foreground-app.cjs');
 const { accountOverview, trayTooltip, claudeStatusLine } = require('./account-overview.cjs');
 const { reportVisibility } = require('./window-visibility.cjs');
 const { forecast } = require('./analytics-core.cjs');
@@ -202,7 +205,14 @@ function state() {
     // The active account's real refresh interval (Codex never polls faster than every 120 s).
     refreshInterval: accounts?.active?.monitor.intervalSeconds,
     // T7.7: whether the system hid the menu-bar icon next to the notch (true / false / null when unknown).
-    menubar: menubar ? { hidden: menubar.hidden } : null,
+    // T20.2: the account the icon shows and, when following the front app, which app chose it (T20.3).
+    menubar: menubar
+      ? {
+          hidden: menubar.hidden,
+          accountLabel: menubar.status?.accountLabel || null,
+          source: settings.menubarAccount === 'foreground' ? follower?.focus?.source || null : null,
+        }
+      : null,
     // T11.1: every account, most urgent first (the menu-bar rule), for the overview grid and the widget.
     overview: accountOverview(accounts?.summaries() || [], settings),
     pace: activePace(),
@@ -499,6 +509,11 @@ function applySettings(next) {
   fitWidget();
   accounts.updateSettings(settings);
   if (previous.updateCheck !== settings.updateCheck) setUpdateCheck();
+  if (previous.menubarAccount !== settings.menubarAccount) {
+    if (settings.menubarAccount === 'foreground') followFrontApp();
+    else follower?.reset();
+    updateTray();
+  }
   if (previous.language !== settings.language) {
     setMainLanguage(settings.language, systemLanguage());
     buildAppMenu();
@@ -506,6 +521,49 @@ function applySettings(next) {
       if (w && !w.isDestroyed()) w.setTitle(tm(w === mainWindow ? 'Token 用量助手' : '用量悬浮窗'));
   }
   broadcast();
+}
+// T20.3 (D27 ③, macOS): follow the coding app in front. Only the bundle id and, for terminals and editors, the
+// executable names under them are used, in memory; nothing is saved or logged. Not in smoke mode.
+let follower = null,
+  activationSubscription = null;
+function menubarSettings() {
+  return {
+    ...settings,
+    focusProvider: settings?.menubarAccount === 'foreground' ? follower?.focus?.provider || null : null,
+  };
+}
+function run(file, args) {
+  return new Promise((resolve, reject) =>
+    execFile(file, args, { timeout: 2000, maxBuffer: 8 * 1024 * 1024 }, (error, stdout) =>
+      error ? reject(error) : resolve(String(stdout)),
+    ),
+  );
+}
+async function frontApp() {
+  const asn = (await run('/usr/bin/lsappinfo', ['front'])).trim();
+  if (!/^ASN:0x[0-9a-f]+-0x[0-9a-f]+:$/i.test(asn)) return null;
+  return parseLsappinfo(await run('/usr/bin/lsappinfo', ['info', '-only', 'bundleid', '-only', 'pid', asn]));
+}
+function followFrontApp() {
+  if (!isMac || smoke || !menubar) return;
+  if (!follower)
+    follower = new ForegroundFollower({
+      listProcesses: () => run('/bin/ps', ['-axo', 'pid=,ppid=,comm=']),
+      onChange: () => {
+        updateTray();
+        broadcast();
+      },
+    });
+  if (activationSubscription === null)
+    activationSubscription = systemPreferences.subscribeWorkspaceNotification(
+      'NSWorkspaceDidActivateApplicationNotification',
+      (_event, info) => {
+        if (settings?.menubarAccount === 'foreground') follower.activated(parseActivation(info));
+      },
+    );
+  frontApp()
+    .then((front) => follower.activated(front))
+    .catch(() => log.warn('main', 'front-app-unknown'));
 }
 // T5.2: the update check runs only while enabled, and never in smoke mode (no network there).
 function setUpdateCheck() {
@@ -635,7 +693,7 @@ function windowText(w) {
 function updateTray() {
   if (!tray || !settings) return;
   // T7.5 / T11.2: the menu-bar (Mac) or tray (Windows) icon shows the most urgent account window (menubar-icon.cjs).
-  menubar?.update(accounts?.summaries() || [], settings);
+  menubar?.update(accounts?.summaries() || [], menubarSettings());
   const credit = monitor?.state.parts.credits;
   const balance = monitor?.state.parts.balance;
   const lines =
@@ -729,7 +787,7 @@ function panelPayload() {
     });
   }
   return {
-    ...panelState(summaries, settings),
+    ...panelState(summaries, menubarSettings()),
     theme: settings.theme,
     language: settings.language,
     systemLanguage: systemLanguage(),
@@ -1350,6 +1408,7 @@ else {
         log.warn('main', 'tray-failed');
         tray = null;
       }
+      if (settings.menubarAccount === 'foreground') followFrontApp();
       if (isMac && !app.isPackaged)
         app.dock?.setIcon(nativeImage.createFromPath(path.join(__dirname, 'assets', 'app.png')));
       buildAppMenu();
@@ -1401,6 +1460,7 @@ else {
   });
   app.on('before-quit', () => {
     quitting = true;
+    if (activationSubscription !== null) systemPreferences.unsubscribeWorkspaceNotification(activationSubscription);
     menubar?.dispose();
     menubarPanel?.dispose();
     accounts?.dispose();
