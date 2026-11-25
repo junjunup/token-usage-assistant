@@ -10,6 +10,8 @@ const PAGES = Object.freeze({
   claude: { name: 'Anthropic', page: 'https://status.claude.com' },
   codex: { name: 'OpenAI', page: 'https://status.openai.com' },
   kimi: { name: 'Moonshot', page: 'https://status.moonshot.cn' },
+  // T21.2: the same Kimi open platform, read with an Admin key.
+  'kimi-admin': { name: 'Moonshot', page: 'https://status.moonshot.cn' },
   minimax: { name: 'MiniMax', page: 'https://status.minimax.io' },
 });
 const INTERVAL_MS = 5 * 60 * 1000;

@@ -50,6 +50,7 @@
 | 平台额度 | ZenMux 订阅 | 官方管理接口（5 小时、7 天额度比例；需要 Management API Key） | 样例验证 |
 | 按量余额 | DeepSeek | 官方余额接口 | 样例验证 |
 | 按量余额 | Kimi 开放平台（国内 / 国际） | 官方余额接口 | 样例验证 |
+| 按量余额 | Kimi 开放平台 · 组织余额（国内 / 国际） | 官方 Admin API（只读账单权限的 Admin Key） | 样例验证 |
 | 按量余额 | 硅基流动（国内 / 国际） | 官方用户信息接口（赠金、充值两项含义按官方示例推断） | 样例验证 |
 | 按量余额 | 阶跃星辰（国内） | 官方账户接口（可用余额；Step Plan 套餐额度没有查询接口） | 样例验证 |
 | 按量余额 | ZenMux | 官方管理接口（美元余额；需要 Management API Key） | 样例验证 |
@@ -111,7 +112,7 @@
 ```bash
 pnpm install
 pnpm run dev               # 浏览器预览（示例数据）
-pnpm run test:desktop      # 桌面与分析测试（基线：本机 523 通过 / 0 失败 / 7 跳过；CI 装了 Harness 运行时，macOS 529 / 0 / 1）
+pnpm run test:desktop      # 桌面与分析测试（基线：本机 530 通过 / 0 失败 / 7 跳过；CI 装了 Harness 运行时，macOS 536 / 0 / 1）
 pnpm run lint              # ESLint
 pnpm run typecheck         # 纯领域模块的严格类型检查（CI 必跑）
 pnpm run format:check      # Prettier 检查（pnpm run format 自动格式化）

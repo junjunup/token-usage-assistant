@@ -14,7 +14,9 @@ class ProviderError extends ApiError {
         : provider === 'opencode-go' && code === 'entitlement'
           ? name + ' 此密钥对应的成员没有可查询的 Go 订阅，请在官方控制台核对成员与工作区。'
           : status === 403
-            ? name + ' 查询权限不足，请检查密钥权限与所选地区。'
+            ? provider === 'kimi-admin'
+              ? name + ' 的 Admin Key 缺少 billing:read 权限，或组织尚未开通 Admin API。'
+              : name + ' 查询权限不足，请检查密钥权限与所选地区。'
             : status === 429
               ? name + ' 查询过于频繁，已暂停自动刷新。'
               : status === 402

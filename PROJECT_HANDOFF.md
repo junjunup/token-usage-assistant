@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0；本机没有全局 pnpm，用 `corepack pnpm@11.19.0` 运行）。项目路径：`~/Documents/commandcode-companion`。用户另有一台 Windows 电脑（D17 ③），用于 Windows 真机验收；执行模型不能直接操作它。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.7`（上一个 `v1.9.0-beta.6`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.4（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1–beta.3；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 530 项，本机 523 通过 / 0 失败 / 7 跳过（6 项 Harness 运行时未装、1 项只在 Windows 运行）；CI 装有两个已验证版本的 Harness 运行时，macOS 529 / 0 / 1，Windows 523 通过、7 项平台跳过（T20.3）。ESLint：0 个错误、0 个警告（T15.1）；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 537 项，本机 530 通过 / 0 失败 / 7 跳过（6 项 Harness 运行时未装、1 项只在 Windows 运行）；CI 装有两个已验证版本的 Harness 运行时，macOS 536 / 0 / 1，Windows 530 通过、7 项平台跳过（T21.2）。ESLint：0 个错误、0 个警告（T15.1）；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -108,6 +108,7 @@
 
 ## 7. 下一步
 
+- **当前：阶段 21「让用户放心地填 Key」（D28，2026-11-25）已完成，未发版**：连接表单列出只调用的地址（由实际请求代码生成）、本机加密、源码链接、建议单独新建 Key、官方 Key 页面直达，「粘贴」按钮会整理多余的空格 / 引号 / `Bearer `；火山引导建只读子用户（`ArkReadOnlyAccess`，社区实测）；新平台「Kimi 开放平台 · 组织余额（Admin Key）」（只读账单权限，样例验证）。测试包 dev.aac8b57 里还没有这些。
 - **当前：阶段 20「菜单栏显示哪个账户」（D27，2026-11-25）已完成，未发版**：已取消的 Command Code 套餐显示「未订阅」、不告警、排最后（T20.1）；Mac 菜单栏默认跟随前台应用——Claude 桌面版、Codex 应用、Command Code 应用直接对应，终端与编辑器里只运行着 `claude` 或 `codex` 时切到对应账户，其他应用保持上一个；也可改成「自动」或固定某个账户（T20.2–T20.3）。测试包 `1.9.0-beta.8-dev.aac8b57`（含阶段 18–20）已装进「应用程序」，你在真实数据下确认菜单栏跟随切换正常（2026-11-25）。
 - **当前：阶段 19「Claude 桌面版的实时额度」（D26，2026-11-24）已完成，未发版**：Claude 桌面版不运行状态栏命令，桌面版会话的额度改由额度同步模组提供（`integrations/claude-desktop-mod`，一行命令 `claude plugin install token-usage-quota-sync --marketplace junjunup/token-usage-assistant` 安装，已装在你的 Mac 上并实测）；Claude 账户详情显示是否已安装并给出安装命令；「接入所有会话」改为只说终端会话。额度只用真实数据，不估算（用户 11-24 明确）。「应用程序」里的测试包 dev.4496aba 不含 T19.2 的界面，模组的数据照常进入它。
 

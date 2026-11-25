@@ -10,11 +10,12 @@ const { fixtureBody } = require('../desktop/provider-fixture.cjs');
 
 // T5.3a: the registry must reproduce the pre-refactor platform list, official pages and client behaviour exactly.
 // Platforms added later are listed explicitly (T10.1: kimi, T10.2: openrouter, T12.2: kimi-code, T13.3: siliconflow,
-// stepfun, zenmux, zenmux-payg) and covered by their own tests.
+// stepfun, zenmux, zenmux-payg, T21.2: kimi-admin) and covered by their own tests.
 const IDS = [
   'opencode-go',
   'deepseek',
   'kimi',
+  'kimi-admin',
   'kimi-code',
   'openrouter',
   'siliconflow',
@@ -39,11 +40,21 @@ test('the registry holds exactly the original platforms plus the added ones, in 
     IDS,
   );
   for (const p of PROVIDERS)
-    assert.deepEqual(Object.keys(p), ['id', 'capabilities', 'name', 'regions', 'credential', 'note', 'verification']);
+    assert.deepEqual(Object.keys(p), [
+      'id',
+      'capabilities',
+      'name',
+      'regions',
+      'credential',
+      'note',
+      'verification',
+      'access', // T21.1
+    ]);
   assert.deepEqual(Object.keys(ORIGINS), [
     'opencode-go',
     'deepseek',
     'kimi',
+    'kimi-admin',
     'kimi-code',
     'openrouter',
     'siliconflow',
@@ -59,6 +70,7 @@ test('the registry holds exactly the original platforms plus the added ones, in 
     'opencode-go': 'quota',
     deepseek: 'balance',
     kimi: 'balance',
+    'kimi-admin': 'balance',
     'kimi-code': 'quota',
     openrouter: 'quota',
     siliconflow: 'balance',
@@ -176,7 +188,7 @@ test('every quota and balance client behaves exactly as before the registry refa
   const snapshotted = [...new Set(Object.keys(expected).map((k) => k.split(':')[0]))];
   assert.deepEqual(
     Object.keys(ORIGINS).filter((p) => !snapshotted.includes(p)),
-    ['kimi', 'kimi-code', 'openrouter', 'siliconflow', 'stepfun', 'zenmux', 'zenmux-payg'],
+    ['kimi', 'kimi-admin', 'kimi-code', 'openrouter', 'siliconflow', 'stepfun', 'zenmux', 'zenmux-payg'],
   );
   for (const [provider, regions] of Object.entries(ORIGINS).filter(([p]) => snapshotted.includes(p)))
     for (const region of Object.keys(regions)) {

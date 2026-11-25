@@ -27,6 +27,7 @@ const ORDER = [
   'claude',
   'deepseek',
   'kimi',
+  'kimi-admin',
   'siliconflow',
   'stepfun',
   'zenmux-payg',

@@ -50,6 +50,7 @@ Verification levels: **Live-tested** = verified read-only against a real account
 | Platform quota | ZenMux subscription | Official management API (5-hour and 7-day usage; needs a Management API Key) | Sample-tested |
 | Balance | DeepSeek | Official balance API | Sample-tested |
 | Balance | Kimi open platform (China / international) | Official balance API | Sample-tested |
+| Balance | Kimi open platform · organization balance (China / international) | Official Admin API (Admin key with only billing read access) | Sample-tested |
 | Balance | SiliconFlow (China / international) | Official user info API (granted and topped-up parts read from the official example) | Sample-tested |
 | Balance | StepFun (China) | Official account API (available balance; Step Plan quota has no query API) | Sample-tested |
 | Balance | ZenMux | Official management API (USD balance; needs a Management API Key) | Sample-tested |
@@ -111,7 +112,7 @@ Node 24.x, pnpm 11.19.0, Electron 44.9.3 (locked in `pnpm-lock.yaml`).
 ```bash
 pnpm install
 pnpm run dev               # browser preview (sample data)
-pnpm run test:desktop      # desktop and analytics tests (baseline: 523 pass / 0 fail / 7 skipped locally; 529 / 0 / 1 on macOS CI with Harness runtimes)
+pnpm run test:desktop      # desktop and analytics tests (baseline: 530 pass / 0 fail / 7 skipped locally; 536 / 0 / 1 on macOS CI with Harness runtimes)
 pnpm run lint              # ESLint
 pnpm run typecheck         # strict type check of the pure domain modules (required in CI)
 pnpm run format:check      # Prettier (pnpm run format to fix)

@@ -26,6 +26,12 @@ module.exports = {
   // HTTP 200 with a non-zero code or status false is a platform-side failure; the body is never shown.
   classifyBodyError: (body) => (body.code !== 0 || body.status === false || body.error ? ['upstream', 0] : null),
   normalize: (raw, _now, region) => normalizeKimi(raw, currency[region]),
+  // T21.1 (D28 ①): the platform's own key page, as its official documentation links it (none where the docs
+  // give no address).
+  keysUrl: Object.freeze({
+    cn: 'https://platform.kimi.com/console/api-keys',
+    global: 'https://platform.kimi.ai/console/api-keys',
+  }),
   officialUrl: ({ region }) =>
     ({ cn: 'https://platform.kimi.com', global: 'https://platform.kimi.ai' })[region] || null,
 };

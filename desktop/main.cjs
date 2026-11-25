@@ -9,6 +9,7 @@ const {
   safeStorage,
   Notification,
   shell,
+  clipboard,
   screen,
   powerMonitor,
   nativeImage,
@@ -66,6 +67,7 @@ const { MenubarIcon } = require('./menubar-icon.cjs');
 const { MenubarPopover } = require('./menubar-popover.cjs');
 const { panelState, paceLine } = require('./menubar-panel.cjs');
 const { ForegroundFollower, parseActivation, parseLsappinfo } = require('./foreground-app.cjs');
+const { providerInfo } = require('./provider-catalog.cjs');
 const { accountOverview, trayTooltip, claudeStatusLine } = require('./account-overview.cjs');
 const { reportVisibility } = require('./window-visibility.cjs');
 const { forecast } = require('./analytics-core.cjs');
@@ -1122,6 +1124,21 @@ function installIpc() {
     menubarPanel.hide();
     return shell.openExternal(url);
   });
+  // T21.1 (D28 ①): a platform's key page or its source file, looked up in the platform registry; the renderer only
+  // names the platform, region and kind.
+  handle('assistant:provider-link', (_event, value) => {
+    const access = providerInfo(String(value?.provider || ''))?.access;
+    const url =
+      value?.kind === 'source'
+        ? access?.source
+        : value?.kind === 'keys'
+          ? access?.keysUrl[String(value?.region || '')]
+          : null;
+    if (typeof url !== 'string' || !url.startsWith('https://')) throw inputError('不支持的地址');
+    return shell.openExternal(url);
+  });
+  // T21.1: the clipboard is read only when the user clicks 「粘贴」 in the connection form; never logged.
+  handle('assistant:paste-key', () => String(clipboard.readText() || '').slice(0, 8192));
   // T14.3: the fixed status page of the active platform (provider-status.cjs), opened in the browser.
   handle('assistant:open-status-page', () => {
     const url = ProviderStatus.page(accounts.active.entry.provider);

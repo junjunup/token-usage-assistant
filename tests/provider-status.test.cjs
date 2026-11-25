@@ -27,7 +27,7 @@ test('T14.3: indicators map to the line; anything else is an incompatible format
   assert.equal(describe('critical').tone, 'red');
   assert.deepEqual(describe(null), { text: '—', tone: 'neutral' });
   assert.equal(DEFAULT_SETTINGS.providerStatus, false, 'off by default');
-  assert.deepEqual(Object.keys(PAGES).sort(), ['claude', 'codex', 'kimi', 'minimax']);
+  assert.deepEqual(Object.keys(PAGES).sort(), ['claude', 'codex', 'kimi', 'kimi-admin', 'minimax']);
   for (const { page } of Object.values(PAGES)) assert.match(page, /^https:\/\/status\.[a-z.]+$/);
 });
 

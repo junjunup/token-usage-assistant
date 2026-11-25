@@ -14,6 +14,8 @@ module.exports = {
   credential: 'apiKey',
   note: '查询账户额度、账期与用量；组织 ID 可选。',
   clientKind: 'commandcode',
+  // T21.1: its requests are built in api.cjs (CommandCodeClient), not here.
+  source: 'desktop/api.cjs',
   // The usage page needs the account login; anything else opens the site root.
   officialUrl: ({ identity, target }) =>
     target === 'usage' && /^[a-zA-Z0-9_-]+$/.test(identity?.login || '')
