@@ -1614,7 +1614,7 @@ export const EN = {
   查看这个平台的代码: "view this platform's code",
   '建议在平台上单独新建一把 Key（例如命名为「Token 用量助手」），不用时可以单独作废。':
     'Consider creating a separate key on the platform (for example named "Token Usage Assistant"), so you can revoke it on its own.',
-  '打开 {v0} 的 Key 页面': "Open {v0}'s key page",
+  '去 {v0} 创建 Key': 'Create a key on {v0}',
   '建议在火山引擎控制台 → 访问控制新建一个子用户，只授予系统策略 ArkReadOnlyAccess（方舟只读），再用这个子用户的 AccessKey 连接。这是社区实测的做法，未见官方文档说明。':
     "Consider creating a sub-user under Volcengine console → Access control, granting only the system policy ArkReadOnlyAccess (Ark read-only), and connecting with that sub-user's AccessKey. This comes from community testing; the official docs do not describe it.",
   '在 Kimi 开放平台 → 组织管理 → Admin API Keys 新建，权限只勾选 billing:read。需要先完成组织认证；Admin API 仍在测试阶段。':

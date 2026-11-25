@@ -519,7 +519,6 @@ export function KeyTrust({ info, region, platform, className = 'key-trust' }) {
   if (!access) return null;
   const reads = access.reads[region] || [];
   const open = (kind) => bridgeOf().openProviderLink(info.id, region, kind);
-  const keysUrl = access.keysUrl[region];
   return (
     <ul className={className}>
       <li>
@@ -560,15 +559,25 @@ export function KeyTrust({ info, region, platform, className = 'key-trust' }) {
           {KEY_GUIDES[info.id]
             ? t(KEY_GUIDES[info.id])
             : t('建议在平台上单独新建一把 Key（例如命名为「Token 用量助手」），不用时可以单独作废。')}
-          {keysUrl && (
-            <button type="button" className="panel-link" onClick={() => open('keys')}>
-              {t('打开 {v0} 的 Key 页面', { v0: t(info.name).split(' · ')[0] })}
-              <ArrowUpRight size={12} />
-            </button>
-          )}
         </span>
       </li>
     </ul>
+  );
+}
+// T21.3: the platform's own key page, as a visible button on the key field's label row (it was easy to miss as a
+// link at the end of the explanation list). Only where the platform's official docs give the address.
+function KeyPageButton({ info, region }) {
+  if (!info.access?.keysUrl[region]) return null;
+  return (
+    <button
+      type="button"
+      className="button key-page"
+      onClick={() => bridgeOf().openProviderLink(info.id, region, 'keys')}
+    >
+      <Key size={14} />
+      {t('去 {v0} 创建 Key', { v0: t(info.name).split(' · ')[0] })}
+      <ArrowUpRight size={13} />
+    </button>
   );
 }
 export function ConnectionForm({
@@ -765,7 +774,10 @@ export function ConnectionForm({
         </>
       ) : (
         <>
-          <label htmlFor="api-key">{info.name} API Key</label>
+          <div className="key-label">
+            <label htmlFor="api-key">{info.name} API Key</label>
+            <KeyPageButton info={info} region={region} />
+          </div>
           <div className="key-input">
             <input
               id="api-key"
