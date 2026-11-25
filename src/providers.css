@@ -363,3 +363,19 @@
 .key-hint .warn {
   color: var(--amber);
 }
+/* T21.3: the key field's label row carries the platform's key-page button */
+.key-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.key-label .key-page {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-color: var(--green);
+  color: var(--green);
+}
