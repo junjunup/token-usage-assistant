@@ -252,15 +252,86 @@ function BalanceThresholds({ settings, pref }) {
     </div>
   );
 }
+// T20.2 (D27 ②, macOS): which account the menu-bar icon shows; following the front app is the default (T20.3).
+const FOLLOW_ROWS = [
+  ['Claude 桌面版', 'Claude 订阅账户'],
+  ['Codex 应用', 'ChatGPT · Codex 账户'],
+  ['Command Code 应用', 'Command Code 账户'],
+  [
+    '终端、VS Code、Cursor 等',
+    '里面运行着 claude 或 codex 时切到对应账户（Command Code、Kimi 等用 node 运行的命令行工具认不出）',
+  ],
+  ['其他应用、分不清时', '保持上一个账户'],
+];
+function MenubarAccount({ state, settings, pref, disabled }) {
+  const accounts = state.accounts || [];
+  const stored = settings.menubarAccount || 'foreground';
+  // A fixed account that was removed reads as the default again.
+  const value =
+    ['foreground', 'auto'].includes(stored) || accounts.some((a) => a.id === stored) ? stored : 'foreground';
+  const options = [
+    { value: 'foreground', label: t('跟随前台应用') },
+    { value: 'auto', label: t('自动：剩余最少的账户') },
+    ...accounts.map((a) => ({ value: a.id, label: t('固定：') + a.label })),
+  ];
+  const shown = state.menubar?.accountLabel;
+  return (
+    <>
+      <div className="setting-row">
+        <div>
+          <h2>{t('菜单栏显示哪个账户')}</h2>
+          <p>
+            {value === 'auto'
+              ? t('显示剩余最少、最需要注意的账户。')
+              : value === 'foreground'
+                ? t('你正在用哪个编程应用，就显示它对应的账户；切换应用时跟着变。')
+                : t('一直显示这个账户；它被移除后回到「跟随前台应用」。')}
+          </p>
+        </div>
+        <Select
+          label={t('菜单栏显示哪个账户')}
+          value={value}
+          disabled={disabled}
+          onChange={(v) => pref({ menubarAccount: v })}
+          menuWidth={240}
+          options={options}
+        />
+      </div>
+      {value === 'foreground' && (
+        <div className="follow-front">
+          <div className="follow-now">
+            <span className={'follow-dot' + (state.menubar?.source ? '' : ' idle')} />
+            {shown && state.menubar?.source ? (
+              <span>
+                {t('现在显示')} <b>{shown}</b> · {t('来自')} {t(state.menubar.source)}
+              </span>
+            ) : (
+              <span>{t('还没有切到对应的编程应用，先显示剩余最少的账户。')}</span>
+            )}
+          </div>
+          <table>
+            <tbody>
+              {FOLLOW_ROWS.map(([app, account]) => (
+                <tr key={app}>
+                  <td>{t(app)}</td>
+                  <td>{t(account)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p>{t('只用前台应用的标识和终端里的进程名，不读窗口内容和命令行，不保存。其他账户的额度提醒照常通知。')}</p>
+        </div>
+      )}
+    </>
+  );
+}
 function MenubarSettings({ state, settings, pref, mac }) {
   const usage = settings.menubarUsage !== false;
-  const place = mac ? t('菜单栏') : t('托盘');
   return (
     <div className="menubar-settings" id="menubar-settings">
       <div className="settings-subhead">
         <AppWindow size={15} />
-        {place}
-        {t('图标与面板')}
+        {t(mac ? '菜单栏图标与面板' : '托盘图标与面板')}
       </div>
       {!mac && (
         <p className="menubar-settings-note">
@@ -275,6 +346,7 @@ function MenubarSettings({ state, settings, pref, mac }) {
           <span>{t('菜单栏空间不足，图标已被系统隐藏。可改用「① 只有刻度环」，或减少其他菜单栏图标。')}</span>
         </div>
       )}
+      {mac && <MenubarAccount state={state} settings={settings} pref={pref} disabled={!usage} />}
       {mac && (
         <div className="setting-row">
           <div>
@@ -300,19 +372,20 @@ function MenubarSettings({ state, settings, pref, mac }) {
       )}
       <div className="setting-row">
         <div>
-          <h2>
-            {place}
-            {t('显示用量')}
-          </h2>
+          <h2>{t(mac ? '菜单栏显示用量' : '托盘显示用量')}</h2>
           <p>
-            {t('关闭后')}
-            {place}
-            {t('只显示静态 Logo，适合屏幕共享或演示；')}
-            {place}
-            {t('图标不受截屏保护。')}
+            {t(
+              mac
+                ? '关闭后菜单栏只显示静态 Logo，适合屏幕共享或演示；菜单栏图标不受截屏保护。'
+                : '关闭后托盘只显示静态 Logo，适合屏幕共享或演示；托盘图标不受截屏保护。',
+            )}
           </p>
         </div>
-        <Toggle label={place + t('显示用量')} checked={usage} onChange={(v) => pref({ menubarUsage: v })} />
+        <Toggle
+          label={t(mac ? '菜单栏显示用量' : '托盘显示用量')}
+          checked={usage}
+          onChange={(v) => pref({ menubarUsage: v })}
+        />
       </div>
       <div className="setting-row">
         <div>

@@ -39,6 +39,9 @@ const DEFAULT_SETTINGS = Object.freeze({
   // T7.7 (macOS menu bar): icon form ① ring / ② ring + value / ③ two lines; show usage (off = static logo);
   // alert colours; screen-capture protection for the popover panel.
   menubarForm: 'value',
+  // T20.2 (D27 ②): which account the menu-bar icon shows: 'foreground' follows the coding app in front (macOS,
+  // T20.3; until one is in front, and on Windows, the same as 'auto'), 'auto' the most urgent account, or an account id.
+  menubarAccount: 'foreground',
   menubarUsage: true,
   menubarAlertColor: true,
   panelProtect: true,
@@ -408,6 +411,8 @@ function patchSettings(current, patch) {
     )
       result[key] = [...new Set(value)];
     else if (key === 'menubarForm' && ['ring', 'value', 'two'].includes(value)) result[key] = value;
+    else if (key === 'menubarAccount' && typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value))
+      result[key] = value;
     else if (
       typeof (/** @type {Record<string, any>} */ (DEFAULT_SETTINGS)[key]) === 'boolean' &&
       typeof value === 'boolean'

@@ -553,6 +553,9 @@ state.settings = {
   panelProtect: true,
 };
 state.menubar = { hidden: new URLSearchParams(location.search).get('desktop-preview') === 'menubar-hidden' };
+// T20.2: ?menubar-front=claude previews the menu bar following the Claude desktop app in front.
+if (new URLSearchParams(location.search).get('menubar-front') === 'claude')
+  state.menubar = { ...state.menubar, accountLabel: 'Claude · Claude Code · 示例', source: 'Claude 桌面版' };
 if (new URLSearchParams(location.search).get('desktop-preview') === 'update-available')
   state.update = { status: 'available', version: '1.8.0-beta.8', checkedAt: now };
 // T12.8: the installed Windows build's download / install steps (?desktop-preview=update-install&install=<status>).
