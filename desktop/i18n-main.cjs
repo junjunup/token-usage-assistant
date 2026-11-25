@@ -30,6 +30,7 @@ const EN = {
   '5 小时 {five} · 每周 {week}': '5 hours {five} · weekly {week}',
   不限: 'Unlimited',
   未启用: 'Not started',
+  未订阅: 'No plan',
   未连接账户: 'No account connected',
   '（上次）': ' (last)',
   '另 {n} 个账户': '{n} more accounts',

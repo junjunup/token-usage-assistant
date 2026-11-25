@@ -27,6 +27,7 @@ export function resetText(focus, now) {
   if (focus.window) return t(resetDescription(focus.window, now));
   if (focus.resetAt)
     return t('账期至 ') + new Date(focus.resetAt).toLocaleDateString(locale(), { month: 'numeric', day: 'numeric' });
+  if (focus.id === 'plan') return t('当前没有有效套餐');
   return focus.kind === 'balance' ? t('无重置窗口') : '—';
 }
 // A failed refresh keeps the last successful values; say so, with their time (AGENTS §2). T17.2 (D24 ①): a rejected
@@ -158,9 +159,11 @@ export function GlanceWidget({ overview, expanded }) {
                     ? n.text
                     : row.focus?.kind === 'window'
                       ? t(row.focus.label.replace(/窗口$/, ''))
-                      : row.focus
-                        ? t('余额')
-                        : '—'}
+                      : row.focus?.id === 'plan'
+                        ? t('套餐')
+                        : row.focus
+                          ? t('余额')
+                          : '—'}
                 </span>
                 <b className={'mono ' + textTone(row.tone)}>{row.focus?.text || '—'}</b>
               </div>

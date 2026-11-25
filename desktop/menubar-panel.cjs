@@ -172,6 +172,9 @@ function panelAccount(a, threshold, amounts = {}) {
     };
   const monthly = slots.find((s) => s.id === 'monthly');
   if (monthly) balance = { value: monthly.compact, unit: '月度余额', note: '账户接口', tone: monthly.tone };
+  // T20.1: no active plan and nothing left.
+  const plan = slots.find((s) => s.id === 'plan');
+  if (plan) balance = { value: plan.compact, unit: '套餐', note: '账户接口', tone: 'normal' };
   const cells = { tokens: summary.tokens, cost: summary.cost, balance };
   const stamps = Object.values(a.updatedAt || {}).filter((v) => typeof v === 'number' && v > 0);
   const stale = STALE.includes(String(a.status || ''));
