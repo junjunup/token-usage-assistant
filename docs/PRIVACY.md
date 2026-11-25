@@ -8,7 +8,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 
 ### 读什么
 
-**平台账户**（只读接口，固定官方地址，你在应用里自己填写密钥）：
+**平台账户**（只读接口，固定官方地址，你在应用里自己填写密钥）：连接表单里列出该平台只调用的地址（由实际发请求的代码生成）和读取代码的源码链接。表单里的「粘贴」按钮只在你点击时读一次剪贴板，用来填入 Key，不保存、不写日志。
 
 | 平台 | 读取内容 | 访问地址 |
 |---|---|---|
@@ -18,6 +18,7 @@ Token 用量助手是本机桌面工具：只**读取**你已连接的平台账�
 | 火山方舟 | AFP 套餐用量（北京区） | `ark.cn-beijing.volcengineapi.com` |
 | DeepSeek | 账户余额 | `api.deepseek.com` |
 | Kimi 开放平台 | 可用余额、代金券余额、现金余额 | 国内 `api.moonshot.cn` / 国际 `api.moonshot.ai`（按你选的站点） |
+| Kimi 开放平台 · 组织余额（Admin Key，T21.2） | 组织的可用余额 | 国内 `api.moonshot.cn` / 国际 `api.moonshot.ai` 的 `/v1/admin/organizations/account`；用你在组织管理里创建、只给 `billing:read` 权限的 Admin Key |
 | OpenRouter | 这把 Key 的花费上限、预算和已报告花费（USD）；接口同时返回的 Key 名称、用户 / 组织 / 工作区编号等不保存 | `openrouter.ai` |
 | 硅基流动 | 总余额、赠金余额、充值余额；接口同时返回的用户编号、名称、邮箱等不保存 | 国内 `api.siliconflow.cn` / 国际 `api.siliconflow.com`（按你选的站点） |
 | 阶跃星辰 | 可用余额、账户类型（预付费 / 后付费） | `api.stepfun.com` |
@@ -91,7 +92,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 
 ### What it reads
 
-**Platform accounts** — read-only endpoints at fixed official addresses; you enter the keys in the app yourself:
+**Platform accounts** — read-only endpoints at fixed official addresses; you enter the keys in the app yourself. The connection form lists the only addresses each platform is called at (generated from the code that sends the requests) and links to the code that reads it. Its "Paste" button reads the clipboard once, only when you click it, to fill in the key; nothing is saved or logged.
 
 | Platform | What | Address |
 |---|---|---|
@@ -101,6 +102,7 @@ Token Usage Assistant is a local desktop app. It only **reads** usage and quota 
 | Volcengine Ark | AFP plan usage (Beijing) | `ark.cn-beijing.volcengineapi.com` |
 | DeepSeek | account balance | `api.deepseek.com` |
 | Kimi open platform | available, voucher and cash balance | China `api.moonshot.cn` / international `api.moonshot.ai` (the site you choose) |
+| Kimi open platform · organization balance (Admin Key, T21.2) | the organization's available balance | `/v1/admin/organizations/account` on China `api.moonshot.cn` / international `api.moonshot.ai`, with an Admin key you create under Organization with only the `billing:read` scope |
 | OpenRouter | this key's spend limit, budgets and reported spend (USD); the key label and user / organization / workspace ids it also returns are not kept | `openrouter.ai` |
 | SiliconFlow | total, granted and topped-up balance; the user id, name, email etc. it also returns are not kept | China `api.siliconflow.cn` / international `api.siliconflow.com` (the site you choose) |
 | StepFun | available balance, account type (prepaid / postpaid) | `api.stepfun.com` |

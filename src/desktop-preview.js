@@ -15,6 +15,7 @@ import {
 import {
   normalizeDeepSeek,
   normalizeKimi,
+  normalizeKimiAdmin,
   normalizeSiliconFlow,
   normalizeStepFun,
   normalizeZenMuxBalance,
@@ -203,6 +204,8 @@ snapshots.deepseek = {
 // T13.3: SiliconFlow (China site), StepFun and ZenMux pay-as-you-go balances from the official reference examples.
 for (const [provider, balance] of [
   ['siliconflow', () => normalizeSiliconFlow(fixtureBody('siliconflow'), 'CNY')],
+  // T21.2: the Kimi organization balance read with an Admin key (China site).
+  ['kimi-admin', () => normalizeKimiAdmin(fixtureBody('kimi-admin'), 'CNY')],
   ['stepfun', () => normalizeStepFun(fixtureBody('stepfun'))],
   ['zenmux-payg', () => normalizeZenMuxBalance(fixtureBody('zenmux-payg'))],
 ])
@@ -459,7 +462,9 @@ if (selectedProvider === 'kimi' && ['arrears', 'exhausted', 'unknown'].includes(
     },
     'CNY',
   );
-const balanceProvider = ['deepseek', 'kimi', 'siliconflow', 'stepfun', 'zenmux-payg'].includes(selectedProvider);
+const balanceProvider = ['deepseek', 'kimi', 'kimi-admin', 'siliconflow', 'stepfun', 'zenmux-payg'].includes(
+  selectedProvider,
+);
 // T10.2: ?provider=openrouter&scenario=unlimited — a key without a spend limit and without budgets.
 if (selectedProvider === 'openrouter' && scenario === 'unlimited') {
   const body = fixtureBody('openrouter', now);
@@ -717,6 +722,9 @@ export const previewBridge = {
   window: async () => ({ ok: false, error: '该功能在 Windows 桌面应用中可用。' }),
   openOfficial: async () => ({ ok: false, error: '网页预览不操作账户。' }),
   openStatusPage: async () => ({ ok: false, error: '网页预览不打开外部页面。' }),
+  // T21.1: the preview neither opens pages nor reads the clipboard.
+  openProviderLink: async () => ({ ok: false, error: '网页预览不打开外部页面。' }),
+  pasteKey: async () => ({ ok: true, value: '  Bearer sk-preview-example-key\n' }),
   testNotification: async () => ({ ok: false, error: 'Windows 桌面应用可发送系统通知。' }),
   openUpdate: async () => ({ ok: false, error: '浏览器预览不打开外部页面。' }),
   claudeConfig: async () => ({ ok: false, error: '浏览器预览不修改 Claude Code 设置。' }),

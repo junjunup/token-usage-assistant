@@ -20,5 +20,8 @@ module.exports = {
   }),
   classifyBodyError: () => null,
   normalize: (raw) => normalizeDeepSeek(raw),
+  // T21.1 (D28 ①): the platform's own key page, as its official documentation links it (none where the docs
+  // give no address).
+  keysUrl: Object.freeze({ global: 'https://platform.deepseek.com/api_keys' }),
   officialUrl: () => 'https://platform.deepseek.com/usage',
 };

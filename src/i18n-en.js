@@ -1603,6 +1603,31 @@ export const EN = {
   账户接口: 'Account API',
   平台返回: 'Reported',
   月度余额: 'Monthly balance',
+  // T21.1–T21.2 (D28): what happens to the credential
+  '只调用这几个查询地址，不调用模型、不修改账户：':
+    'Calls only these query addresses; never calls a model or changes the account:',
+  '只调用这个查询地址，不调用模型、不修改账户：':
+    'Calls only this query address; never calls a model or changes the account:',
+  '{v0}加密保存在这台电脑（{v1}），不写进日志。':
+    '{v0} is stored encrypted on this computer ({v1}) and never written to logs.',
+  '读取代码开源：': 'The code that reads it is open source:',
+  查看这个平台的代码: "view this platform's code",
+  '建议在平台上单独新建一把 Key（例如命名为「Token 用量助手」），不用时可以单独作废。':
+    'Consider creating a separate key on the platform (for example named "Token Usage Assistant"), so you can revoke it on its own.',
+  '打开 {v0} 的 Key 页面': "Open {v0}'s key page",
+  '建议在火山引擎控制台 → 访问控制新建一个子用户，只授予系统策略 ArkReadOnlyAccess（方舟只读），再用这个子用户的 AccessKey 连接。这是社区实测的做法，未见官方文档说明。':
+    "Consider creating a sub-user under Volcengine console → Access control, granting only the system policy ArkReadOnlyAccess (Ark read-only), and connecting with that sub-user's AccessKey. This comes from community testing; the official docs do not describe it.",
+  '在 Kimi 开放平台 → 组织管理 → Admin API Keys 新建，权限只勾选 billing:read。需要先完成组织认证；Admin API 仍在测试阶段。':
+    'Create it under Kimi Open Platform → Organization → Admin API Keys with only the billing:read scope. The organization must be verified first; the Admin API is in beta.',
+  粘贴: 'Paste',
+  'Kimi 开放平台 · 组织余额（Admin Key）': 'Kimi Open Platform · organization balance (Admin Key)',
+  '填写所选站点的 Kimi 开放平台 Admin API Key（组织管理里创建，只需 billing:read 权限；组织需先完成认证），只读查询组织的可用余额。余额变化不作为实际消费。':
+    "Enter a Kimi Open Platform Admin API key for the chosen site (created under Organization, with only the billing:read scope; the organization must be verified first). It reads the organization's available balance only. Balance changes are not treated as spending.",
+  '只按官方接口结构说明测试过，未用真实账户核对':
+    'Tested only against the official interface description, not checked with a real account',
+  '已去掉多余的空格、引号或 Bearer 前缀。': 'Removed extra spaces, quotes or a "Bearer " prefix.',
+  '这是 Kimi 的 Admin Key，请选择「Kimi 开放平台 · 组织余额（Admin Key）」。':
+    'This is a Kimi Admin Key; choose "Kimi Open Platform · organization balance (Admin Key)".',
   // T20.2–T20.3 (D27): which account the menu bar shows
   菜单栏显示哪个账户: 'Account in the menu bar',
   跟随前台应用: 'Follow the app in front',
@@ -1649,6 +1674,11 @@ export const EN = {
 
 /** Text built at run time (shared modules, templates with numbers), translated by shape. */
 export const EN_PATTERNS = [
+  // T21.1 (D28 ①): key format hint
+  [
+    /^这不像该平台的 Key：通常以 (\S+) 开头。$/,
+    (p) => `This does not look like this platform's key; it usually starts with ${p}.`,
+  ],
   [
     /^(\d+) 个会话文件的用量格式不兼容，已排除。$/,
     (n) => `${n} session files had an incompatible usage format and were left out.`,

@@ -37,5 +37,11 @@ module.exports = {
     return null;
   },
   normalize: (raw) => normalizeGlm(raw),
+  // T21.1 (D28 ①): the platform's own key page, as its official documentation links it (none where the docs
+  // give no address).
+  keysUrl: Object.freeze({
+    cn: 'https://bigmodel.cn/usercenter/proj-mgmt/apikeys',
+    global: 'https://z.ai/manage-apikey/apikey-list',
+  }),
   officialUrl: ({ region }) => ({ cn: 'https://bigmodel.cn', global: 'https://z.ai' })[region] || null,
 };

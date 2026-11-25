@@ -12,6 +12,9 @@ import {
   ArrowRight,
   WarningCircle,
   Receipt,
+  LockKey,
+  GithubLogo,
+  ClipboardText,
 } from '@phosphor-icons/react';
 import { Select } from './Select.jsx';
 import { Live } from './Live.jsx';
@@ -19,6 +22,8 @@ import { PROVIDERS, providerInfo } from './generated/provider-catalog.js';
 import { quotaStatus, resetDescription } from './generated/domain.js';
 import { formatAmount } from './generated/balance-domain.js';
 import './providers.css';
+import { previewBridge } from './desktop-preview.js';
+import { cleanKey, keyHint } from './generated/key-format.js';
 import { t, locale } from './i18n.js';
 const number = (v) => typeof v === 'number' && Number.isFinite(v);
 const format = (v) => (number(v) ? v.toLocaleString(locale(), { maximumFractionDigits: 1 }) : '—');
@@ -499,6 +504,73 @@ export function LocalConnectionStatus({ state, onClaudeConfig = null }) {
     </div>
   );
 }
+// T21.1 (D28 ①): what happens to the credential, stated from the platform registry: the addresses called (generated
+// from the request code), local encryption, the open source, and how to make a key just for this. T21.2 (D28 ②): where
+// the platform offers a read-only credential, how to make one.
+const bridgeOf = () => window.tokenAssistant || previewBridge;
+const KEY_GUIDES = {
+  volcengine:
+    '建议在火山引擎控制台 → 访问控制新建一个子用户，只授予系统策略 ArkReadOnlyAccess（方舟只读），再用这个子用户的 AccessKey 连接。这是社区实测的做法，未见官方文档说明。',
+  'kimi-admin':
+    '在 Kimi 开放平台 → 组织管理 → Admin API Keys 新建，权限只勾选 billing:read。需要先完成组织认证；Admin API 仍在测试阶段。',
+};
+export function KeyTrust({ info, region, platform, className = 'key-trust' }) {
+  const access = info.access;
+  if (!access) return null;
+  const reads = access.reads[region] || [];
+  const open = (kind) => bridgeOf().openProviderLink(info.id, region, kind);
+  const keysUrl = access.keysUrl[region];
+  return (
+    <ul className={className}>
+      <li>
+        <ShieldCheck size={15} />
+        <span>
+          {t(
+            reads.length > 1
+              ? '只调用这几个查询地址，不调用模型、不修改账户：'
+              : '只调用这个查询地址，不调用模型、不修改账户：',
+          )}
+          {reads.map((r) => (
+            <code key={r}>{r}</code>
+          ))}
+        </span>
+      </li>
+      <li>
+        <LockKey size={15} />
+        <span>
+          {t('{v0}加密保存在这台电脑（{v1}），不写进日志。', {
+            v0: info.credential === 'aksk' ? t('密钥') : 'Key ',
+            v1: platform === 'darwin' ? t('macOS 钥匙串') : t('Windows 系统加密'),
+          })}
+        </span>
+      </li>
+      <li>
+        <GithubLogo size={15} />
+        <span>
+          {t('读取代码开源：')}
+          <button type="button" className="panel-link" onClick={() => open('source')}>
+            {t('查看这个平台的代码')}
+            <ArrowUpRight size={12} />
+          </button>
+        </span>
+      </li>
+      <li>
+        <Key size={15} />
+        <span>
+          {KEY_GUIDES[info.id]
+            ? t(KEY_GUIDES[info.id])
+            : t('建议在平台上单独新建一把 Key（例如命名为「Token 用量助手」），不用时可以单独作废。')}
+          {keysUrl && (
+            <button type="button" className="panel-link" onClick={() => open('keys')}>
+              {t('打开 {v0} 的 Key 页面', { v0: t(info.name).split(' · ')[0] })}
+              <ArrowUpRight size={12} />
+            </button>
+          )}
+        </span>
+      </li>
+    </ul>
+  );
+}
 export function ConnectionForm({
   state,
   preview,
@@ -519,6 +591,7 @@ export function ConnectionForm({
     [region, setRegion] = useState(editing ? active.region : wizard?.region || 'cn'),
     [label, setLabel] = useState(editing ? active.label : ''),
     [apiKey, setKey] = useState(''),
+    [tidied, setTidied] = useState(false),
     [accessKeyId, setAk] = useState(''),
     [secretKey, setSk] = useState(''),
     [orgId, setOrg] = useState(editing ? active.orgId || '' : '');
@@ -533,6 +606,7 @@ export function ConnectionForm({
   }
   function clear() {
     setKey('');
+    setTidied(false);
     setAk('');
     setSk('');
   }
@@ -594,6 +668,12 @@ export function ConnectionForm({
     } finally {
       setPending(false);
     }
+  }
+  // T21.1: a pasted key is tidied (spaces, quotes, "Bearer "); the platform's answer still decides.
+  function paste(text) {
+    const { key, changed } = cleanKey(text);
+    setKey(key);
+    setTidied(changed && !!key && key !== String(text ?? '').trim());
   }
   const hasSecret =
     info.credential === 'local'
@@ -686,23 +766,50 @@ export function ConnectionForm({
       ) : (
         <>
           <label htmlFor="api-key">{info.name} API Key</label>
-          <input
-            id="api-key"
-            type="password"
-            value={apiKey}
-            onChange={(e) => setKey(e.target.value)}
-            disabled={busy || preview}
-            autoComplete="off"
-            spellCheck={false}
-            required
-            minLength={8}
-            maxLength={4096}
-            placeholder={
-              info.capabilities.balance && !info.capabilities.quota
-                ? t('在本机粘贴官方 API Key')
-                : t('在本机粘贴套餐密钥')
-            }
-          />
+          <div className="key-input">
+            <input
+              id="api-key"
+              type="password"
+              value={apiKey}
+              onChange={(e) => {
+                setKey(e.target.value);
+                setTidied(false);
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                paste(e.clipboardData.getData('text'));
+              }}
+              disabled={busy || preview}
+              autoComplete="off"
+              spellCheck={false}
+              required
+              minLength={8}
+              maxLength={4096}
+              placeholder={
+                info.capabilities.balance && !info.capabilities.quota
+                  ? t('在本机粘贴官方 API Key')
+                  : t('在本机粘贴套餐密钥')
+              }
+            />
+            <button
+              type="button"
+              className="button"
+              disabled={busy || preview}
+              onClick={async () => {
+                const result = await bridgeOf().pasteKey();
+                if (result?.ok) paste(result.value);
+              }}
+            >
+              <ClipboardText size={14} />
+              {t('粘贴')}
+            </button>
+          </div>
+          {(tidied || keyHint(provider, apiKey)) && (
+            <p className="key-hint" role="status">
+              {tidied && <span>{t('已去掉多余的空格、引号或 Bearer 前缀。')}</span>}
+              {keyHint(provider, apiKey) && <span className="warn">{t(keyHint(provider, apiKey))}</span>}
+            </p>
+          )}
         </>
       )}
       {provider === 'commandcode' && (
@@ -758,24 +865,28 @@ export function ConnectionForm({
         </div>
         <p className="provider-form-note">{t(info.note)}</p>
         {fields}
-        <ul className="wz-promise">
-          <li>
-            <ShieldCheck size={15} />
-            {provider === 'codex'
-              ? t('不需要填写 Key：通过本机官方 Codex 客户端读取订阅额度，助手不保存它的登录凭据。')
-              : provider === 'claude'
-                ? t('不需要填写 Key：由 Claude Code 把额度和用量报告给本机组件，助手不读取 Claude 的登录凭据。')
-                : t('{v0}只加密保存在这台电脑（{v1}），只发给 {v2} 自己的接口，不写进日志。', {
-                    v0: info.credential === 'aksk' ? t('密钥') : 'Key ',
-                    v1: state.platform === 'darwin' ? t('macOS 钥匙串') : t('Windows 系统加密'),
-                    v2: info.name,
-                  })}
-          </li>
-          <li>
-            <ShieldCheck size={15} />
-            {t('只做官方只读查询：不调用模型、不消耗额度、不修改账户。')}
-          </li>
-        </ul>
+        {info.access ? (
+          <KeyTrust info={info} region={region} platform={state.platform} className="wz-promise key-trust" />
+        ) : (
+          <ul className="wz-promise">
+            <li>
+              <ShieldCheck size={15} />
+              {provider === 'codex'
+                ? t('不需要填写 Key：通过本机官方 Codex 客户端读取订阅额度，助手不保存它的登录凭据。')
+                : provider === 'claude'
+                  ? t('不需要填写 Key：由 Claude Code 把额度和用量报告给本机组件，助手不读取 Claude 的登录凭据。')
+                  : t('{v0}只加密保存在这台电脑（{v1}），只发给 {v2} 自己的接口，不写进日志。', {
+                      v0: info.credential === 'aksk' ? t('密钥') : 'Key ',
+                      v1: state.platform === 'darwin' ? t('macOS 钥匙串') : t('Windows 系统加密'),
+                      v2: info.name,
+                    })}
+            </li>
+            <li>
+              <ShieldCheck size={15} />
+              {t('只做官方只读查询：不调用模型、不消耗额度、不修改账户。')}
+            </li>
+          </ul>
+        )}
         {state.credentialIssue && <p className="form-error">{state.credentialIssue}</p>}
         <div className="wz-actions">
           <span>{manualButton}</span>
@@ -858,12 +969,7 @@ export function ConnectionForm({
           </p>
         )}
         {fields}
-        <p className="credential-note">
-          <ShieldCheck size={14} />
-          {t('凭据使用')}
-          {state.platform === 'darwin' ? t(' macOS 钥匙串') : t(' Windows 系统加密')}
-          {t('保存在本机，仅用于官方只读查询。')}
-        </p>
+        <KeyTrust info={info} region={region} platform={state.platform} />
         <div className="connect-actions">
           <button className="button primary" type="submit" disabled={disabled}>
             <Plug size={15} />

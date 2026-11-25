@@ -24,6 +24,9 @@ module.exports = {
   }),
   classifyBodyError: (body) => (body.code !== 20000 || body.status === false ? ['upstream', 0] : null),
   normalize: (raw, _now, region) => normalizeSiliconFlow(raw, currency[region]),
+  // T21.1 (D28 ①): the platform's own key page, as its official documentation links it (none where the docs
+  // give no address).
+  keysUrl: Object.freeze({ cn: 'https://cloud.siliconflow.cn/account/ak' }),
   officialUrl: ({ region }) =>
     ({ cn: 'https://cloud.siliconflow.cn', global: 'https://cloud.siliconflow.com' })[region] || null,
 };

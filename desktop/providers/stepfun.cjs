@@ -20,5 +20,8 @@ module.exports = {
   }),
   classifyBodyError: (body) => (body.error ? ['upstream', 0] : null),
   normalize: (raw) => normalizeStepFun(raw),
+  // T21.1 (D28 ①): the platform's own key page, as its official documentation links it (none where the docs
+  // give no address).
+  keysUrl: Object.freeze({ cn: 'https://platform.stepfun.com/interface-key' }),
   officialUrl: ({ region }) => (region === 'cn' ? 'https://platform.stepfun.com' : null),
 };

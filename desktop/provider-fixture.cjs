@@ -16,6 +16,14 @@ function fixtureBody(provider, now = NOW) {
         { currency: 'CNY', total_balance: '110.00', granted_balance: '10.00', topped_up_balance: '100.00' },
       ],
     };
+  // T21.2: the official OrgAccount schema (no example is published; the values are synthetic milli-cents).
+  if (provider === 'kimi-admin')
+    return {
+      available_balance: 4958894,
+      total_consume: 12041106,
+      total_recharge_amount: 15000000,
+      total_voucher_amount: 2000000,
+    };
   // T10.1: the official sample response (both sites use the same shape; the currency comes from the site).
   if (provider === 'kimi')
     return {
@@ -223,27 +231,29 @@ async function fixtureFetch(url) {
       ? 'opencode-go'
       : url === 'https://api.deepseek.com/user/balance'
         ? 'deepseek'
-        : url.includes('api.moonshot.')
-          ? 'kimi'
-          : url.includes('/coding/v1/usages')
-            ? 'kimi-code'
-            : url.includes('api.siliconflow.')
-              ? 'siliconflow'
-              : url === 'https://api.stepfun.com/v1/accounts'
-                ? 'stepfun'
-                : url === 'https://zenmux.ai/api/v1/management/subscription/detail'
-                  ? 'zenmux'
-                  : url === 'https://zenmux.ai/api/v1/management/payg/balance'
-                    ? 'zenmux-payg'
-                    : url === 'https://openrouter.ai/api/v1/key'
-                      ? 'openrouter'
-                      : url.includes('bigmodel') || url.includes('api.z.ai')
-                        ? 'glm'
-                        : url.includes('minimax')
-                          ? 'minimax'
-                          : url.includes('volcengineapi')
-                            ? 'volcengine'
-                            : null;
+        : url.includes('api.moonshot.') && url.endsWith('/v1/admin/organizations/account')
+          ? 'kimi-admin'
+          : url.includes('api.moonshot.')
+            ? 'kimi'
+            : url.includes('/coding/v1/usages')
+              ? 'kimi-code'
+              : url.includes('api.siliconflow.')
+                ? 'siliconflow'
+                : url === 'https://api.stepfun.com/v1/accounts'
+                  ? 'stepfun'
+                  : url === 'https://zenmux.ai/api/v1/management/subscription/detail'
+                    ? 'zenmux'
+                    : url === 'https://zenmux.ai/api/v1/management/payg/balance'
+                      ? 'zenmux-payg'
+                      : url === 'https://openrouter.ai/api/v1/key'
+                        ? 'openrouter'
+                        : url.includes('bigmodel') || url.includes('api.z.ai')
+                          ? 'glm'
+                          : url.includes('minimax')
+                            ? 'minimax'
+                            : url.includes('volcengineapi')
+                              ? 'volcengine'
+                              : null;
   return new Response(JSON.stringify(fixtureBody(provider, Date.now())), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

@@ -18,6 +18,7 @@ for (const name of [
   'onboarding',
   'coverage-report',
   'upstream-contracts',
+  'key-format',
 ]) {
   let code = fs.readFileSync(`desktop/${name}.cjs`, 'utf8');
   // Match the require lines regardless of formatting whitespace.

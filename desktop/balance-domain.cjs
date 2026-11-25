@@ -76,6 +76,39 @@ function normalizeKimi(raw, currency) {
 }
 const positiveAmount = (/** @type {string} */ v) => !v.startsWith('-') && /[1-9]/.test(v);
 /**
+ * T21.2: a Kimi Admin API amount — a safe integer in milli-cents (1 yuan / 1 dollar = 100000) — as an exact decimal
+ * string, without floating point. Anything else is null.
+ * @param {unknown} v
+ * @returns {string|null}
+ */
+function milliAmount(v) {
+  if (typeof v !== 'number' || !Number.isSafeInteger(v)) return null;
+  const digits = String(Math.abs(v)).padStart(6, '0');
+  const whole = digits.slice(0, -5).replace(/^0+(?=\d)/, ''),
+    fraction = digits.slice(-5).replace(/0+$/, '');
+  return (v < 0 ? '-' : '') + whole + (fraction ? '.' + fraction : '');
+}
+/**
+ * Kimi open platform GET /v1/admin/organizations/account (T21.2, D28 ②; official Admin API schema OrgAccount, no
+ * extra fields): available_balance is the organization's available balance (top-up and vouchers together). The
+ * total_* fields are lifetime sums, never parts of the balance, so they are not kept. Currency from the site.
+ * @param {any} raw upstream JSON
+ * @param {'CNY'|'USD'} currency
+ */
+function normalizeKimiAdmin(raw, currency) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !('available_balance' in raw))
+    throw new Error('Unsupported balance response');
+  if (!['CNY', 'USD'].includes(currency)) throw new Error('Unsupported currency');
+  const total = milliAmount(raw.available_balance);
+  if (total === null) throw new Error('Missing amounts');
+  return {
+    // The platform rejects inference calls when the available balance is zero or below (as for T10.1).
+    isAvailable: positiveAmount(total),
+    balances: [{ currency, total }],
+    source: 'kimi-admin-official-balance',
+  };
+}
+/**
  * SiliconFlow GET /v1/user/info (T13.3, D20). The official reference lists the fields but not their meaning; from its
  * example (balance 0.88 + chargeBalance 88.00 = totalBalance 88.88) and how other tools read it, totalBalance is the
  * total, balance the granted part and chargeBalance the topped-up part. All three are decimal strings; totalBalance is
@@ -224,6 +257,8 @@ module.exports = {
   belowAmount,
   normalizeDeepSeek,
   normalizeKimi,
+  normalizeKimiAdmin,
+  milliAmount,
   normalizeSiliconFlow,
   normalizeStepFun,
   normalizeZenMuxBalance,

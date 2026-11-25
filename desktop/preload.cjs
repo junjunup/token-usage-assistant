@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld(
     window: (action) => call('assistant:window', action),
     openOfficial: (target) => call('assistant:official', target),
     openStatusPage: () => call('assistant:open-status-page'),
+    // T21.1: a platform's key page ('keys') or source file ('source'), and the clipboard on a 「粘贴」 click.
+    openProviderLink: (provider, region, kind) => call('assistant:provider-link', { provider, region, kind }),
+    pasteKey: () => call('assistant:paste-key'),
     testNotification: () => call('assistant:test-notification'),
     openUpdate: () => call('assistant:open-update'),
     claudeConfig: (action) => call('assistant:claude-config', action),
