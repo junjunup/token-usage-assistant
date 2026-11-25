@@ -41,7 +41,7 @@ import { Select } from './Select.jsx';
 import { Live } from './Live.jsx';
 import { BalanceDashboard, BalanceWidget } from './BalanceViews.jsx';
 import { AccountSwitcher, ProviderDashboard, ProviderWidget, ConnectionForm } from './ProviderViews.jsx';
-import { monthlyQuota, quotaStatus, resetDescription } from './generated/domain.js';
+import { monthlyQuota, quotaStatus, resetDescription, unsubscribed } from './generated/domain.js';
 import { useAnalytics } from './useAnalytics.js';
 import { AnalyticsPage, RangeControl, HealthStrip } from './AnalyticsPage.jsx';
 import { ToolSources, kindName } from './ToolSources.jsx';
@@ -662,9 +662,11 @@ export function DesktopApp() {
   const summaryLabel =
     s?.scope === 'history' ? t('累计汇总') : { today: t('今日'), '7d': t('近 7 天'), billing: t('本账期') }[range];
   const reset = (w) => <Live>{(now) => t(resetDescription(w, now))}</Live>;
+  const noPlan = unsubscribed(data.parts);
   const monthly = monthlyQuota(data),
-    monthTone =
-      num(c?.monthly) && c.monthly <= 0
+    monthTone = noPlan
+      ? 'neutral'
+      : num(c?.monthly) && c.monthly <= 0
         ? 'red'
         : num(monthly.remainingPercent) && monthly.remainingPercent < settings.threshold
           ? 'amber'
@@ -1229,13 +1231,15 @@ export function DesktopApp() {
                       </div>
                       <div className="month-bottom">
                         <span>
-                          {num(c?.monthly) && c.monthly <= 0
-                            ? c.purchased > 0
-                              ? t('月额度已耗尽，仍有购买余额')
-                              : c.free > 0
-                                ? t('月额度已耗尽，另有免费余额')
-                                : t('月额度已耗尽，请查看其他余额或等待新账期')
-                            : t('短周期窗口有剩余，也需要月余额支持套餐使用')}
+                          {noPlan
+                            ? t('当前没有有效套餐（未订阅），也没有购买或免费余额')
+                            : num(c?.monthly) && c.monthly <= 0
+                              ? c.purchased > 0
+                                ? t('月额度已耗尽，仍有购买余额')
+                                : c.free > 0
+                                  ? t('月额度已耗尽，另有免费余额')
+                                  : t('月额度已耗尽，请查看其他余额或等待新账期')
+                              : t('短周期窗口有剩余，也需要月余额支持套餐使用')}
                         </span>
                         <span>
                           {t('购买')} <b className="mono">{currency(c?.purchased)}</b> {t('· 免费')}{' '}

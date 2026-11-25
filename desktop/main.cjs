@@ -27,7 +27,7 @@ if (legacyHelper) {
 const path = require('node:path');
 const fs = require('node:fs');
 const { LocalStore } = require('./store.cjs');
-const { patchSettings, percentText } = require('./domain.cjs');
+const { patchSettings, percentText, unsubscribed } = require('./domain.cjs');
 const { ApiError } = require('./api.cjs');
 const { AnalyticsService } = require('./analytics-service.cjs');
 const { ToolSources } = require('./tool-sources.cjs');
@@ -645,17 +645,19 @@ function updateTray() {
             tm('{currency} 余额 {amount}', { currency: b.currency, amount: formatAmount(b.total) }),
           )
         : [tm('余额金额暂未返回')]
-      : Array.isArray(credit?.windows)
-        ? credit.windows
-            .filter((w) => w.applicable !== false)
-            .slice(0, 4)
-            .map((w) => w.label + ' ' + windowText(w))
-        : [
-            tm('月度剩余 {amount}', {
-              amount: typeof credit?.monthly === 'number' ? '$' + credit.monthly.toFixed(2) : '—',
-            }),
-            tm('5 小时 {five} · 每周 {week}', { five: windowText(credit?.five), week: windowText(credit?.week) }),
-          ];
+      : unsubscribed(monitor?.state.parts)
+        ? [tm('未订阅')]
+        : Array.isArray(credit?.windows)
+          ? credit.windows
+              .filter((w) => w.applicable !== false)
+              .slice(0, 4)
+              .map((w) => w.label + ' ' + windowText(w))
+          : [
+              tm('月度剩余 {amount}', {
+                amount: typeof credit?.monthly === 'number' ? '$' + credit.monthly.toFixed(2) : '—',
+              }),
+              tm('5 小时 {five} · 每周 {week}', { five: windowText(credit?.five), week: windowText(credit?.week) }),
+            ];
   // T11.2: on Windows the tooltip lists every account's tightest value, within the system's 127-character limit.
   tray.setToolTip(
     isMac

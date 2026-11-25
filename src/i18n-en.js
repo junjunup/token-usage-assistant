@@ -1600,6 +1600,11 @@ export const EN = {
   账户接口: 'Account API',
   平台返回: 'Reported',
   月度余额: 'Monthly balance',
+  // T20.1 (D27 ①): no active plan and nothing left
+  未订阅: 'No plan',
+  套餐: 'Plan',
+  当前没有有效套餐: 'No active plan',
+  '当前没有有效套餐（未订阅），也没有购买或免费余额': 'No active plan, and no purchased or free credits',
   '数据未更新，显示的是上次成功的值。': 'Not updated; showing the last successful value.',
   '尚未同步成功，暂无数据。': 'Not synced yet; no data.',
   周: 'W',

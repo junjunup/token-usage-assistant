@@ -9,7 +9,7 @@
 - 开发机：用户的 Apple Silicon Mac（macOS 15.7.9，Node 24.21.0，pnpm 11.19.0；本机没有全局 pnpm，用 `corepack pnpm@11.19.0` 运行）。项目路径：`~/Documents/commandcode-companion`。用户另有一台 Windows 电脑（D17 ③），用于 Windows 真机验收；执行模型不能直接操作它。
 - 版本控制：Git，源码仓库 https://github.com/junjunup/token-usage-assistant（`main`；2026-10-18 由 commandcode-companion 改名并公开，MIT，见 D11），最新标签 `v1.9.0-beta.7`（上一个 `v1.9.0-beta.6`）。CI（`ci.yml`）在每次推送时运行；打包、校验、升级验证由 Release 工作流完成（见 [docs/RELEASING.md](docs/RELEASING.md)）。阶段 1–5 已完成（性能基线见 [docs/perf-baseline.md](docs/perf-baseline.md)）。
 - 发布产物：放在仓库外的 `~/Documents/TokenUsageAssistant-releases/`，每个版本一个目录（例如 `release-v1.9.0-beta.2/`），CI 报告同时存进 `docs/verification-<版本>/`。四种安装包由 CI 的 Release 工作流产出（见 [docs/RELEASING.md](docs/RELEASING.md)）；公开安装包仓库 https://github.com/junjunup/TokenUsageAssistant（只放安装包）由手动触发的 Publish 工作流发布，目前公开的最新版本是 1.9.0-beta.4（之前公开过 1.8.0-beta.7、beta.8 和 1.9.0-beta.1–beta.3；beta.6 只在源码仓库发布）。beta.5 及更早的 Windows 双包在旧 Windows 机器上。发布用的 secret `PUBLIC_RELEASE_TOKEN`（fine-grained，只授权该公开仓库的 Contents 读写）由用户于 2026-10-15 设置，**2027-01-13 到期**，到期前需要重新生成并用 `gh secret set PUBLIC_RELEASE_TOKEN -R junjunup/token-usage-assistant` 覆盖。
-- 测试基线：`pnpm run test:desktop` 共 518 项，本机 511 通过 / 0 失败 / 7 跳过（6 项 Harness 运行时未装、1 项只在 Windows 运行）；CI 装有两个已验证版本的 Harness 运行时，macOS 517 / 0 / 1，Windows 511 通过、7 项平台跳过（T19.2）。ESLint：0 个错误、0 个警告（T15.1）；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
+- 测试基线：`pnpm run test:desktop` 共 523 项，本机 516 通过 / 0 失败 / 7 跳过（6 项 Harness 运行时未装、1 项只在 Windows 运行）；CI 装有两个已验证版本的 Harness 运行时，macOS 522 / 0 / 1，Windows 516 通过、7 项平台跳过（T20.1）。ESLint：0 个错误、0 个警告（T15.1）；`pnpm run typecheck`（T5.5，TypeScript 7.0.2）通过（T4.5b 后；React hooks 的禁用已全部移除，其余逐行禁用都注明了原因）。
 
 ## 2. 各能力证据等级
 
@@ -108,6 +108,7 @@
 
 ## 7. 下一步
 
+- **当前：阶段 20「菜单栏显示哪个账户」（D27，2026-11-25）**：T20.1 已完成（已取消的 Command Code 套餐显示「未订阅」、不告警、排最后，菜单栏因此显示 Claude）；T20.2 设置项的浅色 / 深色草图待你确认，确认后实现 T20.2–T20.3（跟随前台应用，只做 Mac）。
 - **当前：阶段 19「Claude 桌面版的实时额度」（D26，2026-11-24）已完成，未发版**：Claude 桌面版不运行状态栏命令，桌面版会话的额度改由额度同步模组提供（`integrations/claude-desktop-mod`，一行命令 `claude plugin install token-usage-quota-sync --marketplace junjunup/token-usage-assistant` 安装，已装在你的 Mac 上并实测）；Claude 账户详情显示是否已安装并给出安装命令；「接入所有会话」改为只说终端会话。额度只用真实数据，不估算（用户 11-24 明确）。「应用程序」里的测试包 dev.4496aba 不含 T19.2 的界面，模组的数据照常进入它。
 
 - **当前：阶段 18「审查修复」（D25，2026-11-23）已完成，未发版**：执行模型做了一次第三方全面审查（报告只在本机 `work/reports/第三方全面审查 2026-11-23.md`），你选了「先修高优先级问题」。T18.1 托盘 / 菜单栏面板的账户按剩余最少排序；T18.2 节奏只推算样本时长 12 倍以内、百分比窗口变化不足 3 个点不推算；T18.3 Mac 上的 Claude 状态栏组件与启动脚本改为 sh + curl，Electron 的 RunAsNode 关闭（此前同一用户的其他程序可借应用本身读出钥匙串密钥、解密已保存的 Key），「接入所有会话」把原来的状态栏命令写进新命令，删除助手后照常运行；之后你选「继续修剩余问题」：T18.4 读取本机记录时只解码用量字段名、回复内容从头到尾不解码；T18.5 Claude 启动脚本接受 2.1.251 及以后的任何版本。审查提出的方向问题（先做需求实验，再在「Coding Plan 体检」与维护模式之间选）**你还没有表态**，没有写进计划。下次发版后打开一次助手，状态栏命令与启动脚本会自动换成新写法。

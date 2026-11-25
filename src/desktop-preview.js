@@ -121,6 +121,22 @@ if (scenario === 'idle-used') {
     remainingPercent: 0.4,
   };
 }
+// T20.1 (D27 ①): a cancelled plan — no subscription, unlimited windows, every credit zero.
+if (scenario === 'cancelled') {
+  const unlimited = {
+    used: null,
+    cap: null,
+    remainingPercent: null,
+    usedPercent: null,
+    resetAt: null,
+    resetState: 'unlimited',
+    unlimited: true,
+    exceeded: false,
+  };
+  state.data.parts.credits = { five: unlimited, week: unlimited, monthly: 0, purchased: 0, free: 0, total: 0 };
+  state.data.parts.subscription = { active: false, status: 'none', planId: null, start: null, end: null };
+  state.data.parts.summary = { ...state.data.parts.summary, scope: 'history', periodStart: null, periodEnd: null };
+}
 if (scenario === 'reset-missing')
   state.data.parts.credits.five = { ...state.data.parts.credits.five, resetAt: null, resetState: 'unknown' };
 const snapshots = { commandcode: structuredClone(state.data) };

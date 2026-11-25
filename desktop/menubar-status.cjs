@@ -5,7 +5,7 @@
 //   balance at or below zero is red, below the reminder threshold is amber.
 // - Missing data is "—", never 0; resetAt=0 is "未启用"; balances keep their own currency and are never a gauge.
 // - Within an account, quota windows come first and money is the fallback (T7.9, see focusOf).
-const { monthlyQuota, percentText } = require('./domain.cjs');
+const { monthlyQuota, percentText, unsubscribed } = require('./domain.cjs');
 const { formatAmount, compactAmount, belowAmount } = require('./balance-domain.cjs');
 
 /**
@@ -142,6 +142,22 @@ function slotsOf(a, threshold, amounts = {}) {
   }
   const c = parts.credits;
   if (!c) return slots;
+  // T20.1 (D27 ①): no active plan and nothing left: one neutral "未订阅" slot, no windows (they are not a plan's).
+  if (unsubscribed(parts)) {
+    slots.push({
+      id: 'plan',
+      label: '套餐',
+      short: '套餐',
+      kind: 'balance',
+      ratio: null,
+      percent: null,
+      text: '未订阅',
+      compact: '未订阅',
+      tone: 'normal',
+      resetAt: null,
+    });
+    return slots;
+  }
   if (Array.isArray(c.windows)) {
     for (const w of c.windows) {
       const s = windowSlot(String(w.id), String(w.label || ''), w, threshold);
@@ -203,7 +219,8 @@ function focusOf(slots) {
 }
 
 /**
- * @typedef {{ a: AccountSummary, order: number, slots: Slot[], focus: Slot|null }} RankedAccount
+ * @typedef {{ a: AccountSummary, order: number, slots: Slot[], focus: Slot|null, off: boolean }} RankedAccount
+ *   off: no active plan and nothing left (T20.1)
  */
 
 /**
@@ -218,7 +235,7 @@ function focusOf(slots) {
 function rankAccounts(accounts, threshold, options = {}) {
   const ranked = (Array.isArray(accounts) ? accounts : []).map((a, order) => {
     const slots = slotsOf(a, threshold, options.amounts);
-    return { a, order, slots, focus: focusOf(slots) };
+    return { a, order, slots, focus: focusOf(slots), off: unsubscribed(a.parts) };
   });
   const level = (/** @type {RankedAccount} */ r) => (r.focus ? LEVEL[r.focus.tone] : 0);
   const windowLeft = (/** @type {RankedAccount} */ r) =>
@@ -227,6 +244,8 @@ function rankAccounts(accounts, threshold, options = {}) {
       .reduce((m, s) => Math.min(m, s.percent ?? m), Infinity);
   return ranked.sort(
     (x, y) =>
+      // T20.1 (D27 ①): accounts without a plan go after every other account.
+      Number(x.off) - Number(y.off) ||
       // Alerts first: red over amber, then the one that resets first (④).
       level(y) - level(x) ||
       (level(x) > 0 ? cmp(x.focus?.resetAt ?? Infinity, y.focus?.resetAt ?? Infinity) : 0) ||

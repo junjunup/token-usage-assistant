@@ -215,6 +215,19 @@ function normalizeSummary(raw, periodStart = null, periodEnd = null) {
     scope: periodStart ? 'billing' : 'history',
   };
 }
+/**
+ * T20.1 (D27 ①): Command Code says there is no active plan and nothing is left to spend: "未订阅", not an exhausted
+ * balance. A failed subscription query (no subscription part) is not read as unsubscribed; neither is any credit left.
+ * @param {any} parts
+ * @returns {boolean}
+ */
+function unsubscribed(parts) {
+  const c = parts?.credits,
+    sub = parts?.subscription;
+  if (!sub || sub.active !== false || !c || Array.isArray(c.windows)) return false;
+  if (c.five?.exceeded || c.week?.exceeded) return false;
+  return [c.monthly, c.purchased, c.free].every((n) => typeof n === 'number' && Number.isFinite(n) && n <= 0);
+}
 // A monthly pool can only be derived from matching, freshly synchronized billing data.
 /** @param {any} data app monitor state */
 function monthlyQuota(data) {
@@ -290,6 +303,7 @@ function quotaStatus(state) {
       return ['额度充足', 'green'];
     return ['部分额度暂不可获取', 'neutral'];
   }
+  if (unsubscribed(d.parts)) return ['未订阅', 'neutral'];
   if (c.monthly !== null && c.monthly <= 0) {
     if (c.purchased > 0) return ['月额度已用尽 · 有购买余额', 'amber'];
     if (c.free > 0) return ['月额度已用尽 · 有免费余额', 'amber'];
@@ -500,6 +514,7 @@ module.exports = {
   normalizeSubscription,
   normalizeSummary,
   monthlyQuota,
+  unsubscribed,
   quotaStatus,
   resetDescription,
   percentText,
